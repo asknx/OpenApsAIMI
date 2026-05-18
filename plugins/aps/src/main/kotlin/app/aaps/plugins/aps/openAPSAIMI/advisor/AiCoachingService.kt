@@ -52,16 +52,19 @@ class AiCoachingService @Inject constructor() {
         context: AdvisorContext, 
         report: AdvisorReport, 
         apiKey: String,
+        oauthToken: String? = null,
+        useOAuth: Boolean = false,
         provider: Provider,
         history: List<app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.AdvisorActionLog> = emptyList()
     ): String = withContext(Dispatchers.IO) {
-        if (apiKey.isBlank()) return@withContext "Clé API manquante. Veuillez configurer votre clé ${provider.name}."
+        val tokenToUse = if (useOAuth) oauthToken else null
+        if (apiKey.isBlank() && tokenToUse == null) return@withContext "API Key or OAuth token missing."
 
         try {
             val prompt = buildPrompt(androidContext, context, report, history)
             
             return@withContext when (provider) {
-                Provider.GEMINI -> callGemini(androidContext, apiKey, prompt)
+                Provider.GEMINI -> callGemini(androidContext, apiKey, tokenToUse, prompt)
                 Provider.DEEPSEEK -> callDeepSeek(apiKey, prompt)
                 Provider.CLAUDE -> callClaude(apiKey, prompt)
                 else -> callOpenAI(apiKey, prompt)
@@ -69,37 +72,35 @@ class AiCoachingService @Inject constructor() {
 
         } catch (e: Exception) {
             e.printStackTrace()
-            return@withContext "Erreur de connexion (${provider.name}) : ${e.localizedMessage}"
+            return@withContext "Connection Error (${provider.name}) : ${e.localizedMessage}"
         }
     }
     
     /**
      * Simple text generation for Context Module.
-     * 
-     * @param prompt Complete prompt (system + user message)
-     * @param apiKey API key for the provider
-     * @param provider Which LLM provider to use
-     * @return Generated text or error message
      */
     suspend fun fetchText(
         context: Context,
         prompt: String,
         apiKey: String,
+        oauthToken: String? = null,
+        useOAuth: Boolean = false,
         provider: Provider
     ): String = withContext(Dispatchers.IO) {
-        if (apiKey.isBlank()) return@withContext "Clé API manquante."
-        if (prompt.isBlank()) return@withContext "Prompt vide."
+        val tokenToUse = if (useOAuth) oauthToken else null
+        if (apiKey.isBlank() && tokenToUse == null) return@withContext "API Key missing."
+        if (prompt.isBlank()) return@withContext "Empty prompt."
         
         try {
             return@withContext when (provider) {
-                Provider.GEMINI -> callGemini(context, apiKey, prompt)
+                Provider.GEMINI -> callGemini(context, apiKey, tokenToUse, prompt)
                 Provider.DEEPSEEK -> callDeepSeek(apiKey, prompt)
                 Provider.CLAUDE -> callClaude(apiKey, prompt)
                 else -> callOpenAI(apiKey, prompt)
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            return@withContext "Erreur: ${e.localizedMessage}"
+            return@withContext "Error: ${e.localizedMessage}"
         }
     }
 
@@ -143,40 +144,104 @@ class AiCoachingService @Inject constructor() {
         }
     }
 
-    private fun callGemini(context: Context, apiKey: String, prompt: String): String {
+    private fun callGemini(context: Context, apiKey: String?, oauthToken: String?, prompt: String): String {
         val resolver = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiModelResolver(context)
         
-        // 1. Try Preferred Model (Efficient: Gemini 3 Flash)
-        val primaryModel = resolver.resolveGenerateContentModel(apiKey, "gemini-3-flash-preview")
+        // Use manual dependency resolution with interfaces
+        val aapsLogger = object : app.aaps.core.interfaces.logging.AAPSLogger {
+            override fun debug(message: String) {}
+            override fun debug(enable: Boolean, tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+            override fun debug(tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+            override fun debug(tag: app.aaps.core.interfaces.logging.LTag, accessor: () -> String) {}
+            override fun debug(tag: app.aaps.core.interfaces.logging.LTag, format: String, vararg arguments: Any?) {}
+            override fun warn(tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+            override fun warn(tag: app.aaps.core.interfaces.logging.LTag, format: String, vararg arguments: Any?) {}
+            override fun info(tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+            override fun info(tag: app.aaps.core.interfaces.logging.LTag, format: String, vararg arguments: Any?) {}
+            override fun error(tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+            override fun error(tag: app.aaps.core.interfaces.logging.LTag, message: String, throwable: Throwable) {}
+            override fun error(tag: app.aaps.core.interfaces.logging.LTag, format: String, vararg arguments: Any?) {}
+            override fun error(message: String) {}
+            override fun error(message: String, throwable: Throwable) {}
+            override fun error(format: String, vararg arguments: Any?) {}
+            override fun debug(className: String, methodName: String, lineNumber: Int, tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+            override fun info(className: String, methodName: String, lineNumber: Int, tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+            override fun warn(className: String, methodName: String, lineNumber: Int, tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+            override fun error(className: String, methodName: String, lineNumber: Int, tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
+        }
+        
+        val sp = object : app.aaps.core.interfaces.sharedPreferences.SP {
+            override fun getAll(): Map<String, *> = emptyMap<String, Any>()
+            override fun clear() {}
+            override fun contains(key: String): Boolean = false
+            override fun contains(resourceId: Int): Boolean = false
+            override fun remove(resourceID: Int) {}
+            override fun remove(key: String) {}
+            override fun getString(resourceID: Int, defaultValue: String): String = defaultValue
+            override fun getString(key: String, defaultValue: String): String = context.getSharedPreferences("AAPS", Context.MODE_PRIVATE).getString(key, defaultValue) ?: defaultValue
+            override fun getStringOrNull(resourceID: Int, defaultValue: String?): String? = defaultValue
+            override fun getStringOrNull(key: String, defaultValue: String?): String? = context.getSharedPreferences("AAPS", Context.MODE_PRIVATE).getString(key, defaultValue)
+            override fun getBoolean(resourceID: Int, defaultValue: Boolean): Boolean = defaultValue
+            override fun getBoolean(key: String, defaultValue: Boolean): Boolean = context.getSharedPreferences("AAPS", Context.MODE_PRIVATE).getBoolean(key, defaultValue)
+            override fun getDouble(resourceID: Int, defaultValue: Double): Double = defaultValue
+            override fun getDouble(key: String, defaultValue: Double): Double = defaultValue
+            override fun getInt(resourceID: Int, defaultValue: Int): Int = defaultValue
+            override fun getInt(key: String, defaultValue: Int): Int = defaultValue
+            override fun getLong(resourceID: Int, defaultValue: Long): Long = defaultValue
+            override fun getLong(key: String, defaultValue: Long): Long = context.getSharedPreferences("AAPS", Context.MODE_PRIVATE).getLong(key, defaultValue)
+            override fun incLong(key: String) {}
+            override fun putBoolean(key: String, value: Boolean) {}
+            override fun putBoolean(resourceID: Int, value: Boolean) {}
+            override fun putDouble(key: String, value: Double) {}
+            override fun putDouble(resourceID: Int, value: Double) {}
+            override fun putLong(key: String, value: Long) {}
+            override fun putLong(resourceID: Int, value: Long) {}
+            override fun putInt(key: String, value: Int) {}
+            override fun putInt(resourceID: Int, value: Int) {}
+            override fun incInt(key: String) {}
+            override fun putString(resourceID: Int, value: String) {}
+            override fun putString(key: String, value: String) {}
+            override fun edit(commit: Boolean, block: app.aaps.core.interfaces.sharedPreferences.SP.Editor.() -> Unit) {}
+        }
+
+        val oauthManager = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager(aapsLogger, sp, context)
+        
+        val primaryModel = resolver.resolveGenerateContentModel(apiKey, oauthToken, "gemini-3.1-flash")
         
         try {
-            return executeGeminiRequest(resolver, apiKey, prompt, primaryModel)
+            return executeGeminiRequest(resolver, oauthManager, apiKey, oauthToken, prompt, primaryModel)
         } catch (e: Exception) {
-            // 2. Check for Quota Exhaustion (429)
-            // Error message usually contains "429" or "RESOURCE_EXHAUSTED" or "quota"
             val msg = e.message?.lowercase() ?: ""
             if (msg.contains("429") || msg.contains("resource_exhausted") || msg.contains("quota")) {
-                
-                // 3. Fallback to Efficient Model (High Quota: Gemini 3 Flash)
-                // Flash models typically have 15 RPM free tier vs 2 RPM for Pro
-                val fallbackModel = "gemini-3-flash-preview" // Hardcoded safe fallback
-                android.util.Log.w("AIMI_GEMINI", "⚠️ Quota exceeded on $primaryModel. Auto-fallback to $fallbackModel")
-                
-                return executeGeminiRequest(resolver, apiKey, prompt, fallbackModel)
+                val fallbackModel = "gemini-3.1-flash"
+                return executeGeminiRequest(resolver, oauthManager, apiKey, oauthToken, prompt, fallbackModel)
             }
-            throw e // Re-throw other errors
+            throw e
         }
     }
 
     private fun executeGeminiRequest(
         resolver: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiModelResolver,
-        apiKey: String, 
+        oauthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager,
+        apiKey: String?, 
+        oauthToken: String?,
         prompt: String, 
         modelId: String
     ): String {
-        val urlStr = resolver.getGenerateContentUrl(modelId, apiKey)
+        val urlStr = if (oauthToken != null) {
+            "https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent"
+        } else {
+            resolver.getGenerateContentUrl(modelId, apiKey)
+        }
+        
         val url = URL(urlStr)
         val connection = url.openConnection() as HttpURLConnection
+        if (oauthToken != null) {
+            connection.setRequestProperty("Authorization", "Bearer $oauthToken")
+            oauthManager.getProjectId()?.let { 
+                if (it.isNotEmpty()) connection.setRequestProperty("x-goog-user-project", it)
+            }
+        }
         
         val jsonBody = JSONObject()
         val parts = JSONArray()
@@ -211,18 +276,23 @@ class AiCoachingService @Inject constructor() {
 
         val responseCode = connection.responseCode
         if (responseCode == 200) {
-            val reader = BufferedReader(InputStreamReader(connection.inputStream, java.nio.charset.StandardCharsets.UTF_8))
             val response = StringBuilder()
-            var line: String?
-            while (reader.readLine().also { line = it } != null) response.append(line)
-            reader.close()
+            BufferedReader(InputStreamReader(connection.inputStream)).use {
+                var line: String? = ""
+                while (it.readLine().also { line = it } != null) {
+                    response.append(line)
+                }
+            }
             return parseGeminiResponse(response.toString())
         } else {
-             val reader = BufferedReader(InputStreamReader(connection.errorStream ?: connection.inputStream, java.nio.charset.StandardCharsets.UTF_8))
-             val err = StringBuilder()
-             var line: String?
-             while (reader.readLine().also { line = it } != null) err.append(line)
-             throw Exception("Gemini Error ($responseCode): $err")
+            val errorResponse = StringBuilder()
+            BufferedReader(InputStreamReader(connection.errorStream ?: connection.inputStream)).use {
+                var line: String? = ""
+                while (it.readLine().also { line = it } != null) {
+                    errorResponse.append(line)
+                }
+            }
+            throw Exception("HTTP $responseCode: $errorResponse")
         }
     }
 

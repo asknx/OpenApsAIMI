@@ -45,6 +45,8 @@ import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.utils.fabric.InstanceId
 import app.aaps.core.validators.preferences.AdaptiveListPreference
 import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
+import app.aaps.core.interfaces.pump.actions.CustomAction
+import app.aaps.core.interfaces.pump.actions.CustomActionType
 import app.aaps.pump.virtual.events.EventVirtualPumpUpdateGui
 import app.aaps.pump.virtual.extensions.toText
 import app.aaps.pump.virtual.keys.VirtualBooleanNonPreferenceKey
@@ -53,6 +55,11 @@ import io.reactivex.rxjava3.kotlin.plusAssign
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
+
+enum class VirtualCustomActionType : CustomActionType {
+    Refill;
+    override fun getKey() = name
+}
 
 @Singleton
 open class VirtualPumpPlugin @Inject constructor(
@@ -87,7 +94,7 @@ open class VirtualPumpPlugin @Inject constructor(
 
     private val disposable = CompositeDisposable()
     var batteryPercent = 50
-    var reservoirInUnits = 50
+    var reservoirInUnits = 300
 
     var pumpType: PumpType? = null
         private set
@@ -340,6 +347,24 @@ open class VirtualPumpPlugin @Inject constructor(
     override fun model(): PumpType = pumpDescription.pumpType
     override fun serialNumber(): String = InstanceId.instanceId
     override fun canHandleDST(): Boolean = true
+
+    override fun getCustomActions(): List<CustomAction> {
+        return listOf(
+            CustomAction(
+                customActionType = VirtualCustomActionType.Refill,
+                name = app.aaps.core.ui.R.string.prime_fill,
+                iconResourceId = app.aaps.core.ui.R.drawable.ic_actions_refill,
+                isEnabled = true
+            )
+        )
+    }
+
+    override fun executeCustomAction(customActionType: CustomActionType) {
+        if (customActionType == VirtualCustomActionType.Refill) {
+            reservoirInUnits = 300
+            rxBus.send(EventVirtualPumpUpdateGui())
+        }
+    }
 
     fun refreshConfiguration() {
         val pumpType = preferences.get(StringKey.VirtualPumpType)

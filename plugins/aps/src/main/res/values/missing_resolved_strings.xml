@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_documents">Documents</string>
+    <string name="uam_model_status"> 📦 UAM Model: %1$s (%2$s, %3$s)</string>
+    <string name="sanitize_info"> 🧹 Sanitize: %1$d incomplete values -> 0</string>
+    <string name="cache_hit"> ⚡ Cache HIT → %1$s U</string>
+    <string name="cache_hit_invalid"> ⚠️ Cache HIT invalid (NaN/Inf), recalculating…</string>
+    <string name="uam_unavailable"> ❌ UAM Model unavailable → MB=0</string>
+    <string name="tflite_failed"> 💥 TFLite Error: %1$s → MB=0</string>
+    <string name="uam_executed"> ✔ UAM executed → %1$s U</string>
+    <string name="uam_invalid"> ⚠️ Result invalid (raw=%1$f) → MB=0</string>
+    <string name="model_missing"> ❌ Model file not found: %1$s</string>
+    <string name="model_loaded"> 📦 Model loaded ✓ : %1$s (%2$s KB)</string>
+    <string name="model_load_failed"> ❌ Model load failed: %1$s</string>
+    <string name="log_interpreter_closed">Interpreter closed</string>
+    <string name="log_smb_cache_cleared">MB Cache cleared</string>
+    <string name="log_tflite_failed">TFLite failed to start: %1$s</string>
+    <string name="log_model_file_not_found">Model file not found: %1$s</string>
+    <string name="log_interpreter_initialized">Interpreter initialized from %1$s (%2$s)</string>
+    <string name="log_failed_init_uam">Failed to initialize UAM model: %1$s</string>
+    <string name="log_error_closing_interpreter">Error closing interpreter: %1$s</string>
+    <string name="reason_max_smb">; maxSMB %1$.2f</string>
+    <string name="max_basal_multiplier">Max Basal Multiplier</string>
+    <string name="max_daily_basal_multiplier">Max Daily Basal Multiplier</string>
+    <string name="aimi_pref_openai_key_summary">Enter your OpenAI API Key (sk-...)</string>
+    <string name="aimi_pref_openai_key_title">OpenAI API Key</string>
+    <string name="aimi_physio_data_sources_title">Physiological Data Sources</string>
+    <string name="aimi_physio_advanced_title">Advanced Physiological Settings</string>
+    <string name="oaps_aimi_pkpd_section_title">PK/PD Settings</string>
+    <string name="oaps_aimi_pkpd_enabled_summary">Enable PK/PD adjustments.</string>
+    <string name="oaps_aimi_pkpd_enabled_title">Enable PK/PD</string>
+    <string name="Enable_xdripOM_title">Enable xDrip+ Object Model Integration</string>
+    <string name="training_ml_modes_preferences">ML Training Modes</string>
+    <string name="use_dynamic_sensitivity_summary">Adjust algorithm to use dynamic sensitivity instead of profile ISF.</string>
+    <string name="use_dynamic_sensitivity_title">Enable Dynamic Sensitivity</string>
+    <string name="aimi_adv_rec_pkpd_relief_enable_title">Enable PK/PD Relief</string>
+    <string name="aimi_adv_rec_pkpd_relief_enable_desc">Consider enabling PK/PD relief for better stability.</string>
+    <string name="aimi_adv_rec_pkpd_relief_factor_title">Adjust PK/PD Relief Factor</string>
+    <string name="aimi_adv_rec_pkpd_relief_factor_desc">Review the relief factor setting.</string>
+    <string name="aimi_adv_rec_redcarpet_restore_title">Red Carpet Restore</string>
+    <string name="aimi_adv_rec_redcarpet_restore_desc">Threshold for restoring regular delivery.</string>
+    <string name="aimi_adv_rec_priority_maxiob_title">Priority MaxIOB</string>
+    <string name="aimi_adv_rec_priority_maxiob_desc">Enable priority headroom for critical insulin needs.</string>
+    <string name="aimi_adv_rec_hypos_desc">MaxSMB potentially too aggressive or basal share imbalanced.</string>
+    <string name="aimi_adv_rec_control_desc">Persistent hyperglycemia detected, review ISF or Target.</string>
+    <string name="aimi_adv_rec_hypers_desc">Meal management can be improved using Modes or SMB.</string>
+    <string name="aimi_adv_rec_basal_desc">Review basal share relative to TDD.</string>
+    <string name="safety_cut_tbr">Safety cut: prediction &lt; 100 or IOB &gt; %1$.2f → TBR 0.</string>
+    <string name="bg_80_90_fall">BG 80-90 and falling → TBR 0.</string>
+    <string name="bg_80_90_stable">BG 80-90 and stable → TBR 0.</string>
+    <string name="bg_90_100_slight_gain">BG 90-100 and slight gain → TBR 0.</string>
+    <string name="half_basal_exercise_target_summary">Halve basal when exercise target is active.</string>
+    <string name="half_basal_exercise_target_title">Half Basal on Exercise</string>
+</resources>

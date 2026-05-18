@@ -3,6 +3,8 @@ package app.aaps.plugins.sync.nsclientV3.workers
 import android.content.Context
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import app.aaps.core.data.time.T
+import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.nsclient.StoreDataForDb
 import app.aaps.core.interfaces.rx.bus.RxBus
@@ -33,6 +35,7 @@ class LoadBgWorker(
     @Inject lateinit var nsClientSource: NSClientSource
     @Inject lateinit var nsIncomingDataProcessor: NsIncomingDataProcessor
     @Inject lateinit var storeDataForDb: StoreDataForDb
+    @Inject lateinit var persistenceLayer: PersistenceLayer
 
     override suspend fun doWorkAndLog(): Result {
         if (!nsClientSource.isEnabled() && !preferences.get(BooleanKey.NsClientAcceptCgmData) && !nsClientV3Plugin.doingFullSync)
@@ -40,30 +43,53 @@ class LoadBgWorker(
 
         val nsAndroidClient = nsClientV3Plugin.nsAndroidClient ?: return Result.failure(workDataOf("Error" to "AndroidClient is null"))
         var continueLoading = true
+        var advanceTimestamp = 0L
         try {
             while (continueLoading) {
                 val isFirstLoad = nsClientV3Plugin.isFirstLoad(NsClient.Collection.ENTRIES)
                 val lastLoaded =
                     if (isFirstLoad) max(nsClientV3Plugin.firstLoadContinueTimestamp.collections.entries, dateUtil.now() - nsClientV3Plugin.maxAge)
                     else max(nsClientV3Plugin.lastLoadedSrvModified.collections.entries, dateUtil.now() - nsClientV3Plugin.maxAge)
-                if ((nsClientV3Plugin.newestDataOnServer?.collections?.entries ?: Long.MAX_VALUE) > lastLoaded) {
-                    val sgvs: List<NSSgvV3>
-                    val response: NSAndroidClient.ReadResponse<List<NSSgvV3>>?
-                    if (isFirstLoad) response = nsAndroidClient.getSgvsNewerThan(lastLoaded, NSClientV3Plugin.RECORDS_TO_LOAD)
-                    else {
-                        response = nsAndroidClient.getSgvsModifiedSince(lastLoaded, NSClientV3Plugin.RECORDS_TO_LOAD)
-                        aapsLogger.debug(LTag.NSCLIENT, "lastLoadedSrvModified: ${response.lastServerModified}")
-                        response.lastServerModified?.let { nsClientV3Plugin.lastLoadedSrvModified.collections.entries = it }
-                        nsClientV3Plugin.storeLastLoadedSrvModified()
-                        nsClientV3Plugin.scheduleIrregularExecution() // Idea is to run after 5 min after last BG
+                val newestOnServer = nsClientV3Plugin.newestDataOnServer?.collections?.entries ?: Long.MAX_VALUE
+                val lastGlucose = persistenceLayer.getLastGlucoseValue()
+                val dataIsOld = (lastGlucose?.timestamp ?: 0L) < dateUtil.now() - T.mins(3).plus(T.secs(10)).msecs()
+                
+                if (newestOnServer > lastLoaded || (nsClientSource.isEnabled() && dataIsOld)) {
+                    if (newestOnServer <= lastLoaded) {
+                        aapsLogger.info(LTag.NSCLIENT, "Forcing BG load because data is old (${dateUtil.dateAndTimeAndSecondsString(lastGlucose?.timestamp ?: 0L)}) and NS is source. newestOnServer: $newestOnServer lastLoaded: $lastLoaded")
                     }
+                    val sgvs: List<NSSgvV3>
+                    val response: NSAndroidClient.ReadResponse<List<NSSgvV3>>
+                    if (isFirstLoad) {
+                        response = nsAndroidClient.getSgvsNewerThan(max(lastLoaded, advanceTimestamp), NSClientV3Plugin.RECORDS_TO_LOAD)
+                    } else if (nsClientSource.isEnabled()) {
+                        // xDrip-style: If NS is source, always poll by measurement date for reliability
+                        response = nsAndroidClient.getSgvsNewerThan(max(lastGlucose?.timestamp ?: 0L, advanceTimestamp), NSClientV3Plugin.RECORDS_TO_LOAD)
+                    } else {
+                        response = nsAndroidClient.getSgvsModifiedSince(lastLoaded, NSClientV3Plugin.RECORDS_TO_LOAD)
+                    }
+
+                    aapsLogger.debug(LTag.NSCLIENT, "lastLoadedSrvModified: ${response.lastServerModified}")
+                    val nextSrvModified = response.lastServerModified ?: response.values.mapNotNull { it.srvModified }.maxOrNull()
+                    nextSrvModified?.let {
+                        if (it > nsClientV3Plugin.lastLoadedSrvModified.collections.entries) {
+                            nsClientV3Plugin.lastLoadedSrvModified.collections.entries = it
+                            nsClientV3Plugin.storeLastLoadedSrvModified()
+                        }
+                    }
+                    if (!isFirstLoad) {
+                        nsClientV3Plugin.scheduleIrregularExecution() // Idea is to run after 3 min after last BG
+                    }
+
                     sgvs = response.values
                     aapsLogger.debug(LTag.NSCLIENT, "SGVS: $sgvs")
                     if (sgvs.isNotEmpty()) {
                         val action = if (isFirstLoad) "RCV-F" else "RCV"
-                        rxBus.send(EventNSClientNewLog("◄ $action", "${sgvs.size} SVGs from ${dateUtil.dateAndTimeAndSecondsString(lastLoaded)}"))
+                        rxBus.send(EventNSClientNewLog("◄ $action", "${sgvs.size} SVGs from ${dateUtil.dateAndTimeAndSecondsString(max(lastGlucose?.timestamp ?: 0L, advanceTimestamp))}"))
                         // Schedule processing of fetched data and continue of loading
-                        continueLoading = response.code != 304 && nsIncomingDataProcessor.processSgvs(sgvs, nsClientV3Plugin.doingFullSync)
+                        val newestTimestamp = nsIncomingDataProcessor.processSgvs(sgvs, nsClientV3Plugin.doingFullSync)
+                        continueLoading = response.code != 304 && newestTimestamp > advanceTimestamp
+                        advanceTimestamp = newestTimestamp
                     } else {
                         // End first load
                         if (isFirstLoad) {

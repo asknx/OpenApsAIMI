@@ -246,5 +246,100 @@
             app:layout_constraintTop_toBottomOf="@id/pump_status_text"
             tools:text="Prediction: → 209 in 31m" />
 
+        <!-- 🏥 Physio Data Row (Duplicated from Overview Info) -->
+        <LinearLayout
+            android:id="@+id/physio_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/prediction_text">
+
+            <!-- Steps -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    app:srcCompat="@drawable/ic_dashboard_shoe"
+                    app:tint="@color/dashboard_on_surface_muted" />
+                <TextView
+                    android:id="@+id/physio_steps"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dashboard_on_surface"
+                    android:textSize="12sp"
+                    tools:text="--" />
+            </LinearLayout>
+
+            <!-- HR -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    app:srcCompat="@drawable/ic_cp_heart_rate" />
+                <TextView
+                    android:id="@+id/physio_hr"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dashboard_on_surface"
+                    android:textSize="12sp"
+                    tools:text="--" />
+            </LinearLayout>
+
+            <!-- HRV -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    app:srcCompat="@drawable/ic_dashboard_wave"
+                    app:tint="@color/dashboard_on_surface_muted" />
+                <TextView
+                    android:id="@+id/physio_hrv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dashboard_on_surface"
+                    android:textSize="12sp"
+                    tools:text="--" />
+            </LinearLayout>
+
+            <!-- Sleep -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    app:srcCompat="@drawable/ic_running_mode"
+                    app:tint="@color/dashboard_on_surface_muted" />
+                <TextView
+                    android:id="@+id/physio_sleep"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dashboard_on_surface"
+                    android:textSize="12sp"
+                    tools:text="--" />
+            </LinearLayout>
+
+        </LinearLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </merge>

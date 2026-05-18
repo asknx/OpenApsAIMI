@@ -18,7 +18,7 @@ import app.aaps.wear.interaction.utils.MenuListActivity
 class MainMenuActivity : MenuListActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (BuildConfig.FLAVOR == "full") {
+        if (BuildConfig.FLAVOR == "fulldev" || BuildConfig.FLAVOR == "userfull") {
             setTitle(R.string.app_name)
         } else if (BuildConfig.FLAVOR == "aapsclient") {
             setTitle("AAPSClient")

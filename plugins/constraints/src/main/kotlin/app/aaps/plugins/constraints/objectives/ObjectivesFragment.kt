@@ -82,6 +82,7 @@ class ObjectivesFragment : DaggerFragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.recyclerview.layoutManager = LinearLayoutManager(view.context)
         binding.recyclerview.adapter = objectivesAdapter
+        binding.fake.visibility = if (objectivesPlugin.config.isDev()) View.VISIBLE else View.GONE
         binding.fake.setOnClickListener { updateGUI() }
         binding.reset.setOnClickListener {
             objectivesPlugin.reset()

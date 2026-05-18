@@ -34,11 +34,11 @@ import javax.inject.Singleton
 class AIMIPhysioManagerMTR @Inject constructor(
     private val context: Context,
     val repo: HealthContextRepository, // Public for Workers
-    private val dataRepository: AIMIPhysioDataRepositoryMTR,
+    val dataRepository: AIMIPhysioDataRepositoryMTR,
     private val featureExtractor: AIMIPhysioFeatureExtractorMTR,
     private val baselineModel: AIMIPhysioBaselineModelMTR,
     private val contextEngine: AIMIPhysioContextEngineMTR,
-    private val contextStore: AIMIPhysioContextStoreMTR,
+    val contextStore: AIMIPhysioContextStoreMTR,
     private val llmAnalyzer: AIMILLMPhysioAnalyzerMTR, // Optional
     private val unifiedActivityProvider: UnifiedActivityProviderMTR,
     private val pipelineWatchdog: AIMIPhysioPipelineWatchdogMTR,
@@ -100,6 +100,7 @@ class AIMIPhysioManagerMTR @Inject constructor(
         
         // Log current context status
         contextStore.logStatus()
+        aapsLogger.info(LTag.APS, "[$TAG] 📊 Current Module State: ${getStatus()}")
         
         // 🚀 BOOTSTRAP LOGIC
         // Trigger if:
@@ -345,6 +346,14 @@ class AIMIPhysioManagerMTR @Inject constructor(
             sp.putLong(PREF_KEY_LAST_UPDATE, lastUpdateTime)
 
             val totalMs = System.currentTimeMillis() - startTime
+
+            // Log Snapshot for overview traceability
+            try {
+                val snapshot = repo.fetchSnapshot()
+                aapsLogger.info(LTag.APS, "[$TAG] 📊 Merged Snapshot: Steps(15m)=${snapshot.stepsLast15m}, HR=${snapshot.hrNow}, HRV=${snapshot.hrvRmssd.toInt()}, SleepDebt=${snapshot.sleepDebtMinutes}m")
+            } catch (e: Exception) {
+                // ignore
+            }
 
             // STRUCTURED LOG (Production Level)
             aapsLogger.info(

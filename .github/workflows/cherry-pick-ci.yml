@@ -18,8 +18,10 @@ on:
         default: 'fullRelease'
         type: choice
         options:
-          - fullRelease
-          - fullDebug
+          - fulldevRelease
+          - fulldevDebug
+          - userfullRelease
+          - userfullDebug
           - aapsclientRelease
           - aapsclientDebug
           - aapsclient2Release
@@ -237,7 +239,7 @@ jobs:
           echo "VARIANT_FLAVOR=$VARIANT_FLAVOR" >> $GITHUB_ENV
           echo "VARIANT_TYPE=$VARIANT_TYPE" >> $GITHUB_ENV
           VERSION_SUFFIX=""
-          if [[ "$VARIANT_FLAVOR" != "full" ]]; then VERSION_SUFFIX="$VARIANT_FLAVOR"; fi
+          if [[ "$VARIANT_FLAVOR" != "userfull" ]]; then VERSION_SUFFIX="$VARIANT_FLAVOR"; fi
           if [[ "$VARIANT_TYPE" == "debug" ]]; then VERSION_SUFFIX="$VERSION_SUFFIX-debug"; fi
           if [[ -n "$VERSION_SUFFIX" && "$VERSION_SUFFIX" != -* ]]; then VERSION_SUFFIX="-$VERSION_SUFFIX"; fi
           echo "VERSION_SUFFIX=$VERSION_SUFFIX" >> $GITHUB_ENV

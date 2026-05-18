@@ -19,6 +19,7 @@ import kotlinx.coroutines.withTimeout
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -218,7 +219,15 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                 withTimeout(API_TIMEOUT_MS) {
                     withContext(Dispatchers.IO) {
                         val now = Instant.now()
-                        val yesterday = now.minusSeconds(48 * 60 * 60) // Last 48h
+                        
+                        // 🚀 TARGETED WINDOW: Only aggregate sessions that ENDED since 8 PM yesterday
+                        // This prevents summing multiple days of sleep into one 15h+ value.
+                        val lastNightCutoff = ZonedDateTime.now(ZoneId.systemDefault())
+                            .minusDays(1)
+                            .withHour(20).withMinute(0).withSecond(0)
+                            .toInstant()
+                        
+                        val yesterday = now.minusSeconds(48 * 60 * 60) // Fetch buffer
                         
                         val request = ReadRecordsRequest(
                             recordType = SleepSessionRecord::class,
@@ -227,23 +236,44 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                         
                         val response = client.readRecords(request)
                         
-                        // 🚀 FILTER & AGGREGATE Sleep Sessions
-                        // Health Connect can return multiple segments (Naps, fragmented night)
-                        // We sum up all sleep within the 'Last Night' window (e.g. last 16h to be safe, or just use the response window)
-                        // The response window is 'yesterday' to 'now' (48h). 
-                        // To get "Last Night" specifically, we should look for the most recent generic block.
-                        
-                        // Inclure les nuits qui se terminent dans la même fenêtre que la lecture (48h).
-                        // Un filtre 24h seulement excluait des sessions Garmin valides (décalage fuseau / fin de nuit).
-                        val windowCutoff = now.minusSeconds(48 * 60 * 60)
-                        val recentSessions = response.records.filter { it.endTime.isAfter(windowCutoff) }
+                        // Filter for sessions relevant to "Last Night"
+                        val recentSessions = response.records.filter { it.endTime.isAfter(lastNightCutoff) }
 
                         if (recentSessions.isNotEmpty()) {
-                            // Sum durations
-                            val totalDurationHours = recentSessions.sumOf { 
-                                (it.endTime.epochSecond - it.startTime.epochSecond) / 3600.0 
-                            }
+                            // 🚀 FIX: Merge overlapping sleep intervals to avoid double-counting
+                            // Some apps (Mi Fitness, Health Connect syncs) report disjoint or nested sessions.
+                            val intervals = recentSessions.map { it.startTime.toEpochMilli() to it.endTime.toEpochMilli() }
+                                .sortedBy { it.first }
                             
+                            val mergedIntervals = mutableListOf<Pair<Long, Long>>()
+                            if (intervals.isNotEmpty()) {
+                                var currentStart = intervals[0].first
+                                var currentEnd = intervals[0].second
+                                
+                                for (i in 1 until intervals.size) {
+                                    val nextStart = intervals[i].first
+                                    val nextEnd = intervals[i].second
+                                    
+                                    if (nextStart <= currentEnd) {
+                                        // Overlap found, extend current interval
+                                        currentEnd = maxOf(currentEnd, nextEnd)
+                                    } else {
+                                        // Disjoint interval, save current and start new
+                                        mergedIntervals.add(currentStart to currentEnd)
+                                        currentStart = nextStart
+                                        currentEnd = nextEnd
+                                    }
+                                }
+                                mergedIntervals.add(currentStart to currentEnd)
+                            }
+
+                            val totalDurationHours = mergedIntervals.sumOf { (it.second - it.first) / 3600000.0 }
+                            
+                            // Log sessions for diagnostics
+                            recentSessions.forEach { 
+                                aapsLogger.info(LTag.APS, "[$TAG] 💤 Sleep Record: ${it.startTime} to ${it.endTime} (${((it.endTime.epochSecond - it.startTime.epochSecond)/3600.0).format(1)}h) Source: ${it.metadata.dataOrigin.packageName}")
+                            }
+
                             // Use the latest end time as the session "end"
                             val latestEnd = recentSessions.maxOf { it.endTime }
                             val earliestStart = recentSessions.minOf { it.startTime }
@@ -264,11 +294,12 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                             
                             aapsLogger.info(
                                 LTag.APS,
-                                "[$TAG] ✅ Sleep (Aggregated): ${totalDurationHours.format(1)}h from ${recentSessions.size} segments"
+                                "[$TAG] ✅ Sleep (Merged/Aggregated): ${totalDurationHours.format(1)}h from ${recentSessions.size} records (${mergedIntervals.size} merged intervals)"
                             )
                             
                             sleepData
                         } else {
+                            aapsLogger.info(LTag.APS, "[$TAG] 💤 Sleep: No sessions found ending after cutoff ${lastNightCutoff}")
                             null
                         }
                     }
@@ -315,6 +346,7 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                         val response = client.readRecords(request)
                         
                         val hrvList = response.records.map { record ->
+                            aapsLogger.info(LTag.APS, "[$TAG] 📈 HRV Record: ${record.time} Value=${record.heartRateVariabilityMillis}ms Source=${record.metadata.dataOrigin.packageName}")
                             HRVDataMTR(
                                 timestamp = record.time.toEpochMilli(),
                                 rmssd = record.heartRateVariabilityMillis,
@@ -357,7 +389,7 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                 withTimeout(API_TIMEOUT_MS) {
                     withContext(Dispatchers.IO) {
                         val now = Instant.now()
-                        val start = now.minusSeconds(3600) // 1 hour lookback
+                        val start = now.minusSeconds(7200) // 🚀 Widened to 2 hours lookback
                         val request = ReadRecordsRequest(
                             recordType = HeartRateRecord::class,
                             timeRangeFilter = TimeRangeFilter.between(start, now),
@@ -366,6 +398,11 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                         )
                         val response = client.readRecords(request)
                         val lastRecord = response.records.firstOrNull()
+                        
+                        lastRecord?.let {
+                            aapsLogger.info(LTag.APS, "[$TAG] ❤️ Last HR Record: ${it.startTime} to ${it.endTime} Samples=${it.samples.size} Source=${it.metadata.dataOrigin.packageName}")
+                        }
+
                         // Get the last sample in the record series
                         lastRecord?.samples?.lastOrNull()?.beatsPerMinute?.toInt() ?: 0
                     }
@@ -458,6 +495,7 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                             val minBPM = aggregation[HeartRateRecord.BPM_MIN]
                             
                             if (minBPM != null && minBPM > 0) {
+                                aapsLogger.info(LTag.APS, "[$TAG] 💤 RHR (Aggregated Min) for day ${i}: $minBPM bpm Window=$windowStart to $windowEnd")
                                 rhrList.add(
                                     RHRDataMTR(
                                         timestamp = windowStart.toEpochMilli(),
@@ -472,6 +510,7 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                         var sortedRHR = rhrList.sortedBy { it.timestamp }
 
                         if (sortedRHR.isEmpty()) {
+                            aapsLogger.info(LTag.APS, "[$TAG] ⚠️ No RHR aggregated mins, falling back to RestingHeartRateRecord")
                             sortedRHR = readRestingHeartRateRecordsAsRhr(client, daysBack, now)
                         }
 
@@ -528,7 +567,15 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                 withTimeout(API_TIMEOUT_MS) {
                     withContext(Dispatchers.IO) {
                         val now = Instant.now()
-                        val startTime = now.minusSeconds((daysBack * 24 * 60 * 60).toLong())
+                        
+                        // If daysBack is 1 or 0, we want "Today" (since midnight)
+                        val startTime = if (daysBack <= 1) {
+                            ZonedDateTime.now(ZoneId.systemDefault())
+                                .withHour(0).withMinute(0).withSecond(0).withNano(0)
+                                .toInstant()
+                        } else {
+                            now.minusSeconds((daysBack * 24 * 60 * 60).toLong())
+                        }
                         
                         val response = client.aggregate(
                             AggregateRequest(
@@ -539,13 +586,13 @@ class AIMIPhysioDataRepositoryMTR @Inject constructor(
                         
                         val totalSteps = response[StepsRecord.COUNT_TOTAL] ?: 0L
                         
-                        // Average daily steps
-                        val avgSteps = if (daysBack > 0) (totalSteps / daysBack).toInt() else 0
+                        // If fetching for today, don't divide
+                        val resultSteps = if (daysBack <= 1) totalSteps.toInt() else (totalSteps / daysBack).toInt()
                         
-                        cache[cacheKey] = CachedData(avgSteps, System.currentTimeMillis())
+                        cache[cacheKey] = CachedData(resultSteps, System.currentTimeMillis())
                         
-                        aapsLogger.info(LTag.APS, "[$TAG] ✅ Steps (HC Aggregated): total=$totalSteps, avg=$avgSteps/day")
-                        avgSteps
+                        aapsLogger.info(LTag.APS, "[$TAG] ✅ Steps (HC Aggregated): total=$totalSteps, days=$daysBack, result=$resultSteps")
+                        resultSteps
                     }
                 }
             }

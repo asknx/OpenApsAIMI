@@ -3,6 +3,9 @@ package app.aaps.plugins.aps.openAPSAIMI
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import android.util.LongSparseArray
 import androidx.core.util.forEach
 import androidx.preference.PreferenceCategory
@@ -138,7 +141,9 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
     private val physioAdapter: app.aaps.plugins.aps.openAPSAIMI.physio.AIMIInsulinDecisionAdapterMTR,
     private val auditorOrchestrator: app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorOrchestrator, // 🧠 AI Auditor MTR
     private val contextManager: app.aaps.plugins.aps.openAPSAIMI.context.ContextManager, // 🎯 Context Manager
-    private val aimiBackupManager: AimiBackupManager // ☁️ Cloud Backup Manager (Force Init)
+    private val aimiBackupManager: AimiBackupManager, // ☁️ Cloud Backup Manager (Force Init)
+    private val geminiOAuthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager,
+    private val logcatExporter: app.aaps.plugins.aps.openAPSAIMI.utils.LogcatExporter
 ) : PluginBase(
     PluginDescription()
         .mainType(PluginType.APS)
@@ -1206,11 +1211,22 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                         title = R.string.aimi_prefs_provider_title,
                         entries = arrayOf(
                             rh.gs(R.string.aimi_prefs_provider_openai),
-                            rh.gs(R.string.aimi_prefs_provider_gemini),
+                            "Gemini 3.1 Pro (Heavy Lifter)",
+                            "Gemini 3.1 Flash (High Speed)",
+                            "Gemini 3.1 Flash-Lite (Cost Efficient)",
+                            "Gemini 2.0 Flash (Experimental)",
                             rh.gs(R.string.aimi_prefs_provider_deepseek),
                             rh.gs(R.string.aimi_prefs_provider_claude)
                         ),
-                        entryValues = arrayOf("OPENAI", "GEMINI", "DEEPSEEK", "CLAUDE")
+                        entryValues = arrayOf(
+                            "OPENAI",
+                            "GEMINI-3.1-PRO",
+                            "GEMINI-3.1-FLASH",
+                            "GEMINI-3.1-FLASH-LITE",
+                            "GEMINI-2.0-FLASH",
+                            "DEEPSEEK",
+                            "CLAUDE"
+                        )
                     ).apply {
                         dialogTitle = rh.gs(R.string.aimi_prefs_provider_dialog_title)
                     })
@@ -1235,6 +1251,82 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                         )
                     )
                     
+                    // Gemini Auth Switch (Hidden for Stable Commit)
+                    addPreference(app.aaps.core.validators.preferences.AdaptiveSwitchPreference(
+                        ctx = context, 
+                        booleanKey = BooleanKey.OApsAIMIGeminiUseOAuth,
+                        title = R.string.aimi_prefs_gemini_use_oauth_title,
+                        summary = R.string.aimi_prefs_gemini_use_oauth_summary
+                    ).apply { isVisible = false })
+
+                    // Gemini OAuth Customization (Developer/Power User) - Hidden for Stable Commit
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiGeminiOAuthClientId,
+                            summary = R.string.aimi_prefs_gemini_oauth_client_id_summary,
+                            title = R.string.aimi_prefs_gemini_oauth_client_id_title
+                        ).apply { isVisible = false }
+                    )
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiGeminiOAuthClientSecret,
+                            summary = R.string.aimi_prefs_gemini_oauth_client_secret_summary,
+                            title = R.string.aimi_prefs_gemini_oauth_client_secret_title
+                        ).apply { isVisible = false }
+                    )
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiGeminiOAuthProjectId,
+                            summary = R.string.aimi_prefs_gemini_oauth_project_id_summary,
+                            title = R.string.aimi_prefs_gemini_oauth_project_id_title
+                        ).apply { isVisible = false }
+                    )
+
+                    // Login with Google Action - Hidden for Stable Commit
+                    val loginPref = app.aaps.core.validators.preferences.AdaptiveClickPreference(context, title = R.string.aimi_prefs_provider_google_login, stringKey = StringKey.AimiGeminiOAuthLoginButton)
+                    val logoutPref = app.aaps.core.validators.preferences.AdaptiveClickPreference(context, title = R.string.aimi_prefs_provider_google_logout, stringKey = StringKey.AimiGeminiOAuthLogoutButton)
+
+                    loginPref.apply {
+                        isVisible = false
+                        summary = if (geminiOAuthManager.isOAuthEnabled()) "Logged in (Token Active)" else "Click to authorize with Google"
+                        setOnPreferenceClickListener {
+                            MainScope().launch {
+                                try {
+                                    val url = geminiOAuthManager.startPKCEAuth()
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    })
+                                    val code = geminiOAuthManager.waitForAuthCode()
+                                    if (code != null && geminiOAuthManager.exchangeCodeForTokens(code)) {
+                                        Toast.makeText(context, "Gemini Login Success", Toast.LENGTH_SHORT).show()
+                                        summary = "Logged in (Token Active)"
+                                        logoutPref.isVisible = true
+                                    }
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Login Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            true
+                        }
+                    }
+                    addPreference(loginPref)
+
+                    // Logout from Google Action - Hidden for Stable Commit
+                    logoutPref.apply {
+                        isVisible = false
+                        setOnPreferenceClickListener {
+                            geminiOAuthManager.logout()
+                            Toast.makeText(context, "Logged out from Google", Toast.LENGTH_SHORT).show()
+                            isVisible = false
+                            loginPref.summary = "Click to authorize with Google"
+                            true
+                        }
+                    }
+                    addPreference(logoutPref)
+                    
                     // DeepSeek Key
                     addPreference(
                         AdaptiveStringPreference(
@@ -1254,6 +1346,44 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             title = R.string.aimi_prefs_claude_key_title
                         )
                     )
+
+                    // FatSecret Section
+                    addPreference(PreferenceCategory(context).apply {
+                        title = rh.gs(R.string.aimi_prefs_barcode_provider_title)
+                    })
+                    addPreference(
+                        AdaptiveSwitchPreference(
+                            ctx = context,
+                            booleanKey = BooleanKey.OApsAIMIUseOpenFoodFacts,
+                            summary = R.string.aimi_prefs_use_off_summary,
+                            title = R.string.aimi_prefs_use_off_title
+                        )
+                    )
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = AimiStringKey.FatSecretClientId,
+                            summary = R.string.aimi_prefs_fatsecret_client_id_summary,
+                            title = R.string.aimi_prefs_fatsecret_client_id_title
+                        )
+                    )
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = AimiStringKey.FatSecretClientSecret,
+                            summary = R.string.aimi_prefs_fatsecret_client_secret_summary,
+                            title = R.string.aimi_prefs_fatsecret_client_secret_title
+                        )
+                    )
+                    addPreference(AdaptiveListPreference(
+                        ctx = context,
+                        stringKey = AimiStringKey.FatSecretRegion,
+                        title = R.string.aimi_prefs_fatsecret_region_title,
+                        entries = arrayOf("Russia", "United States", "United Kingdom", "France", "Germany", "Italy", "Spain"),
+                        entryValues = arrayOf("RU", "US", "GB", "FR", "DE", "IT", "ES")
+                    ).apply {
+                        summary = rh.gs(R.string.aimi_prefs_fatsecret_region_summary)
+                    })
                 })
 
                 // 🚨 Emergency SOS (Hypo) Section
@@ -2091,6 +2221,46 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                         validatorParams = hhmmValidator
                     )
                 )
+
+                // 📁 Logcat Export Section
+                addPreference(preferenceManager.createPreferenceScreen(context).apply {
+                    key = "AIMI_LOG_EXPORT"
+                    title = "📁 Logcat Export"
+                    
+                    val timeValues = arrayOf("5", "10", "15", "30", "60", "120", "240", "1440")
+                    val timeEntries = arrayOf("Last 5 min", "Last 10 min", "Last 15 min", "Last 30 min", "Last 1 hour", "Last 2 hours", "Last 4 hours", "Last 24 hours")
+                    
+                    val rangePref = ListPreference(context).apply {
+                        key = "aimi_log_export_range"
+                        title = "Select Time Range"
+                        entries = timeEntries
+                        entryValues = timeValues
+                        setDefaultValue("15")
+                        summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
+                    }
+                    addPreference(rangePref)
+
+                    val exportAction = androidx.preference.Preference(context).apply {
+                        key = "aimi_log_export_action"
+                        title = "Generate Log File"
+                        summary = "Output to /Documents/AAPS/logs/"
+                        setOnPreferenceClickListener {
+                            MainScope().launch {
+                                val mins = rangePref.value?.toIntOrNull() ?: 15
+                                Toast.makeText(context, "Exporting logs ($mins min)...", Toast.LENGTH_SHORT).show()
+                                val file = logcatExporter.exportLogs(context, mins)
+                                if (file != null) {
+                                    Toast.makeText(context, "Exported: ${file.name}", Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(context, "Export Failed!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            true
+                        }
+                    }
+                    addPreference(exportAction)
+                })
+
                 addPreference(
                     AdaptiveDoublePreference(
                         ctx = context,

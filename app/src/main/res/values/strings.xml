@@ -32,47 +32,49 @@
     <string name="sort_label">Sort</string>
     <string name="search">Search</string>
     <string name="simple_mode">Simple mode</string>
+    <string name="compact_mode">Compact mode</string>
+    <string name="compact_mode_summary">Pack menu under three bars and use short tab titles</string>
     <string name="select">Select</string>
     <string name="set">Set</string>
 
     <!-- Comparator -->
-    <string name="menu_comparator">Comparateur Plugin AIMI-SMB</string>
-    <string name="comparator_title">Analyse de Performance</string>
-    <string name="comparator_no_data">Aucune donnée disponible. Le fichier CSV sera créé après la première comparaison.</string>
-    <string name="comparator_summary">Résumé</string>
-    <string name="comparator_total_entries">Nombre d\'entrées</string>
-    <string name="comparator_avg_rate_diff">Diff. basale moyenne</string>
-    <string name="comparator_avg_smb_diff">Diff. SMB moyenne</string>
-    <string name="comparator_agreement">Taux d\'accord</string>
-    <string name="comparator_aimi_win_rate">AIMI plus agressif</string>
-    <string name="comparator_smb_win_rate">SMB plus agressif</string>
-    <string name="comparator_rate_chart_title">Débits Basaux Comparés</string>
-    <string name="comparator_rate_chart_desc">AIMI vs SMB - Débits Basaux (U/h)</string>
-    <string name="comparator_smb_chart_title">SMB Comparés</string>
+    <string name="menu_comparator">AIMI-SMB Plugin Comparator</string>
+    <string name="comparator_title">Performance Analysis</string>
+    <string name="comparator_no_data">No data available. The CSV file will be created after the first comparison.</string>
+    <string name="comparator_summary">Summary</string>
+    <string name="comparator_total_entries">Total Entries</string>
+    <string name="comparator_avg_rate_diff">Avg Basal Diff</string>
+    <string name="comparator_avg_smb_diff">Avg SMB Diff</string>
+    <string name="comparator_agreement">Agreement Rate</string>
+    <string name="comparator_aimi_win_rate">AIMI more aggressive</string>
+    <string name="comparator_smb_win_rate">SMB more aggressive</string>
+    <string name="comparator_rate_chart_title">Compared Basal Rates</string>
+    <string name="comparator_rate_chart_desc">AIMI vs SMB - Basal Rates (U/h)</string>
+    <string name="comparator_smb_chart_title">Compared SMBs</string>
     <string name="comparator_smb_chart_desc">AIMI vs SMB - Super Micro Bolus (U)</string>
-    <string name="comparator_bg_chart_title">Profil glycémique</string>
-    <string name="comparator_bg_chart_desc">Glycémie réelle avec seuils cliniques (mg/dL)</string>
+    <string name="comparator_bg_chart_title">Glycemic Profile</string>
+    <string name="comparator_bg_chart_desc">Actual BG with clinical thresholds (mg/dL)</string>
     
     <!-- Safety Analysis -->
-    <string name="comparator_safety_title">Analyse de Sécurité</string>
-    <string name="comparator_variability_score">Score de variabilité</string>
-    <string name="comparator_hypo_risk">Risque d\'hypo estimé</string>
+    <string name="comparator_safety_title">Safety Analysis</string>
+    <string name="comparator_variability_score">Variability Score</string>
+    <string name="comparator_hypo_risk">Estimated Hypo Risk</string>
     
     <!-- Clinical Impact -->
-    <string name="comparator_clinical_impact_title">Impact Clinique</string>
-    <string name="comparator_total_insulin_aimi">Insuline totale AIMI</string>
-    <string name="comparator_total_insulin_smb">Insuline totale SMB</string>
-    <string name="comparator_cumulative_diff">Différence cumulée</string>
+    <string name="comparator_clinical_impact_title">Clinical Impact</string>
+    <string name="comparator_total_insulin_aimi">Total Insulin AIMI</string>
+    <string name="comparator_total_insulin_smb">Total Insulin SMB</string>
+    <string name="comparator_cumulative_diff">Cumulative Difference</string>
     
     <!-- Critical Moments -->
-    <string name="comparator_critical_moments_title">Moments Critiques</string>
-    <string name="comparator_critical_moment_entry">Entrée #%1$d - BG: %2$.0f mg/dL, IOB: %3$.1f U</string>
+    <string name="comparator_critical_moments_title">Critical Moments</string>
+    <string name="comparator_critical_moment_entry">Entry #%1$d - BG: %2$.0f mg/dL, IOB: %3$.1f U</string>
     <string name="comparator_critical_moment_divergence">Divergence: Basal %1$s U/h, SMB %2$s U</string>
     
     <!-- Recommendation -->
-    <string name="comparator_recommendation_title">Recommandation</string>
-    <string name="comparator_recommended_algorithm">Algorithme recommandé: %1$s</string>
-    <string name="comparator_confidence">Confiance: %1$s</string>
+    <string name="comparator_recommendation_title">Recommendation</string>
+    <string name="comparator_recommended_algorithm">Recommended Algorithm: %1$s</string>
+    <string name="comparator_confidence">Confidence: %1$s</string>
     <string name="comparator_scoring_mode_balanced">Balanced</string>
     <string name="comparator_scoring_mode_post_meal">Post-meal</string>
     <string name="comparator_scoring_mode_overnight">Overnight</string>
@@ -87,18 +89,19 @@
     <string name="comparator_period_global_history">Global History</string>
     <string name="comparator_summary_copied">Summary copied to clipboard!</string>
     <string name="comparator_export_using">Export using...</string>
+    <string name="comparator_no_data_for_period_title">No data for this period</string>
     <string name="comparator_chart_no_data">No chart data available</string>
     <string name="comparator_dataset_aimi">AIMI</string>
     <string name="comparator_dataset_smb">SMB</string>
     <string name="comparator_dataset_aimi_smb">AIMI SMB</string>
     <string name="comparator_dataset_smb_smb">SMB SMB</string>
-    <string name="comparator_dataset_bg_actual">BG réel</string>
+    <string name="comparator_dataset_bg_actual">Actual BG</string>
     <string name="comparator_dataset_bg_low">BG &lt; 70</string>
     <string name="comparator_dataset_bg_in_range">BG 70-180</string>
     <string name="comparator_dataset_bg_high">BG &gt; 180</string>
-    <string name="comparator_bg_threshold_54">&lt;54 sévère</string>
+    <string name="comparator_bg_threshold_54">&lt;54 severe</string>
     <string name="comparator_bg_threshold_70">70 hypo</string>
-    <string name="comparator_bg_threshold_180">180 haut</string>
+    <string name="comparator_bg_threshold_180">180 high</string>
     <string name="comparator_bg_threshold_250">250 hyper</string>
 
 

@@ -228,6 +228,9 @@
     <string name="isf_dynamic_label_warning">Your algorithm can provide dynamic calculation of ISF. Values below can be used only as a fallback in case of missing data or as a reference value only</string>
     <string name="ic_dynamic_label_warning">Your algorithm can provide dynamic calculation of IC. Values below cen be used only as a fallback in case of missing data or as a reference value only</string>
 
+    <string name="aimi_advisor">AIMI Advisor</string>
+    <string name="meal_advisor">Meal Advisor</string>
+    <string name="adjustments">Adjustments</string>
     <!-- Actions -->
     <string name="actions">Actions</string>
     <string name="description_actions">Some buttons to quickly access common features</string>

@@ -29,10 +29,10 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.core.view.MenuCompat
 import androidx.core.view.MenuProvider
+import app.aaps.R
 import app.aaps.activities.DashboardPreviewActivity
 import app.aaps.activities.HistoryBrowseActivity
 import app.aaps.activities.PreferencesActivity
-import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.configuration.Config
@@ -48,7 +48,6 @@ import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.protection.ExportPasswordDataStore
 import app.aaps.core.interfaces.protection.ProtectionCheck
 import app.aaps.core.interfaces.rx.AapsSchedulers
-import app.aaps.core.interfaces.rx.events.EventAppExit
 import app.aaps.core.interfaces.rx.events.EventAppInitialized
 import app.aaps.core.interfaces.rx.events.EventPreferenceChange
 import app.aaps.core.interfaces.rx.events.EventRebuildTabs
@@ -56,7 +55,6 @@ import app.aaps.core.interfaces.smsCommunicator.SmsCommunicator
 import app.aaps.core.interfaces.ui.IconsProvider
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
-import app.aaps.core.interfaces.versionChecker.VersionCheckerUtils
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.StringKey
 import app.aaps.core.objects.crypto.CryptoUtil
@@ -75,6 +73,7 @@ import app.aaps.ui.activities.ProfileHelperActivity
 import app.aaps.ui.activities.StatsActivity
 import app.aaps.ui.activities.TreatmentsActivity
 import app.aaps.ui.tabs.TabPageAdapter
+import androidx.core.net.toUri
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -91,7 +90,6 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
     private val disposable = CompositeDisposable()
 
     @Inject lateinit var aapsSchedulers: AapsSchedulers
-    @Inject lateinit var versionCheckerUtils: VersionCheckerUtils
     @Inject lateinit var smsCommunicator: SmsCommunicator
     @Inject lateinit var loop: Loop
     @Inject lateinit var config: Config
@@ -228,9 +226,29 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
                         true
                     }
 
+                    R.id.nav_aimi_adjust        -> {
+                        startActivity(Intent(this@MainActivity, app.aaps.plugins.main.general.dashboard.AdjustmentDetailsActivity::class.java))
+                        true
+                    }
+
+                    R.id.nav_aimi_modes         -> {
+                        startActivity(Intent(this@MainActivity, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiModeSettingsActivity::class.java))
+                        true
+                    }
+
+                    R.id.nav_aimi_manual        -> {
+                        startActivity(Intent(this@MainActivity, app.aaps.plugins.main.general.manual.UserManualActivity::class.java))
+                        true
+                    }
+
+                    R.id.nav_aimi_abbreviations -> {
+                        startActivity(Intent(this@MainActivity, app.aaps.activities.AbbreviationsActivity::class.java))
+                        true
+                    }
+
                     R.id.nav_about              -> {
                         var message = "Build: ${config.BUILD_VERSION}\n"
-                        message += "Flavor: ${BuildConfig.FLAVOR}${BuildConfig.BUILD_TYPE}\n"
+                        message += "Flavor: ${app.aaps.BuildConfig.FLAVOR}${app.aaps.BuildConfig.BUILD_TYPE}\n"
                         message += "${rh.gs(app.aaps.plugins.configuration.R.string.configbuilder_nightscoutversion_label)} ${activePlugin.activeNsClient?.detectedNsVersion() ?: rh.gs(app.aaps.plugins.main.R.string.not_available_full)}"
                         if (config.isEngineeringMode()) message += "\n${rh.gs(app.aaps.plugins.configuration.R.string.engineering_mode_enabled)}"
                         if (config.isUnfinishedMode()) message += "\nUnfinished mode enabled"
@@ -247,7 +265,7 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
                                 startActivity(
                                     Intent(
                                         Intent.ACTION_VIEW,
-                                        Uri.parse("https://dontkillmyapp.com/" + Build.MANUFACTURER.lowercase().replace(" ", "-"))
+                                        "https://dontkillmyapp.com/${Build.MANUFACTURER.lowercase().replace(" ", "-")}".toUri()
                                     )
                                 )
                             }
@@ -379,23 +397,21 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
 
     override fun onResume() {
         super.onResume()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                // [FIX] Force active prompt instead of passive toast
-                checkAndRequestPermissions()
-            } else {
-                // [FIX] Ensure Documents/AAPS exists for fresh installs
-                try {
-                    val aapsDir = java.io.File(Environment.getExternalStorageDirectory(), "Documents/AAPS")
-                    if (!aapsDir.exists()) {
-                        if (aapsDir.mkdirs()) {
-                            ToastUtils.okToast(this, "Created Documents/AAPS folder")
-                        }
+        if (Environment.isExternalStorageManager()) {
+            // [FIX] Ensure Documents/AAPS exists for fresh installs
+            try {
+                val aapsDir = java.io.File(Environment.getExternalStorageDirectory(), "Documents/AAPS")
+                if (!aapsDir.exists()) {
+                    if (aapsDir.mkdirs()) {
+                        ToastUtils.okToast(this, "Created Documents/AAPS folder")
                     }
-                } catch (e: Exception) {
-                    ToastUtils.errorToast(this, "Error creating AAPS dir: ${e.message}")
                 }
+            } catch (e: Exception) {
+                ToastUtils.errorToast(this, "Error creating AAPS dir: ${e.message}")
             }
+        } else {
+            // [FIX] Force active prompt instead of passive toast
+            checkAndRequestPermissions()
         }
         if (config.appInitialized) binding.splash.visibility = View.GONE
         if (!isProtectionCheckActive) {
@@ -422,17 +438,19 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
         val pageAdapter = TabPageAdapter(this)
         binding.mainNavigationView.setNavigationItemSelectedListener { true }
         val menu = binding.mainNavigationView.menu.also { it.clear() }
+        val simpleMode = preferences.simpleMode
+        val compactMode = preferences.get(BooleanKey.GeneralCompactMode)
         for (p in activePlugin.getPluginsList())
             if (p.isEnabled() && p.hasFragment() && p.showInList(p.getType())) {
                 // Add to tabs if visible
                 if (
-                    preferences.simpleMode && p.pluginDescription.simpleModePosition == PluginDescription.Position.TAB ||
-                    !preferences.simpleMode && p.isFragmentVisible()
+                    (simpleMode || compactMode) && p.pluginDescription.simpleModePosition == PluginDescription.Position.TAB ||
+                    !(simpleMode || compactMode) && p.isFragmentVisible()
                 ) pageAdapter.registerNewFragment(p)
                 // Add to menu if not visible
                 if (
-                    preferences.simpleMode && !p.pluginDescription.neverVisible && p.pluginDescription.simpleModePosition == PluginDescription.Position.MENU ||
-                    !preferences.simpleMode && !p.pluginDescription.neverVisible && !p.isFragmentVisible()
+                    (simpleMode || compactMode) && !p.pluginDescription.neverVisible && p.pluginDescription.simpleModePosition == PluginDescription.Position.MENU ||
+                    !(simpleMode || compactMode) && !p.pluginDescription.neverVisible && !p.isFragmentVisible()
                 ) {
                     val menuItem = menu.add(p.name)
                     menuItem.isCheckable = true
@@ -453,7 +471,7 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
         binding.mainPager.offscreenPageLimit = 8 // This may cause more memory consumption
 
         // Tabs
-        if (preferences.get(BooleanKey.OverviewShortTabTitles)) {
+        if (preferences.get(BooleanKey.OverviewShortTabTitles) || preferences.get(BooleanKey.GeneralCompactMode)) {
             binding.tabsNormal.visibility = View.GONE
             binding.tabsCompact.visibility = View.VISIBLE
             binding.toolbar.layoutParams = LinearLayout.LayoutParams(Toolbar.LayoutParams.MATCH_PARENT, resources.getDimension(app.aaps.core.ui.R.dimen.compact_height).toInt())
@@ -542,10 +560,8 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
     // Correct place for calling setUserStats() would be probably MainApp
     // but we need to have it called at least once a day. Thus this location
     private fun checkAndRequestPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                showPermissionExplanation()
-            }
+        if (!Environment.isExternalStorageManager()) {
+            showPermissionExplanation()
         }
     }
 
@@ -561,11 +577,9 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
     }
 
     private fun requestManageExternalStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            intent.data = Uri.parse("package:$packageName")
-            startActivity(intent)
-        }
+        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+        intent.data = "package:$packageName".toUri()
+        startActivity(intent)
     }
 
     private fun setUserStats() {
@@ -582,7 +596,7 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
         fabricPrivacy.setUserProperty("Mode", config.APPLICATION_ID + "-" + closedLoopEnabled)
         fabricPrivacy.setUserProperty("Language", preferences.getIfExists(StringKey.GeneralLanguage) ?: Locale.getDefault().language)
         fabricPrivacy.setUserProperty("Version", config.VERSION_NAME)
-        fabricPrivacy.setUserProperty("HEAD", BuildConfig.HEAD)
+        fabricPrivacy.setUserProperty("HEAD", app.aaps.BuildConfig.HEAD)
         fabricPrivacy.setUserProperty("Remote", remote)
         val hashes: List<String> = signatureVerifierPlugin.shortHashes()
         if (hashes.isNotEmpty()) fabricPrivacy.setUserProperty("Hash", hashes[0])
@@ -594,7 +608,7 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
         activePlugin.activeSensitivity.let { fabricPrivacy.setUserProperty("Sensitivity", it::class.java.simpleName) }
         activePlugin.activeInsulin.let { fabricPrivacy.setUserProperty("Insulin", it::class.java.simpleName) }
         // Add to crash log too
-        FirebaseCrashlytics.getInstance().setCustomKey("HEAD", BuildConfig.HEAD)
+        FirebaseCrashlytics.getInstance().setCustomKey("HEAD", app.aaps.BuildConfig.HEAD)
         FirebaseCrashlytics.getInstance().setCustomKey("Version", config.VERSION_NAME)
         FirebaseCrashlytics.getInstance().setCustomKey("BuildType", config.BUILD_TYPE)
         FirebaseCrashlytics.getInstance().setCustomKey("BuildFlavor", config.FLAVOR)

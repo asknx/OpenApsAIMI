@@ -112,9 +112,14 @@ class UiInteractionImpl @Inject constructor(
             .show(fragmentManager, "TreatmentDialog")
     }
 
-    override fun runInsulinDialog(fragmentManager: FragmentManager) {
-        InsulinDialog()
-            .show(fragmentManager, "InsulinDialog")
+    override fun runInsulinDialog(fragmentManager: FragmentManager, amount: Double?) {
+        InsulinDialog().apply {
+            if (amount != null) {
+                arguments = Bundle().apply {
+                    putDouble("amount", amount)
+                }
+            }
+        }.show(fragmentManager, "InsulinDialog")
     }
 
     override fun runCalibrationDialog(fragmentManager: FragmentManager) {

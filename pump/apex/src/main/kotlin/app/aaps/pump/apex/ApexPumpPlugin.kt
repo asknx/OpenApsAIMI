@@ -163,7 +163,7 @@ class ApexPumpPlugin @Inject constructor(
 
     override fun isBusy() = false //service?.isBusy ?: false
     override fun isSuspended() = pump.isSuspended
-    override fun isInitialized() = pump.isInitialized && service != null
+    override fun isInitialized() = pump.isInitialized
     override fun isConnecting() = when (service?.connectionStatus) {
         ApexBluetooth.Status.CONNECTING -> true
         ApexBluetooth.Status.CONNECTED -> service?.isReadyForExecutingCommands == false

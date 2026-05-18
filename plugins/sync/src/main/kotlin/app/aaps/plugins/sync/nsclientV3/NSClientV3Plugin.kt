@@ -177,6 +177,7 @@ class NSClientV3Plugin @Inject constructor(
     internal var firstLoadContinueTimestamp = LastModified(LastModified.Collections()) // timestamp of last fetched data for every collection during initial load
     internal var initialLoadFinished = false
 
+    private var pendingIrregularExecution = false
     private val fullSyncSemaphore = Object()
 
     /**
@@ -233,7 +234,9 @@ class NSClientV3Plugin @Inject constructor(
                                // Trigger upload of data that accumulated while offline.
                                // executeLoop may skip when WS is enabled and initial load is done,
                                // but pending outbound data still needs to be pushed.
-                               executeUpload("CONNECTIVITY", forceNew = false)
+                               // executeUpload is already covered by executeLoop chain if it runs,
+                               // but if executeLoop skips, we might need a separate upload.
+                               // However, let's just rely on executeLoop for now to avoid overlaps.
                            } else if (ev.connected && !isAllowed) {
                                nsClientV3Service?.let { service ->
                                    if (service.storageSocket != null) stopService()
@@ -297,21 +300,21 @@ class NSClientV3Plugin @Inject constructor(
             .subscribe({ executeUpload("EventProfileStoreChanged", forceNew = false) }, fabricPrivacy::logException)
 
         runLoop = Runnable {
-            var refreshInterval = T.mins(5).msecs()
+            var refreshInterval = T.mins(3).msecs()
             if (nsClientSource.isEnabled())
                 persistenceLayer.getLastGlucoseValue()?.let {
-                    // if last value is older than 5 min or there is no bg
-                    if (it.timestamp < dateUtil.now() - T.mins(5).plus(T.secs(20)).msecs()) {
+                    // if last value is older than 3 min or there is no bg
+                    if (it.timestamp < dateUtil.now() - T.mins(3).plus(T.secs(10)).msecs()) {
                         refreshInterval = T.mins(1).msecs()
                     }
                 }
-            if (!preferences.get(BooleanKey.NsClient3UseWs))
+            if (!preferences.get(BooleanKey.NsClient3UseWs) || nsClientSource.isEnabled() || preferences.get(BooleanKey.NsClientAcceptCgmData))
                 executeLoop("MAIN_LOOP", forceNew = true)
             else
                 rxBus.send(EventNSClientNewLog("● TICK", ""))
             handler?.postDelayed(runLoop, refreshInterval)
         }
-        handler?.postDelayed(runLoop, T.mins(2).msecs())
+        handler?.postDelayed(runLoop, T.secs(10).msecs())
     }
 
     fun scheduleIrregularExecution(refreshToken: Boolean = false) {
@@ -320,15 +323,21 @@ class NSClientV3Plugin @Inject constructor(
             return
         }
         if (config.AAPSCLIENT || nsClientSource.isEnabled()) {
-            var origin = "5_MIN_AFTER_BG"
+            if (pendingIrregularExecution) return
+            pendingIrregularExecution = true
+            var origin = "3_MIN_AFTER_BG"
             var forceNew = true
-            var toTime = lastLoadedSrvModified.collections.entries + T.mins(5).plus(T.secs(10)).msecs()
+            val lastGlucoseTimestamp = persistenceLayer.getLastGlucoseValue()?.timestamp ?: 0L
+            var toTime = lastGlucoseTimestamp + T.mins(3).plus(T.secs(15)).msecs()
             if (toTime < dateUtil.now()) {
                 toTime = dateUtil.now() + T.mins(1).plus(T.secs(0)).msecs()
                 origin = "1_MIN_OLD_DATA"
                 forceNew = false
             }
-            handler?.postDelayed({ executeLoop(origin, forceNew = forceNew) }, toTime - dateUtil.now())
+            handler?.postDelayed({
+                pendingIrregularExecution = false
+                executeLoop(origin, forceNew = forceNew)
+            }, toTime - dateUtil.now())
             rxBus.send(EventNSClientNewLog("● NEXT", dateUtil.dateAndTimeAndSecondsString(toTime)))
         }
     }
@@ -741,7 +750,7 @@ class NSClientV3Plugin @Inject constructor(
     }
 
     internal fun executeLoop(origin: String, forceNew: Boolean) {
-        if (preferences.get(BooleanKey.NsClient3UseWs) && initialLoadFinished) return
+        if (preferences.get(BooleanKey.NsClient3UseWs) && initialLoadFinished && !nsClientSource.isEnabled() && !preferences.get(BooleanKey.NsClientAcceptCgmData)) return
         if (preferences.get(NsclientBooleanKey.NsPaused)) {
             rxBus.send(EventNSClientNewLog("● RUN", "paused  $origin"))
             return
@@ -753,8 +762,6 @@ class NSClientV3Plugin @Inject constructor(
         if (workIsRunning()) {
             rxBus.send(EventNSClientNewLog("● RUN", "Already running $origin"))
             if (!forceNew) return
-            // Wait for end and start new cycle
-            while (workIsRunning()) Thread.sleep(5000)
         }
         rxBus.send(EventNSClientNewLog("● RUN", "Starting next round $origin"))
         synchronized(fullSyncSemaphore) {
@@ -799,19 +806,17 @@ class NSClientV3Plugin @Inject constructor(
         if (workIsRunning()) {
             rxBus.send(EventNSClientNewLog("● RUN", "Already running $origin"))
             if (!forceNew) return
-            // Wait for end and start new cycle
-            while (workIsRunning()) Thread.sleep(5000)
         }
         rxBus.send(EventNSClientNewLog("● RUN", "Starting upload $origin"))
         WorkManager.getInstance(context)
             .enqueueUniqueWork(
                 JOB_NAME,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 OneTimeWorkRequest.Builder(DataSyncWorker::class.java).build()
             )
     }
 
-    private fun workIsRunning(workName: String = JOB_NAME): Boolean {
+    internal fun workIsRunning(workName: String = JOB_NAME): Boolean {
         for (workInfo in WorkManager.getInstance(context).getWorkInfosForUniqueWork(workName).get())
             if (workInfo.state == WorkInfo.State.BLOCKED || workInfo.state == WorkInfo.State.ENQUEUED || workInfo.state == WorkInfo.State.RUNNING)
                 return true

@@ -4,6 +4,9 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -43,6 +46,8 @@ import app.aaps.core.keys.IntNonKey
 import app.aaps.core.keys.UnitDoubleKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.UIRunnable
+import app.aaps.core.ui.toast.ToastUtils
+import androidx.core.text.toSpanned
 import app.aaps.plugins.main.R
 import app.aaps.plugins.main.databinding.FragmentDashboardBinding
 import app.aaps.plugins.main.general.dashboard.viewmodel.AdjustmentCardState
@@ -53,14 +58,14 @@ import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
-import dagger.android.support.DaggerFragment
+import app.aaps.plugins.aps.openAPSAIMI.advisor.AimiProfileAdvisorActivity
 import app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.ui.AuditorStatusLiveData
 import app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.ui.AuditorNotificationManager
 import app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.ui.AuditorStatusIndicator
 import javax.inject.Inject
 import javax.inject.Provider
 import app.aaps.plugins.main.general.dashboard.views.CircleTopActionListener
-import app.aaps.plugins.aps.openAPSAIMI.advisor.AimiProfileAdvisorActivity
+import dagger.android.support.DaggerFragment
 
 class DashboardFragment : DaggerFragment() {
 
@@ -96,6 +101,7 @@ class DashboardFragment : DaggerFragment() {
     @Inject lateinit var auditorNotificationManager: AuditorNotificationManager
     @Inject lateinit var trajectoryGuard: app.aaps.plugins.aps.openAPSAIMI.trajectory.TrajectoryGuard // 🌀 Trajectory Injection
     @Inject lateinit var autodriveEngine: app.aaps.plugins.aps.openAPSAIMI.autodrive.AutodriveEngine // 🧠 Engine Injection
+    @Inject lateinit var unifiedProvider: app.aaps.plugins.aps.openAPSAIMI.steps.UnifiedActivityProviderMTR // 🎛️ Activity Injection
 
     private val disposables = CompositeDisposable()
     private var _binding: FragmentDashboardBinding? = null
@@ -166,9 +172,17 @@ class DashboardFragment : DaggerFragment() {
             preferences,
             overviewData,
             trajectoryGuard, // 🌀 Pass to Factory
-            autodriveEngine  // 🧠 Pass to Factory
+            autodriveEngine, // 🧠 Pass to Factory
+            unifiedProvider  // 🎛️ Pass to Factory
         )
     }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
@@ -189,11 +203,17 @@ class DashboardFragment : DaggerFragment() {
                 R.id.dashboard_nav_bolus -> {
                     openBolus()
                 }
-                R.id.dashboard_nav_adjustments -> {
-                    openModes()
+                R.id.dashboard_nav_meal_advisor -> {
+                    startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.meal.MealAdvisorActivity::class.java))
+                    true
                 }
-                R.id.dashboard_nav_settings -> {
-                    openSensorApp()
+                R.id.dashboard_nav_carbs -> {
+                    uiInteraction.runCarbsDialog(parentFragmentManager)
+                    true
+                }
+                R.id.dashboard_nav_calculator -> {
+                    uiInteraction.runWizardDialog(parentFragmentManager, null, null)
+                    true
                 }
                 else -> true
             }
@@ -221,10 +241,34 @@ class DashboardFragment : DaggerFragment() {
             openAdjustmentDetails()
         }
         binding.adjustmentStatus.setOnRunLoopClickListener {
-            app.aaps.core.ui.toast.ToastUtils.infoToast(context, resourceHelper.gs(R.string.dashboard_loop_run_requested))
+            ToastUtils.infoToast(context, resourceHelper.gs(R.string.dashboard_loop_run_requested))
             Thread {
                 try {
                     loop.invoke("Dashboard", true)
+                    
+                    val lastRun = loop.lastRun
+                    if (!loop.runningMode.isClosedLoopOrLgs() && lastRun?.constraintsProcessed?.isChangeRequested == true) {
+                        activity?.runOnUiThread {
+                            activity?.let { activity ->
+                                protectionCheck.queryProtection(activity, ProtectionCheck.Protection.BOLUS, UIRunnable {
+                                    if (isAdded) {
+                                        app.aaps.core.ui.dialogs.OKDialog.showConfirmation(
+                                            activity, 
+                                            resourceHelper.gs(app.aaps.core.ui.R.string.tempbasal_label), 
+                                            lastRun.constraintsProcessed?.resultAsSpanned() ?: "".toSpanned(), 
+                                            {
+                                                // uel is injected UserEntryLogger
+                                                automation.removeAutomationEventBolusReminder()
+                                                (context?.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager)?.cancel(app.aaps.core.data.configuration.Constants.notificationID)
+                                                rxBus.send(app.aaps.core.interfaces.rx.events.EventMobileToWear(app.aaps.core.interfaces.rx.weardata.EventData.CancelNotification(dateUtil.now())))
+
+                                                loop.acceptChangeRequest()
+                                            })
+                                    }
+                                })
+                            }
+                        }
+                    }
                 } catch (e: Exception) {
                     aapsLogger.error(app.aaps.core.interfaces.logging.LTag.APS, "Error invoking loop from dashboard", e)
                 }
@@ -234,33 +278,12 @@ class DashboardFragment : DaggerFragment() {
         binding.statusCard.isClickable = true
         binding.statusCard.isFocusable = true
         
-        // Setup Action Listeners (Advisor, Adjust, Prefs, Stats)
+        // Setup Action Listeners (AIMI Pulse only)
         binding.statusCard.setActionListener(object : CircleTopActionListener {
-            override fun onAimiAdvisorClicked() {
-                try {
-                    val intent = Intent(requireContext(), AimiProfileAdvisorActivity::class.java)
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    aapsLogger.error(LTag.CORE, "Failed to launch Advisor: ${e.message}")
-                }
-            }
-            override fun onAdjustClicked() { openAdjustmentDetails() }
-            override fun onAimiPreferencesClicked() {
-                try {
-                    val intent = Intent(requireContext(), app.aaps.plugins.aps.openAPSAIMI.advisor.meal.MealAdvisorActivity::class.java)
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    aapsLogger.error(LTag.CORE, "Failed to launch Meal Advisor: ${e.message}")
-                }
-            }
-            override fun onStatsClicked() {
-                try {
-                    val intent = Intent().setClassName(requireContext(), "app.aaps.plugins.aps.openAPSAIMI.context.ui.ContextActivity")
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    aapsLogger.error(LTag.CORE, "Failed to launch ContextActivity: ${e.message}")
-                }
-            }
+            override fun onAimiAdvisorClicked() {}
+            override fun onAdjustClicked() {}
+            override fun onAimiPreferencesClicked() {}
+            override fun onStatsClicked() {}
 
             override fun onAimiPulseClicked() {
                 openAdjustmentDetails()
@@ -422,7 +445,7 @@ class DashboardFragment : DaggerFragment() {
         val fraction = resources.getFraction(R.fraction.dashboard_graph_viewport_fraction, 1, 1)
         val raw = (viewportH * fraction).toInt()
         // Cap below full viewport so the status block can scroll; slightly relaxed vs 50% to fit X-axis labels.
-        val viewportCapPx = (viewportH * 0.50f).toInt()
+        val viewportCapPx = (viewportH * 0.65f).toInt()
         val effectiveMaxPx = minOf(maxPx, viewportCapPx)
         val effectiveMinPx = minOf(minPx, effectiveMaxPx)
         val target = raw.coerceIn(effectiveMinPx, effectiveMaxPx)

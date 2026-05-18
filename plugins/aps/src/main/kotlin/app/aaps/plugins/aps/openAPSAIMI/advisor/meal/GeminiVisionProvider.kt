@@ -2,6 +2,7 @@ package app.aaps.plugins.aps.openAPSAIMI.advisor.meal
 
 import android.graphics.Bitmap
 import android.util.Base64
+import app.aaps.core.keys.BooleanKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -10,19 +11,26 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-class GeminiVisionProvider(private val context: android.content.Context) : AIVisionProvider {
-    override val displayName = "Gemini (3.0 Flash)"
+class GeminiVisionProvider(
+    private val context: android.content.Context,
+    private val preferences: app.aaps.core.keys.interfaces.Preferences,
+    private val oauthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager
+) : AIVisionProvider {
+    override val displayName = "Gemini 1.5 Flash (Latest)"
     override val providerId = "GEMINI"
     
     private val geminiResolver = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiModelResolver(context)
 
-    override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String): EstimationResult = withContext(Dispatchers.IO) {
+    override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String, glucoseContext: String?): EstimationResult = withContext(Dispatchers.IO) {
         try {
             val base64Image = bitmapToBase64(bitmap)
-            val responseJson = callGeminiAPI(apiKey, base64Image, userDescription)
-            return@withContext parseResponse(responseJson)
+            val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth) && oauthManager.isOAuthEnabled()
+            val token = if (useOAuth) oauthManager.getValidAccessToken() else null
+            
+            val responseJson = callGeminiAPI(apiKey, token, base64Image, userDescription, glucoseContext)
+            parseResponse(responseJson)
         } catch (e: Exception) {
-            return@withContext FoodAnalysisPrompt.emptyErrorResult("Gemini Error", e.message ?: "Unknown error")
+            FoodAnalysisPrompt.emptyErrorResult("Gemini Error", e.message ?: "Unknown error")
         }
     }
     
@@ -32,36 +40,54 @@ class GeminiVisionProvider(private val context: android.content.Context) : AIVis
         return Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP)
     }
     
-    private fun callGeminiAPI(apiKey: String, base64Image: String, userDescription: String): String {
-        val primaryModel = geminiResolver.resolveGenerateContentModel(apiKey, "gemini-3-flash")
+    private fun callGeminiAPI(apiKey: String, oauthToken: String?, base64Image: String, userDescription: String, glucoseContext: String?): String {
+        val preferredModel = preferences.get(app.aaps.core.keys.StringKey.AimiAdvisorProvider)
+        val primaryModel = geminiResolver.resolveGenerateContentModel(
+            if (oauthToken == null) apiKey else null, 
+            oauthToken, 
+            preferredModel
+        )
         
         try {
-            return executeRequest(apiKey, base64Image, primaryModel, userDescription)
+            return executeRequest(apiKey, oauthToken, base64Image, primaryModel, userDescription, glucoseContext)
         } catch (e: Exception) {
             val msg = e.message?.lowercase() ?: ""
             if (msg.contains("429") || msg.contains("quota") || msg.contains("resource_exhausted")) {
-                val fallbackModel = "gemini-1.5-flash-latest"
-                return executeRequest(apiKey, base64Image, fallbackModel, userDescription)
+                val fallbackModel = "gemini-3.1-flash"
+                return executeRequest(apiKey, oauthToken, base64Image, fallbackModel, userDescription, glucoseContext)
             }
             throw e
         }
     }
 
-    private fun executeRequest(apiKey: String, base64Image: String, modelId: String, userDescription: String): String {
-        val urlStr = geminiResolver.getGenerateContentUrl(modelId, apiKey)
+    private fun executeRequest(apiKey: String, oauthToken: String?, base64Image: String, modelId: String, userDescription: String, glucoseContext: String?): String {
+        val urlStr = if (oauthToken != null) {
+            "https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent"
+        } else {
+            geminiResolver.getGenerateContentUrl(modelId, apiKey)
+        }
+        
         val url = URL(urlStr)
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
+        if (oauthToken != null) {
+            connection.setRequestProperty("Authorization", "Bearer $oauthToken")
+            oauthManager.getProjectId()?.let { 
+                if (it.isNotEmpty()) connection.setRequestProperty("x-goog-user-project", it)
+            }
+        }
         connection.doOutput = true
         connection.connectTimeout = 30000
         connection.readTimeout = 60000
         
-        val userPrompt = if (userDescription.isNotBlank()) {
-            "User description: \"$userDescription\". Analyze this meal image and return JSON only according to the required schema."
-        } else {
-            "Analyze this meal image and return JSON only according to the required schema."
-        }
+        val userPrompt = StringBuilder().apply {
+            if (userDescription.isNotBlank()) {
+                append("IMPORTANT - User clarification: \"$userDescription\". Use this as the highest priority source for portion sizing and calculation adjustments. ")
+            }
+            if (glucoseContext != null) append("$glucoseContext. ")
+            append("Analyze this meal image and return JSON only according to the required schema.")
+        }.toString()
 
         val jsonBody = JSONObject().apply {
             put("contents", JSONArray().apply {
@@ -93,6 +119,8 @@ class GeminiVisionProvider(private val context: android.content.Context) : AIVis
             return connection.inputStream.bufferedReader().use { it.readText() }
         } else {
             val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
+            // Log full error to logcat for developer analysis
+            android.util.Log.e("GeminiVision", "403 Full Body: $err")
             throw Exception("HTTP $code: $err")
         }
     }

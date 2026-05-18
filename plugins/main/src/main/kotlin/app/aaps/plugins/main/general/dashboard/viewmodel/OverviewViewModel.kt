@@ -83,7 +83,8 @@ class OverviewViewModel(
     private val preferences: Preferences,
     private val overviewData: OverviewData,
     private val trajectoryGuard: TrajectoryGuard, // 🌀 Trajectory Injection
-    private val autodriveEngine: AutodriveEngine // 🧠 Engine Injection
+    private val autodriveEngine: AutodriveEngine, // 🧠 Engine Injection
+    private val unifiedActivityProvider: app.aaps.plugins.aps.openAPSAIMI.steps.UnifiedActivityProviderMTR // 🎛️ Activity Injection
 ) : ViewModel() {
 
     private val disposables = CompositeDisposable()
@@ -326,10 +327,6 @@ class OverviewViewModel(
             rateUh + pctStr
         } ?: "0.00 U/h"
 
-        // 10. Steps & HR
-        var stepsText: String = "--"
-        var hrText: String = "--"
-        
         // 11. 24H Clinical Stats (TIR, CV, A1C)
         var cvText: String? = "CV --%"
         var tirVeryLow: Double? = null
@@ -373,50 +370,47 @@ class OverviewViewModel(
                 // GMI / Estimated A1C Formula: (mean + 46.7) / 28.7
                 a1c = (mean + 46.7) / 28.7
             }
-            
-            // --- Steps (Integration of rolling windows) ---
-            val stepsList = persistenceLayer.getStepsCountFromTimeToTime(from, now).sortedBy { it.timestamp }
-            var totalSteps = 0.0
-            var lastTimestamp = from
-
-            stepsList.forEach { sc ->
-                if (sc.duration > 0 && sc.steps5min > 0) {
-                    val dt = (sc.timestamp - lastTimestamp).coerceAtLeast(0)
-                    if (dt > 0) {
-                        // Calculate rate (steps per ms)
-                        val rate = sc.steps5min.toDouble() / sc.duration
-                        // Determine meaningful time window (handle overlaps vs gaps)
-                        // If dt < duration (overlap), we integrate over dt.
-                        // If dt >= duration (gap), we integrate over duration (full record) and assume 0 for the gap.
-                        val coveredDuration = java.lang.Math.min(dt, sc.duration)
-                        
-                        totalSteps += rate * coveredDuration
-                    }
-                }
-                lastTimestamp = java.lang.Math.max(lastTimestamp, sc.timestamp)
-            }
-
-            if (totalSteps > 1) {
-                stepsText = "%.0f".format(totalSteps)
-            } else {
-                 if (stepsList.isNotEmpty()) stepsText = "0"
-            }
-
-            // Heart Rate (Average or Last)
-            // Fix: Use 3h window + 15min buffer for overlapped records (Garmin), and ensure sorting
-            val hrFrom = now - 3 * 60 * 60 * 1000
-            val hrList = persistenceLayer.getHeartRatesFromTimeToTime(hrFrom - 15 * 60 * 1000, now)
-                .sortedBy { it.timestamp }
-            
-            if (hrList.isNotEmpty()) {
-                val lastHr = hrList.lastOrNull()?.beatsPerMinute
-                if (lastHr != null && lastHr > 0) {
-                    hrText = "%.0f".format(lastHr)
-                }
-            }
-        
         } catch (e: Exception) {
-             e.printStackTrace()
+            e.printStackTrace()
+        }
+
+        // 10. Steps & HR - Use UnifiedProvider for consistency across app
+        var stepsText: String = "--"
+        var hrText: String = "--"
+        var hrvText: String = "--"
+        var sleepText: String = "--"
+        
+        try {
+            val mgr = app.aaps.plugins.aps.openAPSAIMI.physio.AIMIPhysioManagerMTR.instance
+            val dataRepo = mgr?.dataRepository
+            val healthRepo = mgr?.repo
+            val physioContext = mgr?.contextStore?.getCurrentContext()
+            val features = physioContext?.features
+
+            // 1. Steps - Use Unified Provider (Watch > HC > Phone)
+            val stepsCount = unifiedActivityProvider.getStepsTotalSince(dateUtil.beginOfDay(System.currentTimeMillis()))?.steps ?: 0
+            if (stepsCount > 0) stepsText = stepsCount.toString()
+
+            // 2. HR - Use Unified Provider (Watch > HC)
+            val lastHr = unifiedActivityProvider.getLatestHeartRate(15 * 60 * 1000)?.bpm?.toInt() ?: 0
+            if (lastHr > 0) hrText = lastHr.toString()
+
+            // 3. HRV & Sleep (Historical from Health Connect)
+            if (features != null) {
+                if (features.hrvMeanRMSSD > 0) hrvText = "${features.hrvMeanRMSSD.toInt()}ms"
+                if (features.sleepDurationHours > 0) sleepText = "%.1fh".format(features.sleepDurationHours)
+            } else {
+                val sleepData = dataRepo?.fetchSleepData()
+                if (sleepData != null && sleepData.durationHours > 0) {
+                    sleepText = "%.1fh".format(sleepData.durationHours)
+                }
+                val snapshot = healthRepo?.getLastSnapshot()
+                if (snapshot != null && snapshot.hrvRmssd > 0) {
+                    hrvText = "${snapshot.hrvRmssd.toInt()}ms"
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore errors in physio data fetch
         }
 
         val lastApsRequest = loop.lastRun?.request
@@ -480,6 +474,8 @@ class OverviewViewModel(
             basalText = basalText,
             stepsText = stepsText,
             hrText = hrText,
+            hrvText = hrvText,
+            sleepText = sleepText,
             cvText = cvText,
             
             // 24H TIR Clinical Stats
@@ -908,7 +904,8 @@ class OverviewViewModel(
         private val preferences: Preferences,
         private val overviewData: OverviewData,
         private val trajectoryGuard: TrajectoryGuard, // 🌀 Add to Factory
-        private val autodriveEngine: AutodriveEngine // 🧠 Add to Factory
+        private val autodriveEngine: AutodriveEngine, // 🧠 Add to Factory
+        private val unifiedActivityProvider: app.aaps.plugins.aps.openAPSAIMI.steps.UnifiedActivityProviderMTR // 🎛️ Add to Factory
     ) : ViewModelProvider.Factory {
 
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -935,7 +932,8 @@ class OverviewViewModel(
                     preferences,
                     overviewData,
                     trajectoryGuard,
-                    autodriveEngine
+                    autodriveEngine,
+                    unifiedActivityProvider
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class $modelClass")
@@ -999,6 +997,8 @@ data class StatusCardState(
     val basalText: String? = null,
     val stepsText: String? = null,
     val hrText: String? = null,
+    val hrvText: String? = null,
+    val sleepText: String? = null,
     val cvText: String? = null,
     
     // 24H TIR Clinical Stats

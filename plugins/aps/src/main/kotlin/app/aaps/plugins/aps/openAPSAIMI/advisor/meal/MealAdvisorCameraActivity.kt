@@ -1,258 +1,251 @@
 package app.aaps.plugins.aps.openAPSAIMI.advisor.meal
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Matrix
-import android.graphics.ImageFormat
-import android.graphics.SurfaceTexture
-import android.hardware.camera2.*
-import android.media.ImageReader
 import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
 import android.util.Size
-import android.view.Surface
-import android.view.TextureView
-import android.view.ViewGroup
 import android.view.Gravity
-import android.widget.Button
+import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
-import java.io.ByteArrayOutputStream
-import java.util.Collections
+import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 /**
- * Custom Camera Activity to FORCE Front/Back camera selection.
- * System Intents are unreliable on Samsung/Pixel devices.
- * This implementation uses Camera2 API directly.
+ * Live Barcode Scanner using CameraX and ML Kit.
+ * Automatically detects barcodes and returns the result.
  */
 class MealAdvisorCameraActivity : AppCompatActivity() {
 
-    private lateinit var textureView: TextureView
-    private lateinit var captureButton: Button
-    private lateinit var backgroundHandler: Handler
-    private lateinit var backgroundThread: HandlerThread
-    private var cameraDevice: CameraDevice? = null
-    private var captureSession: CameraCaptureSession? = null
-    private lateinit var imageReader: ImageReader
-    
-    // Force Back Camera
-    private val lensFacing = CameraCharacteristics.LENS_FACING_BACK
+    private lateinit var cameraExecutor: ExecutorService
+    private lateinit var previewView: PreviewView
+    private var isScanning = true
+    private var mode = MODE_BARCODE
+    private var cameraProvider: ProcessCameraProvider? = null
+    private var imageCapture: ImageCapture? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // --- 1. Programmatic Layout (No XML needed) ---
+        mode = intent.getStringExtra(EXTRA_MODE) ?: MODE_BARCODE
+
+        // --- 1. Layout ---
         val root = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
         }
         
-        textureView = TextureView(this).apply {
+        previewView = PreviewView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         }
-        root.addView(textureView)
-        
-        captureButton = Button(this).apply {
-            text = "🔘 CAPTURE"
-            textSize = 18f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.TRANSPARENT)
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                bottomMargin = 64
+        root.addView(previewView)
+
+        if (mode == MODE_BARCODE) {
+            val overlay = TextView(this).apply {
+                text = "Center the barcode in the frame"
+                setTextColor(Color.WHITE)
+                textSize = 16f
+                gravity = Gravity.CENTER
+                setBackgroundColor(Color.parseColor("#80000000"))
+                setPadding(32, 16, 32, 16)
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                    bottomMargin = 200
+                }
             }
-            setOnClickListener { takePicture() }
+            root.addView(overlay)
+        } else {
+            val captureButton = android.widget.Button(this).apply {
+                text = "🔘 CAPTURE"
+                textSize = 18f
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.TRANSPARENT)
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                    bottomMargin = 64
+                }
+                setOnClickListener { takePicture() }
+            }
+            root.addView(captureButton)
         }
-        root.addView(captureButton)
         
         setContentView(root)
-    }
 
-    override fun onResume() {
-        super.onResume()
-        startBackgroundThread()
-        if (textureView.isAvailable) {
-            openCamera()
+        cameraExecutor = Executors.newSingleThreadExecutor()
+
+        if (allPermissionsGranted()) {
+            startCamera()
         } else {
-            textureView.surfaceTextureListener = textureListener
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
     }
 
-    override fun onPause() {
-        closeCamera()
-        stopBackgroundThread()
-        super.onPause()
-    }
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
-    private val textureListener = object : TextureView.SurfaceTextureListener {
-        override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) { openCamera() }
-        override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
-        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture) = true
-        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
-    }
-    
-    private fun closeCamera() {
-        try {
-            captureSession?.close()
-            captureSession = null
-            cameraDevice?.close()
-            cameraDevice = null
-            imageReader?.close()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
+        cameraProviderFuture.addListener({
+            cameraProvider = cameraProviderFuture.get()
 
-    private fun openCamera() {
-        val manager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-        try {
-            val cameraId = manager.cameraIdList.firstOrNull { id ->
-                val characteristics = manager.getCameraCharacteristics(id)
-                characteristics.get(CameraCharacteristics.LENS_FACING) == lensFacing
-            } ?: manager.cameraIdList.firstOrNull() ?: return
-
-            val characteristics = manager.getCameraCharacteristics(cameraId)
-            val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) ?: return
-            
-            // Choose optimal size (closest to 1080p usually fine for AI)
-            val outputSize = map.getOutputSizes(ImageFormat.JPEG).maxByOrNull { it.width * it.height } ?: Size(1920, 1080)
-            
-            imageReader = ImageReader.newInstance(outputSize.width, outputSize.height, ImageFormat.JPEG, 1)
-            imageReader.setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                // Should be granted by caller, but safety first
-                return 
-            }
-            
-            manager.openCamera(cameraId, stateCallback, backgroundHandler)
-            
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Camera Error: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private val stateCallback = object : CameraDevice.StateCallback() {
-        override fun onOpened(camera: CameraDevice) {
-            cameraDevice = camera
-            createCameraPreview()
-        }
-        override fun onDisconnected(camera: CameraDevice) { camera.close() }
-        override fun onError(camera: CameraDevice, error: Int) { camera.close(); this@MealAdvisorCameraActivity.finish() }
-    }
-
-    private fun createCameraPreview() {
-        try {
-            val texture = textureView.surfaceTexture!!
-            texture.setDefaultBufferSize(1920, 1080) // Standard 16:9
-            val surface = Surface(texture)
-            
-            val captureRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-            captureRequestBuilder?.addTarget(surface)
-            
-            cameraDevice?.createCaptureSession(listOf(surface, imageReader.surface), object : CameraCaptureSession.StateCallback() {
-                override fun onConfigured(session: CameraCaptureSession) {
-                    if (cameraDevice == null) return
-                    captureSession = session
-                    captureRequestBuilder?.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                    session.setRepeatingRequest(captureRequestBuilder!!.build(), null, backgroundHandler)
+            val preview = Preview.Builder()
+                .build()
+                .also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
                 }
-                override fun onConfigureFailed(session: CameraCaptureSession) {}
-            }, null)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+            try {
+                cameraProvider?.unbindAll()
+                
+                if (mode == MODE_BARCODE) {
+                    val imageAnalyzer = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                        .also {
+                            it.setAnalyzer(cameraExecutor, BarcodeAnalyzer { barcode ->
+                                if (isScanning) {
+                                    isScanning = false
+                                    runOnUiThread {
+                                        onBarcodeFound(barcode)
+                                    }
+                                }
+                            })
+                        }
+                    cameraProvider?.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+                } else {
+                    imageCapture = ImageCapture.Builder()
+                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                        .build()
+                    cameraProvider?.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+                }
+                
+            } catch(e: Exception) {
+                Toast.makeText(this, "Camera bind failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+
+        }, ContextCompat.getMainExecutor(this))
     }
 
     private fun takePicture() {
-        if (cameraDevice == null) return
-        try {
-            val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
-            captureBuilder?.addTarget(imageReader.surface)
-            captureBuilder?.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-            
-            // Orientation
-            val rotation = windowManager.defaultDisplay.rotation
-            captureBuilder?.set(CaptureRequest.JPEG_ORIENTATION, 90) // Usually 90 for portrait back camera
-
-            captureSession?.stopRepeating()
-            captureSession?.capture(captureBuilder!!.build(), null, backgroundHandler)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private val onImageAvailableListener = ImageReader.OnImageAvailableListener { reader ->
-        val image = reader.acquireLatestImage()
-        val buffer = image.planes[0].buffer
-        val bytes = ByteArray(buffer.capacity())
-        buffer.get(bytes)
-        image.close()
+        val imageCapture = imageCapture ?: return
         
-        // Return result
-        runOnUiThread {
-            returnResult(bytes)
-        }
-    }
+        val filename = "aimi_meal_capture.jpg"
+        val file = java.io.File(cacheDir, filename)
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
 
-    private fun returnResult(jpegBytes: ByteArray) {
-        try {
-            // Decode and Rotate
-            val opts = BitmapFactory.Options()
-            val bitmap = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size, opts)
-            
-            // Rotate if needed (Back camera is usually 90deg)
-            val matrix = Matrix()
-            matrix.postRotate(90f) 
-            val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        imageCapture.takePicture(
+            outputOptions,
+            ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    val authority = "info.nightscout.androidaps.fileprovider"
+                    val contentUri = androidx.core.content.FileProvider.getUriForFile(this@MealAdvisorCameraActivity, authority, file)
+                    
+                    val resultIntent = Intent()
+                    resultIntent.data = contentUri
+                    resultIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    setResult(RESULT_OK, resultIntent)
+                    finish()
+                }
 
-            // Save to temporary file
-            // Passing Bitmap via Intent extras is limited to ~1MB (TransactionTooLargeException).
-            // We must save to disk and pass the URI.
-            val filename = "aimi_meal_capture.jpg"
-            val file = java.io.File(cacheDir, filename)
-            java.io.FileOutputStream(file).use { out ->
-                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) // High quality
+                override fun onError(exception: ImageCaptureException) {
+                    Toast.makeText(this@MealAdvisorCameraActivity, "Capture failed: ${exception.message}", Toast.LENGTH_SHORT).show()
+                }
             }
-            
-            // Return File URI
-            val resultIntent = Intent()
-            resultIntent.data = android.net.Uri.fromFile(file)
-            setResult(RESULT_OK, resultIntent)
-            finish()
-            
-        } catch (e: Exception) {
-            Toast.makeText(this, "Process Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            finish()
+        )
+    }
+
+    private fun onBarcodeFound(barcode: String) {
+        val resultIntent = Intent()
+        resultIntent.putExtra("barcode", barcode)
+        setResult(RESULT_OK, resultIntent)
+        finish()
+    }
+
+    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (allPermissionsGranted()) {
+                startCamera()
+            } else {
+                Toast.makeText(this, "Permissions not granted by the user.", Toast.LENGTH_SHORT).show()
+                finish()
+            }
         }
     }
 
-    private fun startBackgroundThread() {
-        backgroundThread = HandlerThread("CameraBackground")
-        backgroundThread.start()
-        backgroundHandler = Handler(backgroundThread.looper)
+    companion object {
+        private const val REQUEST_CODE_PERMISSIONS = 10
+        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+        
+        const val EXTRA_MODE = "mode"
+        const val MODE_CAMERA = "camera"
+        const val MODE_BARCODE = "barcode"
     }
 
-    private fun stopBackgroundThread() {
-        backgroundThread.quitSafely()
-        try {
-            backgroundThread.join()
-        } catch (e: InterruptedException) {
-            e.printStackTrace()
+    private class BarcodeAnalyzer(private val onBarcodeDetected: (String) -> Unit) : ImageAnalysis.Analyzer {
+        private val options = BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(
+                Barcode.FORMAT_EAN_13,
+                Barcode.FORMAT_EAN_8,
+                Barcode.FORMAT_UPC_A,
+                Barcode.FORMAT_UPC_E,
+                Barcode.FORMAT_CODE_128,
+                Barcode.FORMAT_CODE_39,
+                Barcode.FORMAT_ITF
+            )
+            .build()
+        private val scanner = BarcodeScanning.getClient(options)
+
+        @SuppressLint("UnsafeOptInUsageError")
+        override fun analyze(imageProxy: ImageProxy) {
+            val mediaImage = imageProxy.image
+            if (mediaImage != null) {
+                val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                scanner.process(image)
+                    .addOnSuccessListener { barcodes ->
+                        barcodes.firstOrNull()?.rawValue?.let {
+                            onBarcodeDetected(it)
+                        }
+                    }
+                    .addOnCompleteListener {
+                        imageProxy.close()
+                    }
+            } else {
+                imageProxy.close()
+            }
         }
     }
 }

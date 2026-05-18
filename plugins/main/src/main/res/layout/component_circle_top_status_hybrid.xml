@@ -22,8 +22,8 @@
             <!-- GlucoseRingView (Center) -->
             <app.aaps.core.ui.views.GlucoseRingView
                 android:id="@+id/glucose_ring"
-                android:layout_width="132dp"
-                android:layout_height="132dp"
+                android:layout_width="148dp"
+                android:layout_height="148dp"
                 android:elevation="3dp"
                 app:ringStrokeWidth="4dp"
                 app:glucoseRingUseSteppedColors="true"
@@ -107,7 +107,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="-58dp"
+            android:layout_marginTop="-66dp"
             android:layout_marginBottom="@dimen/dashboard_row_spacing_small">
 
             <!-- LEFT COLUMN -->
@@ -212,6 +212,30 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="CV --%"
+                        android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
+                        android:textColor="@color/dashboard_on_surface" />
+                </LinearLayout>
+
+                <!-- HRV -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_marginEnd="6dp"
+                        app:srcCompat="@drawable/ic_dashboard_wave"
+                        app:tint="@color/dashboard_on_surface_muted" />
+
+                    <TextView
+                        android:id="@+id/hrv_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
                         android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
                         android:textColor="@color/dashboard_on_surface" />
                 </LinearLayout>
@@ -388,6 +412,30 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0%"
+                        android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
+                        android:textColor="@color/dashboard_on_surface" />
+                </LinearLayout>
+
+                <!-- Sleep -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="3dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_marginEnd="6dp"
+                        app:srcCompat="@drawable/ic_running_mode"
+                        app:tint="@color/dashboard_on_surface_muted" />
+
+                    <TextView
+                        android:id="@+id/sleep_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
                         android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
                         android:textColor="@color/dashboard_on_surface" />
                 </LinearLayout>
@@ -596,67 +644,5 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- BOTTOM ROW: Action Chips                            -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <HorizontalScrollView
-            android:id="@+id/bottom_action_row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="none">
-
-            <com.google.android.material.chip.ChipGroup
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                app:chipSpacingHorizontal="@dimen/dashboard_chip_spacing"
-                app:chipSpacingVertical="@dimen/dashboard_row_spacing_small"
-                app:singleSelection="false">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_aimi_advisor"
-                    style="@style/Widget.AAPS.Dashboard.ActionChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/dashboard_cd_chip_aimi_advisor"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
-                    android:importantForAccessibility="yes"
-                    android:text="@string/advisor_button" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_adjust"
-                    style="@style/Widget.AAPS.Dashboard.ActionChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/dashboard_cd_chip_adjust"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
-                    android:importantForAccessibility="yes"
-                    android:text="@string/adjust_button" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_aimi_pref"
-                    style="@style/Widget.AAPS.Dashboard.ActionChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/dashboard_cd_chip_meal_mode"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
-                    android:importantForAccessibility="yes"
-                    android:text="@string/dashboard_mode_meal" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_stat"
-                    style="@style/Widget.AAPS.Dashboard.ActionChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/dashboard_cd_chip_aimi_context"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
-                    android:importantForAccessibility="yes"
-                    android:text="@string/aimi_context" />
-            </com.google.android.material.chip.ChipGroup>
-        </HorizontalScrollView>
     </LinearLayout>
 </merge>

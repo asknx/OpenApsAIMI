@@ -846,6 +846,9 @@
     <string name="console_mpc_log">Module MPC : dose=%.2f, Kp=%.3f, corr=%.2f, out=%.2f</string>
     <string name="reason_mpc_pi">🎛️ MPC modèle prédictif: %.2f U (%.0f%%) | PI modèle physiologique: %.2f U (%.0f%%)</string>
     <string name="smb_final">✅ SMB final: %1$s U</string>
+    <string name="aimi_prefs_barcode_provider_title">Fournisseur de codes-barres</string>
+    <string name="aimi_prefs_use_off_title">Utiliser Open Food Facts</string>
+    <string name="aimi_prefs_use_off_summary">Utiliser la base de données Open Food Facts (gratuit, sans clé API) au lieu de FatSecret</string>
     <string name="reason_dia_reattivity">📈 DIA: %1$.1f mins | REACT◁120 Matin: %2$.1f%% | Après-midi: %3$.1f%% | Soir: %4$.1f%%</string>
     <string name="autodrive_status">🚗 Autodrive: %1$s |&#160;Mode collation / pré-bolus: %2$s | </string>
     <string name="autodrive_condition">&#160;Autodrive Conditions: %1$s</string>

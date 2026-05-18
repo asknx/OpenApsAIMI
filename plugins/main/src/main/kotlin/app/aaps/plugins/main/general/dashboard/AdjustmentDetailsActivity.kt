@@ -14,6 +14,7 @@ import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.ui.toast.ToastUtils
+import androidx.core.text.toSpanned
 import javax.inject.Inject
 
 class AdjustmentDetailsActivity : TranslatedDaggerAppCompatActivity() {
@@ -75,6 +76,19 @@ class AdjustmentDetailsActivity : TranslatedDaggerAppCompatActivity() {
             Thread {
                 try {
                     loop.invoke("AdjustmentDetails", true)
+                    
+                    val lastRun = loop.lastRun
+                    if (!loop.runningMode.isClosedLoopOrLgs() && lastRun?.constraintsProcessed?.isChangeRequested == true) {
+                        runOnUiThread {
+                            app.aaps.core.ui.dialogs.OKDialog.showConfirmation(
+                                this, 
+                                resourceHelper.gs(app.aaps.core.ui.R.string.tempbasal_label), 
+                                lastRun.constraintsProcessed?.resultAsSpanned() ?: "".toSpanned(), 
+                                {
+                                    Thread { loop.acceptChangeRequest() }.start()
+                                })
+                        }
+                    }
                 } catch (e: Exception) {
                     aapsLogger.error(LTag.APS, "Error invoking loop from details", e)
                 }

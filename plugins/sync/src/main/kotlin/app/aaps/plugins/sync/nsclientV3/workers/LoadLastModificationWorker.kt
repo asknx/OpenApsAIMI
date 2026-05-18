@@ -27,9 +27,9 @@ class LoadLastModificationWorker(
             aapsLogger.debug(LTag.NSCLIENT, "LAST MODIFIED: ${nsClientV3Plugin.newestDataOnServer}")
         } catch (error: Exception) {
             aapsLogger.error(LTag.NSCLIENT, "Error: ", error)
-            rxBus.send(EventNSClientNewLog("◄ ERROR", error.localizedMessage))
+            // rxBus.send(EventNSClientNewLog("◄ ERROR", error.localizedMessage)) // Don't spam error if it's just polling
             nsClientV3Plugin.lastOperationError = error.localizedMessage
-            return Result.failure(workDataOf("Error" to error.localizedMessage))
+            return Result.success() // Continue chain even if lastModified fails
         }
         nsClientV3Plugin.lastOperationError = null
         return Result.success()

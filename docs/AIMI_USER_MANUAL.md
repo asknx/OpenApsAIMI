@@ -175,8 +175,8 @@ The Advisor generates a **detailed report** containing:
 2. Scroll to **"🤖 Assistant AI"** section
 3. Tap **"AIMI Profile Advisor"**
 4. Select **AI Provider**:
-   - **ChatGPT (GPT-5.2)**: Most advanced reasoning
-   - **Gemini (2.5 Flash)**: Best cost/performance ratio ✅ Recommended
+   - **OpenAI (GPT-5.2)**: Most advanced reasoning
+   - **Gemini 3.1 Flash (High Speed)**: Best cost/performance ratio ✅ Recommended
    - **DeepSeek (Chat)**: Most economical
    - **Claude (3.5 Sonnet)**: Alternative high-quality
 5. Enter your **API Key** (get from provider's website)
@@ -192,8 +192,8 @@ The Advisor generates a **detailed report** containing:
 - Create new key
 - Copy and paste into AAPS
 
-**Google Gemini (2.5 Flash)** ✅ Recommended:
-- Go to https://makersuite.google.com/app/apikey
+**Google Gemini 3.1 Flash** ✅ Recommended:
+- Go to https://aistudio.google.com/api-keys
 - Create API key
 - Copy and paste into AAPS
 - **Cost**: ~30x cheaper than GPT
@@ -222,10 +222,38 @@ The Advisor generates a **detailed report** containing:
 
 | Model | Use Case | Accuracy | Cost |
 |-------|----------|----------|------|
-| **GPT-4o Vision** | High accuracy needed | ⭐⭐⭐⭐⭐ | $$$ |
-| **Gemini (2.5 Flash)** | Best balance | ⭐⭐⭐⭐ | $ ✅ |
+| **OpenAI (GPT-5.2)** | High accuracy needed | ⭐⭐⭐⭐⭐ | $$$ |
+| **Gemini 3.1 Flash (High Speed)** | Best balance | ⭐⭐⭐⭐ | $ ✅ |
+| **Gemini 3.1 Pro (Heavy Lifter)** | Advanced reasoning | ⭐⭐⭐⭐⭐ | $$ |
+| **Gemini 3.1 Flash-Lite** | Cost efficient | ⭐⭐⭐⭐ | $ |
+| **Gemini 2.0 Flash (Exp)** | Next-gen speed | ⭐⭐⭐⭐⭐ | $ |
 | **DeepSeek (Chat)** | Budget option | ⭐⭐⭐ | ¢ |
 | **Claude (3.5 Sonnet)** | Alternative | ⭐⭐⭐⭐ | $$$ |
+
+---
+
+## 🛒 Barcode Scanning
+
+**Scan product barcodes for 100% nutritional accuracy.**
+
+### FatSecret Integration
+
+**What is it?**: Fetch data directly from the FatSecret database using product barcodes.
+
+**Setup**:
+1. Register at https://platform.fatsecret.com
+2. Obtain your **Client ID** and **Client Secret** from your personal cabinet.
+3. Enter credentials in **AIMI Preferences → AI Assistant → Barcode Provider**.
+
+### Open Food Facts Integration
+
+**What is it?**: Free, collaborative food database (no API key required).
+
+**Setup**:
+1. Enable **"Use Open Food Facts"** in **AIMI Preferences**.
+2. Scan any product using the barcode icon in Meal Advisor.
+
+---
 
 ### How to Use
 

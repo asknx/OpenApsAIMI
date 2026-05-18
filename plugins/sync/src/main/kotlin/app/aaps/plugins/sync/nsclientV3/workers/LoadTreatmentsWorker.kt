@@ -42,16 +42,23 @@ class LoadTreatmentsWorker(
                     else max(nsClientV3Plugin.lastLoadedSrvModified.collections.treatments, dateUtil.now() - nsClientV3Plugin.maxAge)
                 if ((nsClientV3Plugin.newestDataOnServer?.collections?.treatments ?: Long.MAX_VALUE) > lastLoaded) {
                     val treatments: List<NSTreatment>
-                    val response: NSAndroidClient.ReadResponse<List<NSTreatment>>?
+                    val response: NSAndroidClient.ReadResponse<List<NSTreatment>>
                     if (isFirstLoad) {
                         val lastLoadedIso = dateUtil.toISOString(lastLoaded)
                         response = nsAndroidClient.getTreatmentsNewerThan(lastLoadedIso, NSClientV3Plugin.RECORDS_TO_LOAD)
                     } else {
                         response = nsAndroidClient.getTreatmentsModifiedSince(lastLoaded, NSClientV3Plugin.RECORDS_TO_LOAD)
-                        aapsLogger.debug(LTag.NSCLIENT, "lastLoadedSrvModified: ${response.lastServerModified}")
-                        response.lastServerModified?.let { nsClientV3Plugin.lastLoadedSrvModified.collections.treatments = it }
-                        nsClientV3Plugin.storeLastLoadedSrvModified()
                     }
+
+                    aapsLogger.debug(LTag.NSCLIENT, "lastLoadedSrvModified: ${response.lastServerModified}")
+                    val nextSrvModified = response.lastServerModified ?: response.values.mapNotNull { it.srvModified }.maxOrNull()
+                    nextSrvModified?.let {
+                        if (it > nsClientV3Plugin.lastLoadedSrvModified.collections.treatments) {
+                            nsClientV3Plugin.lastLoadedSrvModified.collections.treatments = it
+                            nsClientV3Plugin.storeLastLoadedSrvModified()
+                        }
+                    }
+
                     treatments = response.values
                     aapsLogger.debug(LTag.NSCLIENT, "TREATMENTS: $treatments")
                     if (treatments.isNotEmpty()) {
@@ -83,7 +90,8 @@ class LoadTreatmentsWorker(
             aapsLogger.error("Error: ", error)
             rxBus.send(EventNSClientNewLog("◄ ERROR", error.localizedMessage))
             nsClientV3Plugin.lastOperationError = error.localizedMessage
-            return Result.failure(workDataOf("Error" to error.localizedMessage))
+            // return Result.failure(workDataOf("Error" to error.localizedMessage))
+            return Result.success() // Continue chain
         }
 
         storeDataForDb.storeTreatmentsToDb(fullSync = nsClientV3Plugin.doingFullSync)

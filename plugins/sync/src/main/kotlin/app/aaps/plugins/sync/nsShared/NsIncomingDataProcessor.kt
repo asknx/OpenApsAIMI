@@ -91,13 +91,13 @@ class NsIncomingDataProcessor @Inject constructor(
     /**
      * Preprocess list of SGVs
      *
-     * @return true if there was an accepted SGV
+     * @return highest timestamp in accepted SGVs or 0 if none accepted
      */
-    fun processSgvs(sgvs: Any, doFullSync: Boolean): Boolean {
+    fun processSgvs(sgvs: Any, doFullSync: Boolean): Long {
         // Objective0
         preferences.put(BooleanNonKey.ObjectivesBgIsAvailableInNs, true)
 
-        if (!nsClientSource.isEnabled() && !preferences.get(BooleanKey.NsClientAcceptCgmData) && !doFullSync) return false
+        if (!nsClientSource.isEnabled() && !preferences.get(BooleanKey.NsClientAcceptCgmData) && !doFullSync) return 0L
 
         var latestDateInReceivedData: Long = 0
         aapsLogger.debug(LTag.NSCLIENT, "Received NS Data: $sgvs")
@@ -133,7 +133,7 @@ class NsIncomingDataProcessor @Inject constructor(
             }
             storeDataForDb.addToGlucoseValues(glucoseValues)
         }
-        return glucoseValues.isNotEmpty()
+        return latestDateInReceivedData
     }
 
     /**

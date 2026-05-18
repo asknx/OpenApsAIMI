@@ -28,7 +28,8 @@ android {
 
     flavorDimensions += listOf("standard")
     productFlavors {
-        create("full") { dimension = "standard" }
+        create("fulldev") { dimension = "standard" }
+        create("userfull") { dimension = "standard" }
         create("pumpcontrol") { dimension = "standard" }
         create("aapsclient") { dimension = "standard" }
         create("aapsclient2") { dimension = "standard" }

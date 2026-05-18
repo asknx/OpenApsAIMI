@@ -6,6 +6,7 @@ import android.util.Log
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -22,6 +23,7 @@ class GeminiModelResolver @Inject constructor(
 
     companion object {
         private const val TAG = "AIMI_GEMINI"
+        // Switched back to v1beta for AI Studio per-user quota support
         private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
         
         // PREFS
@@ -32,13 +34,14 @@ class GeminiModelResolver @Inject constructor(
         // TTL: 24h
         private val CACHE_TTL_MS = TimeUnit.HOURS.toMillis(24)
 
-        // Fallback fallback priority list
+        // Fallback fallback priority list (Realistic Model IDs as of April 2026)
         private val FALLBACK_PRIORITY = listOf(
-            "gemini-3-flash-preview",
-            "gemini-3-pro",
-            "gemini-2.0-flash",
+            "gemini-3.1-pro",
+            "gemini-3.1-flash",
+            "gemini-3.1-flash-lite",
             "gemini-1.5-flash-latest",
-            "gemini-1.5-pro-latest"
+            "gemini-1.5-pro-latest",
+            "gemini-2.0-flash-exp"
         )
     }
 
@@ -48,48 +51,56 @@ class GeminiModelResolver @Inject constructor(
     /**
      * Resolves a valid model ID for generateContent calls.
      * 
-     * @param apiKey The API Key to use for listing models
-     * @param preferredModel The user's preferred model (e.g. "gemini-3-pro-preview")
-     * @return A valid model ID (e.g. "gemini-3-pro-preview") ready for use in URL
+     * @param apiKey The API Key (optional if using OAuth)
+     * @param oauthToken The OAuth Access Token (optional if using API Key)
+     * @param preferredModel The user's preferred model
+     * @return A valid model ID ready for use in URL
      */
-    fun resolveGenerateContentModel(apiKey: String, preferredModel: String?): String {
-        val availableModels = getOrFetchModels(apiKey)
+    fun resolveGenerateContentModel(apiKey: String?, oauthToken: String?, preferredModel: String?): String {
+        val availableModels = getOrFetchModels(apiKey, oauthToken)
         
-        // 1. Check preferred
+        // 1. Explicit Mapping for the new UI internal IDs
         if (!preferredModel.isNullOrBlank()) {
-            val sanitized = preferredModel.trim().removePrefix("models/")
-            if (availableModels.contains(sanitized)) {
-                Log.d(TAG, "Using preferred model: $sanitized")
-                return sanitized
-            } else {
-                 Log.w(TAG, "Preferred model '$sanitized' not found in available list.")
+            val mappedModel = when (preferredModel.uppercase(Locale.US)) {
+                "GEMINI-3.1-PRO" -> "gemini-3.1-pro"
+                "GEMINI-3.1-FLASH" -> "gemini-3.1-flash"
+                "GEMINI-3.1-FLASH-LITE" -> "gemini-3.1-flash-lite"
+                "GEMINI-1.5-PRO" -> "gemini-1.5-pro-latest"
+                "GEMINI-1.5-FLASH" -> "gemini-1.5-flash-latest"
+                "GEMINI-2.0-FLASH" -> "gemini-2.0-flash-exp"
+                "GEMINI" -> "gemini-3.1-flash"
+                else -> preferredModel.trim().removePrefix("models/")
+            }
+
+            if (availableModels.contains(mappedModel)) {
+                Log.d(TAG, "Using mapped/preferred model: $mappedModel")
+                return mappedModel
             }
         }
 
         // 2. Iterate Priority List
         for (candidate in FALLBACK_PRIORITY) {
             if (availableModels.contains(candidate)) {
-                Log.i(TAG, "Fallback to high-priority model: $candidate")
                 return candidate
             }
         }
 
-        // 3. Last resort - Find anything that looks like "gemini" and "pro" or "flash"
-        val fallback = availableModels.firstOrNull { it.contains("gemini") && (it.contains("pro") || it.contains("flash")) }
-            ?: "gemini-3-flash-preview" // Hard fallback if everything fails (network down + no cache)
-
-        Log.w(TAG, "Using last resort fallback: $fallback")
-        return fallback
+        // 3. Last resort
+        return availableModels.firstOrNull { it.contains("gemini") } ?: "gemini-2.5-flash"
     }
     
     /**
      * Helper to construct the full URL for a resolved model
      */
-    fun getGenerateContentUrl(modelId: String, apiKey: String): String {
-        return "$BASE_URL/$modelId:generateContent?key=$apiKey"
+    fun getGenerateContentUrl(modelId: String, apiKey: String?): String {
+        return if (apiKey != null) {
+            "$BASE_URL/$modelId:generateContent?key=$apiKey"
+        } else {
+            "$BASE_URL/$modelId:generateContent"
+        }
     }
 
-    private fun getOrFetchModels(apiKey: String): Set<String> {
+    private fun getOrFetchModels(apiKey: String?, oauthToken: String?): Set<String> {
         // 1. Check Memory Cache Validity
         if (memoryCache.isNotEmpty() && !isCacheExpired()) {
             return memoryCache.keys
@@ -112,7 +123,7 @@ class GeminiModelResolver @Inject constructor(
 
         // 3. Fetch Network
         return try {
-            val freshModels = fetchModelsFromApi(apiKey)
+            val freshModels = fetchModelsFromApi(apiKey, oauthToken)
             if (freshModels.isEmpty()) throw Exception("Empty model list returned")
             
             // Save to Disk
@@ -124,21 +135,8 @@ class GeminiModelResolver @Inject constructor(
             updateMemoryCache(freshModels)
             freshModels
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to fetch models: ${e.message}. Using cache/fallback.")
-            // If we have STALE memory cache, use it
+            Log.e(TAG, "Failed to fetch models: ${e.message}")
             if (memoryCache.isNotEmpty()) return memoryCache.keys
-            
-            // If we have STALE disk cache, use it
-            val jsonStr = prefs.getString(KEY_AVAILABLE_MODELS, null)
-             if (jsonStr != null) {
-                val set = parseModelsSet(jsonStr)
-                if (set.isNotEmpty()) {
-                     updateMemoryCache(set)
-                     return set
-                }
-            }
-            
-            // Absolute failure -> Return Priority List as "assumed available" to attempt
             FALLBACK_PRIORITY.toSet()
         }
     }
@@ -157,28 +155,23 @@ class GeminiModelResolver @Inject constructor(
         return csv.split(",").filter { it.isNotBlank() }.toSet()
     }
 
-    private fun fetchModelsFromApi(apiKey: String): Set<String> {
-        val start = System.currentTimeMillis()
+    private fun fetchModelsFromApi(apiKey: String?, oauthToken: String?): Set<String> {
         var connection: HttpURLConnection? = null
         try {
-            val url = URL("$BASE_URL?key=$apiKey")
+            val urlStr = if (apiKey != null) "$BASE_URL?key=$apiKey" else BASE_URL
+            val url = URL(urlStr)
             connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
+            if (oauthToken != null) {
+                connection.setRequestProperty("Authorization", "Bearer $oauthToken")
+            }
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
 
             val status = connection.responseCode
-            if (status != 200) {
-                 val errorStream = connection.errorStream
-                 val errorMsg = errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown Error"
-                 Log.e(TAG, "ListModels failed: $status - ${errorMsg.take(300)}")
-                 return emptySet()
-            }
+            if (status != 200) return emptySet()
 
             val response = connection.inputStream.bufferedReader().use { it.readText() }
-            val latency = System.currentTimeMillis() - start
-            Log.d(TAG, "ListModels success ($latency ms). Response size: ${response.length}")
-            
             val json = JSONObject(response)
             if (!json.has("models")) return emptySet()
             
@@ -187,31 +180,20 @@ class GeminiModelResolver @Inject constructor(
             
             for (i in 0 until modelsArray.length()) {
                 val m = modelsArray.getJSONObject(i)
-                val name = m.getString("name") // e.g. "models/gemini-pro"
+                val name = m.getString("name")
                 val supportedMethods = m.optJSONArray("supportedGenerationMethods")
                 
-                var supportsGenerateContent = false
                 if (supportedMethods != null) {
                     for (j in 0 until supportedMethods.length()) {
                         if (supportedMethods.getString(j) == "generateContent") {
-                            supportsGenerateContent = true
+                            resultSet.add(name.removePrefix("models/"))
                             break
                         }
                     }
                 }
-                
-                if (supportsGenerateContent) {
-                    // Extract ID: "models/gemini-pro" -> "gemini-pro"
-                    val id = name.removePrefix("models/")
-                    resultSet.add(id)
-                }
             }
-            
-            Log.d(TAG, "Found ${resultSet.size} models supporting generateContent: $resultSet")
             return resultSet
-
         } catch (e: Exception) {
-            Log.e(TAG, "Fetch Error: ${e.message}")
             return emptySet()
         } finally {
             connection?.disconnect()

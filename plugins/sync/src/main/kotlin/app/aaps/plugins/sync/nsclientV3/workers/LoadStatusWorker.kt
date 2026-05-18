@@ -27,10 +27,10 @@ class LoadStatusWorker(
             aapsLogger.debug(LTag.NSCLIENT, "STATUS: $status")
         } catch (error: Exception) {
             aapsLogger.error("Error: ", error)
-            rxBus.send(EventNSClientNewLog("◄ ERROR", error.localizedMessage))
+            // rxBus.send(EventNSClientNewLog("◄ ERROR", error.localizedMessage))
             nsClientV3Plugin.lastOperationError = error.localizedMessage
             rxBus.send(EventNSClientUpdateGuiStatus())
-            return Result.failure(workDataOf("Error" to error.localizedMessage))
+            return Result.success() // Continue chain
         }
         nsClientV3Plugin.lastOperationError = null
         rxBus.send(EventNSClientUpdateGuiStatus())

@@ -18,6 +18,7 @@ enum class BooleanKey(
 ) : BooleanPreferenceKey {
 
     GeneralSimpleMode("simple_mode", true),
+    GeneralCompactMode("compact_mode", false),
     GeneralSetupWizardProcessed("startupwizard_processed", false),
     OverviewKeepScreenOn("keep_screen_on", false, calculatedDefaultValue = true),
     OverviewShowTreatmentButton("show_treatment_button", false, defaultedBySM = true, hideParentScreenIfHidden = true),
@@ -26,8 +27,8 @@ enum class BooleanKey(
     OverviewShowCarbsButton("show_carbs_button", true, defaultedBySM = true),
     OverviewShowCgmButton("show_cgm_button", false, defaultedBySM = true, showInNsClientMode = false),
     OverviewShowCalibrationButton("show_calibration_button", false, defaultedBySM = true, showInNsClientMode = false),
-    OverviewShortTabTitles("short_tabtitles", false, defaultedBySM = true),
-    OverviewUseDashboardLayout("overview_use_dashboard", true, defaultedBySM = true),
+    OverviewShortTabTitles("short_tabtitles", false),
+    OverviewUseDashboardLayout("overview_use_dashboard", true),
     OverviewShowNotesInDialogs("show_notes_entry_dialogs", false, defaultedBySM = true),
     OverviewShowStatusLights("show_statuslights", true, defaultedBySM = true, hideParentScreenIfHidden = true),
     OverviewUseBolusAdvisor("use_bolus_advisor", true, defaultedBySM = true),
@@ -178,4 +179,10 @@ enum class BooleanKey(
 
     // 🚨 Emergency SOS (Hypo)
     AimiEmergencySosEnable("aimi_emergency_sos_enable", false),
+
+    // Gemini Auth Switch
+    OApsAIMIGeminiUseOAuth("aimi_gemini_use_oauth", false),
+
+    // 🍎 Barcode Provider
+    OApsAIMIUseOpenFoodFacts("aimi_use_openfoodfacts", false),
 }

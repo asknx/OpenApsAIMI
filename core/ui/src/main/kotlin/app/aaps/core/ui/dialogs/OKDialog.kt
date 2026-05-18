@@ -280,4 +280,44 @@ object OKDialog {
             .setCanceledOnTouchOutside(false)
     }
 
+    @SuppressLint("InflateParams")
+    fun showThreeOptions(
+        activity: FragmentActivity,
+        title: String,
+        message: String,
+        posBtnText: String,
+        posAction: Runnable?,
+        neuBtnText: String,
+        neuAction: Runnable?,
+        negBtnText: String,
+        negAction: Runnable?
+    ) {
+        var clicked = false
+        MaterialAlertDialogBuilder(activity, R.style.DialogTheme)
+            .setMessage(message)
+            .setCustomTitle(AlertDialogHelper.buildCustomTitle(activity, title))
+            .setPositiveButton(posBtnText) { dialog: DialogInterface, _: Int ->
+                if (clicked) return@setPositiveButton
+                clicked = true
+                dialog.dismiss()
+                SystemClock.sleep(100)
+                posAction?.let { activity.runOnUiThread(it) }
+            }
+            .setNeutralButton(neuBtnText) { dialog: DialogInterface, _: Int ->
+                if (clicked) return@setNeutralButton
+                clicked = true
+                dialog.dismiss()
+                SystemClock.sleep(100)
+                neuAction?.let { activity.runOnUiThread(it) }
+            }
+            .setNegativeButton(negBtnText) { dialog: DialogInterface, _: Int ->
+                if (clicked) return@setNegativeButton
+                clicked = true
+                dialog.dismiss()
+                SystemClock.sleep(100)
+                negAction?.let { activity.runOnUiThread(it) }
+            }
+            .show()
+            .setCanceledOnTouchOutside(false)
+    }
 }

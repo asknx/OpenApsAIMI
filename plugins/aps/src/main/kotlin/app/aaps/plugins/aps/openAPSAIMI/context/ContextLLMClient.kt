@@ -39,7 +39,8 @@ class ContextLLMClient @Inject constructor(
     private val aiCoachingService: AiCoachingService,
     private val sp: SP,
     private val aapsLogger: AAPSLogger,
-    private val context: android.content.Context
+    private val context: android.content.Context,
+    private val geminiOAuthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager
 ) {
     companion object {
         private const val TIMEOUT_MS = 3000L // 3 secondes max
@@ -231,13 +232,18 @@ Output:
                 AiCoachingService.Provider.CLAUDE -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorClaudeKey.key, "")
             }
             
-            if (apiKey.isBlank()) {
-                aapsLogger.error(LTag.APS, "[ContextLLM] API key not configured for $provider")
+            val useOAuth = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth.key, false)
+            val token = if (provider == AiCoachingService.Provider.GEMINI && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
+                geminiOAuthManager.getValidAccessToken()
+            } else null
+
+            if (apiKey.isBlank() && token == null) {
+                aapsLogger.error(LTag.APS, "[ContextLLM] API key or OAuth token not configured for $provider")
                 return emptyList()
             }
             
             // Call LLM service
-            val llmResponse = aiCoachingService.fetchText(context, prompt, apiKey, provider)
+            val llmResponse = aiCoachingService.fetchText(context, prompt, apiKey, token, useOAuth, provider)
             
             // Check for service errors
             if (llmResponse.startsWith("Erreur")) {

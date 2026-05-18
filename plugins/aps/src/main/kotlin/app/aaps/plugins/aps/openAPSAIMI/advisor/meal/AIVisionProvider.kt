@@ -9,7 +9,7 @@ import kotlin.math.round
  * Common interface for AI vision providers
  */
 interface AIVisionProvider {
-    suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String): EstimationResult
+    suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String, glucoseContext: String?): EstimationResult
     val displayName: String
     val providerId: String
 }
@@ -48,10 +48,18 @@ Analyze the meal image and return STRICT JSON ONLY.
 
 ## NUTRITION PROTOCOL
 1. Identify visible items and volume cues.
-2. Estimate mass (g) for Carbs, Protein, and Fat.
-3. Assess Glycemic Impact and confidence levels.
-4. If uncertain about volume or ingredients, lean conservative on 'estimate'.
-5. Protein/Fat: Do NOT hallucinate hidden oils; be realistic/conservative.
+2. **FATSECRET DATA (TRUTH SOURCE)**: If the "User clarification" contains "FatSecret Data", treat those nutritional values as HIGH-ACCURACY lab data for the identified product. Use them as your primary source for per-serving macros.
+3. Carefully analyze other context in the "User clarification" field (e.g., "Half portion"). If it specifies a portion, calculate final totals based on the FatSecret macros adjusted by that portion.
+4. Estimate mass (g) for Carbs, Protein, and Fat.
+5. Assess Glycemic Impact and confidence levels.
+6. If uncertain about volume or ingredients, lean conservative on 'estimate'.
+7. Protein/Fat: Do NOT hallucinate hidden oils; be realistic/conservative.
+
+## GLUCOSE CONTEXT (ADVISORY)
+If glucose context is provided (BG readings and trend):
+- Use it to refine your **rationale** and **safety warnings**.
+- **CRITICAL**: Do NOT adjust the `carbs_g` estimate based on glucose levels. Provide the most accurate **PHYSICAL MASS** estimate of the food regardless of the user's BG.
+- Mention the trend and any insulin-relevant risks in your 'rationale'.
 
 ## JSON SCHEMA
 {
@@ -68,7 +76,7 @@ Analyze the meal image and return STRICT JSON ONLY.
   "hidden_carb_risk": "LOW" | "MEDIUM" | "HIGH",
   "needs_manual_confirmation": boolean,
   "insulin_relevant_notes": ["concise notes on glazes, hidden sugars, or high fiber"],
-  "rationale": "concise nutrition summary"
+  "rationale": "concise nutrition summary including impact of glucose context and user clarification if provided"
 }
 """
 

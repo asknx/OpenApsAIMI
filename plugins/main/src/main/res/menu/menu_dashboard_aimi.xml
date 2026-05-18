@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_aimi_advisor"
+        android:title="@string/aimi_advisor"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_aimi_meal_advisor"
+        android:title="@string/meal_advisor"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_aimi_context"
+        android:title="@string/aimi_context"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_aimi_adjust"
+        android:title="@string/adjustments"
+        app:showAsAction="never" />
+</menu>

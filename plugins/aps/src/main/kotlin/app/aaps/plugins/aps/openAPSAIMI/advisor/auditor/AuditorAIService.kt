@@ -28,7 +28,8 @@ import javax.inject.Singleton
 class AuditorAIService @Inject constructor(
     private val preferences: Preferences,
     private val context: Context,
-    private val auditorStatusLiveData: app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.ui.AuditorStatusLiveData
+    private val auditorStatusLiveData: app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.ui.AuditorStatusLiveData,
+    private val geminiOAuthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager
 ) {
     
     companion object {
@@ -63,9 +64,14 @@ class AuditorAIService @Inject constructor(
         useHighPerf: Boolean = false
     ): AuditorVerdict? = withContext(Dispatchers.IO) {
         
-        // Get API key
+        // Get API key or OAuth Token
         val apiKey = getApiKey(provider)
-        if (apiKey.isBlank()) {
+        val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth)
+        val oauthToken = if (provider == Provider.GEMINI && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
+            geminiOAuthManager.getValidAccessToken()
+        } else null
+
+        if (apiKey.isBlank() && oauthToken == null) {
             AuditorStatusTracker.updateStatus(AuditorStatusTracker.Status.OFFLINE_NO_APIKEY)
             auditorStatusLiveData.notifyUpdate()
             return@withContext null
@@ -84,7 +90,7 @@ class AuditorAIService @Inject constructor(
                 val responseJson = withTimeoutOrNull(timeoutMs) {
                     when (provider) {
                         Provider.OPENAI -> callOpenAI(apiKey, prompt, useHighPerf)
-                        Provider.GEMINI -> callGemini(apiKey, prompt, useHighPerf)
+                        Provider.GEMINI -> callGemini(apiKey, oauthToken, prompt, useHighPerf)
                         Provider.DEEPSEEK -> callDeepSeek(apiKey, prompt) // DeepSeek is always cheap/fast
                         Provider.CLAUDE -> callClaude(apiKey, prompt, useHighPerf)
                     }
@@ -199,34 +205,40 @@ class AuditorAIService @Inject constructor(
     /**
      * Call Gemini API
      */
-    private fun callGemini(apiKey: String, prompt: String, useHighPerf: Boolean): String {
+    private fun callGemini(apiKey: String?, oauthToken: String?, prompt: String, useHighPerf: Boolean): String {
         // 1. Select Model based on complexity
-        // HighPerf -> gemini-3-pro | Standard -> gemini-3-flash
-        val modelName = if (useHighPerf) "gemini-3-pro" else "gemini-3-flash-preview"
+        val modelName = if (useHighPerf) "gemini-3.1-pro" else "gemini-3.1-flash"
         
-        val primaryModel = geminiResolver.resolveGenerateContentModel(apiKey, modelName)
+        val primaryModel = geminiResolver.resolveGenerateContentModel(apiKey, oauthToken, modelName)
         
         try {
-            return executeGeminiRequest(apiKey, prompt, primaryModel)
+            return executeGeminiRequest(apiKey, oauthToken, prompt, primaryModel)
         } catch (e: Exception) {
-            // 2. Fallback on Quota Exceeded (429)
-            val msg = e.message?.lowercase() ?: ""
-            if (msg.contains("429") || msg.contains("quota") || msg.contains("resource_exhausted")) {
-                val fallbackModel = "gemini-3-flash-preview"
-                android.util.Log.w("AIMI_GEMINI", "Auditor Quota Exceeded. Fallback to $fallbackModel")
-                return executeGeminiRequest(apiKey, prompt, fallbackModel)
-            }
-            throw e
+            // 2. Fallback
+            val fallbackModel = "gemini-3.1-flash"
+            return executeGeminiRequest(apiKey, oauthToken, prompt, fallbackModel)
         }
     }
 
-    private fun executeGeminiRequest(apiKey: String, prompt: String, modelId: String): String {
-        val urlStr = geminiResolver.getGenerateContentUrl(modelId, apiKey)
+    private fun executeGeminiRequest(apiKey: String?, oauthToken: String?, prompt: String, modelId: String): String {
+        val urlStr = if (oauthToken != null) {
+            "https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent"
+        } else {
+            geminiResolver.getGenerateContentUrl(modelId, apiKey)
+        }
+        
         val url = URL(urlStr)
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
+            if (oauthToken != null) {
+                setRequestProperty("Authorization", "Bearer $oauthToken")
+                // 🚨 Crucial: x-goog-user-project is often required for OAuth in AI Studio
+                geminiOAuthManager.getProjectId()?.let { 
+                    if (it.isNotEmpty()) setRequestProperty("x-goog-user-project", it) 
+                }
+            }
             connectTimeout = 15_000
             readTimeout = 45_000
         }

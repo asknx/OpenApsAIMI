@@ -124,7 +124,11 @@ class UnifiedActivityProviderMTR @Inject constructor(
 
                 MODE_AUTO_FALLBACK -> {
                     val wear = records.filter { isWearDevice(it.device) }
-                    wear.ifEmpty { records.filter { it.device == SOURCE_HC || it.device == SOURCE_PHONE } }
+                    // 🚀 FIX: Priority fallback - prefer HC over Phone instead of summing both
+                    wear.ifEmpty { 
+                        val hc = records.filter { it.device == SOURCE_HC }
+                        hc.ifEmpty { records.filter { it.device == SOURCE_PHONE } }
+                    }
                 }
                 else -> emptyList()
             }

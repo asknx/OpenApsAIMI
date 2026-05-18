@@ -123,8 +123,16 @@ android {
 
     flavorDimensions.add("standard")
     productFlavors {
-        create("full") {
+        create("fulldev") {
             isDefault = true
+            applicationId = "info.nightscout.androidaps"
+            dimension = "standard"
+            resValue("string", "app_name", "AAPS Dev")
+            versionName = Versions.appVersion
+            manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher"
+            manifestPlaceholders["appIconRound"] = "@mipmap/ic_launcher_round"
+        }
+        create("userfull") {
             applicationId = "info.nightscout.androidaps"
             dimension = "standard"
             resValue("string", "app_name", "AAPS")

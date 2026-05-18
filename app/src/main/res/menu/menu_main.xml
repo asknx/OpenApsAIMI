@@ -28,31 +28,52 @@
         android:orderInCategory="1"
         app:showAsAction="never"
         android:title="@string/nav_setupwizard" />
+
     <item
-        android:id="@+id/nav_dashboard_preview"
+        android:id="@+id/nav_aimi_root"
+        android:orderInCategory="1"
+        android:title="@string/oaps_aimi_shortname">
+        <menu>
+            <item
+                android:id="@+id/nav_meal_advisor"
+                app:showAsAction="never"
+                android:title="@string/aimi_meal_advisor_title" />
+            <item
+                android:id="@+id/nav_aimi_advisor"
+                app:showAsAction="never"
+                android:title="@string/aimi_advisor_title" />
+            <item
+                android:id="@+id/nav_aimi_context"
+                app:showAsAction="never"
+                android:title="@string/context_title" />
+            <item
+                android:id="@+id/nav_comparator"
+                app:showAsAction="never"
+                android:title="@string/menu_comparator" />
+            <item
+                android:id="@+id/nav_aimi_adjust"
+                app:showAsAction="never"
+                android:title="@string/adjustments" />
+            <item
+                android:id="@+id/nav_aimi_modes"
+                app:showAsAction="never"
+                android:title="@string/aimi_modes_title" />
+            <item
+                android:id="@+id/nav_aimi_manual"
+                app:showAsAction="never"
+                android:title="@string/manual_title" />
+            <item
+                android:id="@+id/nav_dashboard_preview"
+                app:showAsAction="never"
+                android:title="@string/nav_dashboard_preview" />
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/nav_aimi_abbreviations"
         android:orderInCategory="1"
         app:showAsAction="never"
-        android:title="@string/nav_dashboard_preview" />
-    <item
-        android:id="@+id/nav_comparator"
-        android:orderInCategory="1"
-        app:showAsAction="never"
-        android:title="@string/menu_comparator" />
-    <item
-        android:id="@+id/nav_meal_advisor"
-        android:orderInCategory="1"
-        app:showAsAction="never"
-        android:title="@string/aimi_meal_advisor_title" />
-    <item
-        android:id="@+id/nav_aimi_advisor"
-        android:orderInCategory="1"
-        app:showAsAction="never"
-        android:title="@string/aimi_advisor_title" />
-    <item
-        android:id="@+id/nav_aimi_context"
-        android:orderInCategory="1"
-        app:showAsAction="never"
-        android:title="@string/context_title" />
+        android:title="@string/aimi_abbreviations_title" />
 
     <item
         android:id="@+id/nav_stats"

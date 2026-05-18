@@ -28,6 +28,13 @@ dependencies {
     implementation ("org.tensorflow:tensorflow-lite-metadata:0.1.0")
     implementation ("org.tensorflow:tensorflow-lite-gpu:2.3.0")
     implementation("androidx.core:core-i18n:1.0.0-alpha01")
+    implementation(libs.com.google.mlkit.barcode.scanning)
+    
+    val camera_version = "1.6.0"
+    implementation("androidx.camera:camera-core:$camera_version")
+    implementation("androidx.camera:camera-camera2:$camera_version")
+    implementation("androidx.camera:camera-lifecycle:$camera_version")
+    implementation("androidx.camera:camera-view:$camera_version")
     
     // 🏥 Health Connect - MTR Steps Integration (Android 14+)
     implementation("androidx.health.connect:connect-client:1.1.0-alpha07")

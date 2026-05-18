@@ -93,4 +93,11 @@ enum class StringKey(
     
     // 🚨 Emergency SOS (Hypo)
     AimiEmergencySosPhone("aimi_emergency_sos_phone", ""),
+
+    // Gemini OAuth Customization
+    AimiGeminiOAuthClientId("aimi_gemini_oauth_client_id", "", showInApsMode = true),
+    AimiGeminiOAuthClientSecret("aimi_gemini_oauth_client_secret", "", showInApsMode = true),
+    AimiGeminiOAuthProjectId("aimi_gemini_oauth_project_id", "", showInApsMode = true),
+    AimiGeminiOAuthLoginButton("aimi_gemini_oauth_login_button", "", showInApsMode = true),
+    AimiGeminiOAuthLogoutButton("aimi_gemini_oauth_logout_button", "", showInApsMode = true),
 }

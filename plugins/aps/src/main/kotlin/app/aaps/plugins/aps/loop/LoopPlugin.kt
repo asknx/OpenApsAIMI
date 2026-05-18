@@ -801,6 +801,7 @@ class LoopPlugin @Inject constructor(
         val profile = profileFunction.getProfile() ?: return
         lastRun?.let { lastRun ->
             lastRun.constraintsProcessed?.let { constraintsProcessed ->
+                // 1. Enact TBR
                 applyTBRRequest(constraintsProcessed, profile, object : Callback() {
                     override fun run() {
                         if (result.enacted) {
@@ -808,10 +809,26 @@ class LoopPlugin @Inject constructor(
                             lastRun.lastTBRRequest = lastRun.lastAPSRun
                             lastRun.lastTBREnact = dateUtil.now()
                             lastRun.lastOpenModeAccept = dateUtil.now()
-                            scheduleBuildAndStoreDeviceStatus("acceptChangeRequest")
+                            scheduleBuildAndStoreDeviceStatus("acceptChangeRequest_TBR")
                             preferences.inc(IntNonKey.ObjectivesManualEnacts)
                         }
-                        rxBus.send(EventAcceptOpenLoopChange())
+                        
+                        // 2. Enact SMB if available
+                        if (constraintsProcessed.smb > 0.0) {
+                            applySMBRequest(constraintsProcessed, object : Callback() {
+                                override fun run() {
+                                    if (result.enacted) {
+                                        lastRun.smbSetByPump = result
+                                        lastRun.lastSMBRequest = lastRun.lastAPSRun
+                                        lastRun.lastSMBEnact = dateUtil.now()
+                                        scheduleBuildAndStoreDeviceStatus("acceptChangeRequest_SMB")
+                                    }
+                                    rxBus.send(EventAcceptOpenLoopChange())
+                                }
+                            })
+                        } else {
+                            rxBus.send(EventAcceptOpenLoopChange())
+                        }
                     }
                 })
             }

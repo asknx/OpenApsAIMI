@@ -21,15 +21,21 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/dashboard_nav_adjustments"
-        android:icon="@android:drawable/ic_menu_manage"
-        android:title="@string/dashboard_nav_modes"
+        android:id="@+id/dashboard_nav_meal_advisor"
+        android:icon="@android:drawable/ic_menu_camera"
+        android:title="@string/aimi_meal_advisor_title"
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/dashboard_nav_settings"
-        android:icon="@android:drawable/ic_menu_preferences"
-        android:title="@string/dashboard_nav_settings"
+        android:id="@+id/dashboard_nav_carbs"
+        android:icon="@drawable/ic_cp_bolus_carbs"
+        android:title="@string/carbs"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/dashboard_nav_calculator"
+        android:icon="@drawable/ic_calculator"
+        android:title="@string/calculator_label"
         app:showAsAction="ifRoom" />
 
 </menu>

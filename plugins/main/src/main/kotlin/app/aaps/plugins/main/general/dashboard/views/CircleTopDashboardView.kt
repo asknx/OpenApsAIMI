@@ -7,10 +7,7 @@ import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
-import androidx.viewbinding.ViewBinding
-import androidx.core.view.ViewCompat
 import androidx.core.view.isGone
-import com.google.android.material.chip.Chip
 import app.aaps.plugins.main.databinding.ComponentCircleTopStatusHybridBinding
 import app.aaps.plugins.main.general.dashboard.viewmodel.StatusCardState
 import app.aaps.core.ui.dialogs.OKDialog
@@ -59,7 +56,7 @@ class CircleTopDashboardView @JvmOverloads constructor(
             // Helper function to safely get property value
             fun <T> getProp(name: String): T? {
                 return try {
-                    val getter = stateClass.getMethod("get${name.capitalize()}")
+                    val getter = stateClass.getMethod("get${name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }}")
                     @Suppress("UNCHECKED_CAST")
                     getter.invoke(state) as? T
                 } catch (e: Exception) {
@@ -133,9 +130,10 @@ class CircleTopDashboardView @JvmOverloads constructor(
                             )
                         }
 
-                        val manager = accessibilityManager
-                        if (manager != null && manager.isEnabled && manager.isTouchExplorationEnabled) {
-                            announceForAccessibility(state.adaptiveSmoothingQualityBadgeText)
+                        accessibilityManager?.let { manager ->
+                            if (manager.isEnabled && manager.isTouchExplorationEnabled) {
+                                announceForAccessibility(state.adaptiveSmoothingQualityBadgeText)
+                            }
                         }
                     }
                 }
@@ -149,7 +147,6 @@ class CircleTopDashboardView @JvmOverloads constructor(
             // ═══════════════════════════════════════════════════════════════
             val currentTime = System.currentTimeMillis()
             val startOfDay = currentTime / (1000 * 3600 * 24) * (1000 * 3600 * 24) - TimeZone.getDefault().getOffset(currentTime)
-            val endOfDay = startOfDay + (1000 * 3600 * 24)
 
             val avg = getProp<Double>("avgBgMgdl") ?: Double.NaN
             val a1c = getProp<Double>("a1c") ?: Double.NaN
@@ -199,6 +196,8 @@ class CircleTopDashboardView @JvmOverloads constructor(
             // Steps & HR
             binding.stepsText.text = getProp<String>("stepsText") ?: "--"
             binding.hrText.text = getProp<String>("hrText") ?: "--"
+            binding.hrvText.text = getProp<String>("hrvText") ?: "--"
+            binding.sleepText.text = getProp<String>("sleepText") ?: "--"
             
             // ═══════════════════════════════════════════════════════════════
             // 5b. AIMI Pulse (real APS reason + facts)
@@ -245,33 +244,16 @@ class CircleTopDashboardView @JvmOverloads constructor(
             
 
             
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Fallback: Log error but don't crash
-            e.printStackTrace()
         }
     }
 
     /**
-     * Set action listeners for chips and the AIMI pulse card.
+     * Set action listeners for the AIMI pulse card.
      */
     fun setActionListener(listener: CircleTopActionListener) {
         circleTopActionListener = listener
-
-        fun applyChipStateDescription(chip: Chip) {
-            val stateRes = if (chip.isChecked) {
-                app.aaps.plugins.main.R.string.dashboard_chip_state_selected
-            } else {
-                app.aaps.plugins.main.R.string.dashboard_chip_state_not_selected
-            }
-            ViewCompat.setStateDescription(chip, context.getString(stateRes))
-        }
-
-        fun configureAccessibility(chip: Chip) {
-            chip.setOnCheckedChangeListener { buttonView, _ ->
-                applyChipStateDescription(buttonView as Chip)
-            }
-            applyChipStateDescription(chip)
-        }
 
         fun announceIfAccessibilityEnabled(messageRes: Int) {
             val manager = accessibilityManager
@@ -286,31 +268,9 @@ class CircleTopDashboardView @JvmOverloads constructor(
             action()
         }
 
-        configureAccessibility(binding.chipAimiAdvisor)
-        configureAccessibility(binding.chipAdjust)
-        configureAccessibility(binding.chipAimiPref)
-        configureAccessibility(binding.chipStat)
-
         binding.aimiPulseContainer.setOnClickListener(withHaptic {
             circleTopActionListener?.onAimiPulseClicked()
             announceIfAccessibilityEnabled(app.aaps.plugins.main.R.string.dashboard_chip_announced_aimi_pulse_details)
-        })
-
-        binding.chipAimiAdvisor.setOnClickListener(withHaptic {
-            listener.onAimiAdvisorClicked()
-            announceIfAccessibilityEnabled(app.aaps.plugins.main.R.string.dashboard_chip_announced_advisor_opened)
-        })
-        binding.chipAdjust.setOnClickListener(withHaptic {
-            listener.onAdjustClicked()
-            announceIfAccessibilityEnabled(app.aaps.plugins.main.R.string.dashboard_chip_announced_adjust_opened)
-        })
-        binding.chipAimiPref.setOnClickListener(withHaptic {
-            listener.onAimiPreferencesClicked()
-            announceIfAccessibilityEnabled(app.aaps.plugins.main.R.string.dashboard_chip_announced_meal_mode_opened)
-        })
-        binding.chipStat.setOnClickListener(withHaptic {
-            listener.onStatsClicked()
-            announceIfAccessibilityEnabled(app.aaps.plugins.main.R.string.dashboard_chip_announced_context_opened)
         })
     }
     

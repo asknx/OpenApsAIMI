@@ -14,10 +14,10 @@ class DeepSeekVisionProvider : AIVisionProvider {
     override val displayName = "DeepSeek (Chat)"
     override val providerId = "DEEPSEEK"
     
-    override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String): EstimationResult = withContext(Dispatchers.IO) {
+    override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String, glucoseContext: String?): EstimationResult = withContext(Dispatchers.IO) {
         try {
             val base64Image = bitmapToBase64(bitmap)
-            val responseJson = callDeepSeekAPI(apiKey, base64Image, userDescription)
+            val responseJson = callDeepSeekAPI(apiKey, base64Image, userDescription, glucoseContext)
             return@withContext parseResponse(responseJson)
         } catch (e: Exception) {
             return@withContext FoodAnalysisPrompt.emptyErrorResult("DeepSeek Error", e.message ?: "Unknown error")
@@ -30,7 +30,7 @@ class DeepSeekVisionProvider : AIVisionProvider {
         return Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP)
     }
     
-    private fun callDeepSeekAPI(apiKey: String, base64Image: String, userDescription: String): String {
+    private fun callDeepSeekAPI(apiKey: String, base64Image: String, userDescription: String, glucoseContext: String?): String {
         val url = URL("https://api.deepseek.com/v1/chat/completions")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
@@ -40,11 +40,11 @@ class DeepSeekVisionProvider : AIVisionProvider {
         connection.connectTimeout = 30000
         connection.readTimeout = 45000
 
-        val userPrompt = if (userDescription.isNotBlank()) {
-            "User description: \"$userDescription\". Analyze this meal image and return JSON only according to the required schema."
-        } else {
-            "Analyze this meal image and return JSON only according to the required schema."
-        }
+        val userPrompt = StringBuilder().apply {
+            if (userDescription.isNotBlank()) append("User description: \"$userDescription\". ")
+            if (glucoseContext != null) append("$glucoseContext. ")
+            append("Analyze this meal image and return JSON only according to the required schema.")
+        }.toString()
         
         val jsonBody = JSONObject().apply {
             put("model", "deepseek-chat")

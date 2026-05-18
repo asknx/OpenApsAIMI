@@ -487,6 +487,7 @@ enum class PumpType(
         baseBasalMinValue = 0.05,
         baseBasalMaxValue = 25.0,
         baseBasalStep = 0.05,
+        maxReservoirReading = 300,
         pumpCapability = PumpCapability.ApexCapabilities,
         source = Source.Apex
     );

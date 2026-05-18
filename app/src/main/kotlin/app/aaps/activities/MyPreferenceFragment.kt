@@ -400,6 +400,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreference(AdaptiveListPreference(ctx = context, stringKey = StringKey.GeneralUnits, title = R.string.unitsnosemicolon, entries = unitsEntries, entryValues = unitsValues))
             addPreference(AdaptiveListPreference(ctx = context, stringKey = StringKey.GeneralLanguage, title = R.string.language, entries = languageEntries, entryValues = languageValues))
             addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.GeneralSimpleMode, title = R.string.simple_mode))
+            addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.GeneralCompactMode, title = R.string.compact_mode, summary = R.string.compact_mode_summary))
             addPreference(
                 AdaptiveStringPreference(
                     ctx = context, stringKey = StringKey.GeneralPatientName, summary = app.aaps.plugins.configuration.R.string.patient_name_summary, title = app.aaps.plugins.configuration.R.string.patient_name,

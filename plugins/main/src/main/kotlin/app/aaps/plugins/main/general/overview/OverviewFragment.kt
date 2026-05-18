@@ -169,6 +169,9 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
     @Inject lateinit var notificationUiBinder: NotificationUiBinder
     @Inject lateinit var auditorStatusLiveData: AuditorStatusLiveData
     @Inject lateinit var auditorNotificationManager: AuditorNotificationManager
+    @Inject lateinit var healthContextRepository: app.aaps.plugins.aps.openAPSAIMI.physio.HealthContextRepository
+    @Inject lateinit var physioContextStore: app.aaps.plugins.aps.openAPSAIMI.physio.AIMIPhysioContextStoreMTR
+    @Inject lateinit var unifiedProvider: app.aaps.plugins.aps.openAPSAIMI.steps.UnifiedActivityProviderMTR
 
     private val disposable = CompositeDisposable()
 
@@ -269,6 +272,9 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
         binding.buttonsLayout.calibrationButton.setOnClickListener(this)
         binding.buttonsLayout.cgmButton.setOnClickListener(this)
         binding.buttonsLayout.insulinButton.setOnClickListener(this)
+        binding.buttonsLayout.mealAdvisorButton.setOnClickListener {
+            startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.meal.MealAdvisorActivity::class.java))
+        }
         binding.buttonsLayout.carbsButton.setOnClickListener(this)
         binding.buttonsLayout.quickWizardButton.setOnClickListener(this)
         binding.buttonsLayout.quickWizardButton.setOnLongClickListener(this)
@@ -418,6 +424,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
             updateGraph()
             updateNotification()
             updateAimiContextIndicator()
+            updatePhysioData()
         }
         updateBg()
         updateTemporaryBasal()
@@ -427,6 +434,57 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
         processAps()
         updateProfile()
         updateTemporaryTarget()
+    }
+
+    private fun updatePhysioData() {
+        if (!isAdded) return
+        try {
+            val mgr = app.aaps.plugins.aps.openAPSAIMI.physio.AIMIPhysioManagerMTR.instance
+            val dataRepo = mgr?.dataRepository
+            val healthRepo = mgr?.repo
+            val physioContext = mgr?.contextStore?.getCurrentContext()
+            val features = physioContext?.features
+
+            // 1. Steps - Use Unified Provider (Watch > HC > Phone) for consistency
+            val stepsCount = unifiedProvider.getStepsTotalSince(dateUtil.beginOfDay(System.currentTimeMillis()))?.steps ?: 0
+            val stepsStr = if (stepsCount > 0) stepsCount.toString() else "--"
+            binding.infoLayout.physioSteps.text = stepsStr
+            binding.modernCircleCard.findViewById<TextView>(R.id.physio_steps)?.text = stepsStr
+
+            // 2. HR - Use Unified Provider (Watch > HC) for consistency
+            val hrResult = unifiedProvider.getLatestHeartRate(15 * 60 * 1000)
+            val lastHr = hrResult?.bpm?.toInt() ?: 0
+            val hrStr = if (lastHr > 0) lastHr.toString() else "--"
+            binding.infoLayout.physioHr.text = hrStr
+            binding.modernCircleCard.findViewById<TextView>(R.id.physio_hr)?.text = hrStr
+
+            // 3. HRV & Sleep
+            var hrvStr = "--"
+            var sleepStr = "--"
+
+            if (features != null) {
+                if (features.hrvMeanRMSSD > 0) hrvStr = "${features.hrvMeanRMSSD.toInt()}ms"
+                if (features.sleepDurationHours > 0) sleepStr = "%.1fh".format(features.sleepDurationHours)
+            } else {
+                // Fallback to Repo fetch (which now has refined windowing)
+                val sleepData = dataRepo?.fetchSleepData()
+                if (sleepData != null && sleepData.durationHours > 0) {
+                    sleepStr = "%.1fh".format(sleepData.durationHours)
+                }
+
+                val snapshot = healthRepo?.getLastSnapshot()
+                if (snapshot != null && snapshot.hrvRmssd > 0) hrvStr = "${snapshot.hrvRmssd.toInt()}ms"
+            }
+            
+            binding.infoLayout.physioHrv.text = hrvStr
+            binding.modernCircleCard.findViewById<TextView>(R.id.physio_hrv)?.text = hrvStr
+            
+            binding.infoLayout.physioSleep.text = sleepStr
+            binding.modernCircleCard.findViewById<TextView>(R.id.physio_sleep)?.text = sleepStr
+
+        } catch (e: Exception) {
+            aapsLogger.error("Overview", "Error updating physio data", e)
+        }
     }
 
     private fun updateAimiContextIndicator() {

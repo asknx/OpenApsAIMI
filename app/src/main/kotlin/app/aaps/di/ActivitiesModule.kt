@@ -18,4 +18,6 @@ abstract class ActivitiesModule {
     @ContributesAndroidInjector abstract fun contributesPreferencesFragment(): MyPreferenceFragment
     @ContributesAndroidInjector abstract fun contributesDashboardPreviewActivity(): DashboardPreviewActivity
     @ContributesAndroidInjector abstract fun contributesComparatorActivity(): app.aaps.activities.ComparatorActivity
+
+    @ContributesAndroidInjector abstract fun contributesAbbreviationsActivity(): app.aaps.activities.AbbreviationsActivity
 }

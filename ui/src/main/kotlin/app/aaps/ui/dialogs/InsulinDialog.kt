@@ -142,6 +142,7 @@ class InsulinDialog : DialogFragmentWithDate() {
         )
         binding.amount.setParams(
             savedInstanceState?.getDouble("amount")
+                ?: arguments?.getDouble("amount")
                 ?: 0.0, 0.0, maxInsulin, activePlugin.activePump.pumpDescription.bolusStep, decimalFormatter.pumpSupportedBolusFormat(activePlugin.activePump.pumpDescription.bolusStep),
             false, binding.okcancel.ok, textWatcher
         )

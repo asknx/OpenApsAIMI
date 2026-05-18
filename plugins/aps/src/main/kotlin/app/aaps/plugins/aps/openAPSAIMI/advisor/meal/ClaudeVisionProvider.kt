@@ -14,10 +14,10 @@ class ClaudeVisionProvider : AIVisionProvider {
     override val displayName = "Claude (3.5 Sonnet)"
     override val providerId = "CLAUDE"
     
-    override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String): EstimationResult = withContext(Dispatchers.IO) {
+    override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String, glucoseContext: String?): EstimationResult = withContext(Dispatchers.IO) {
         try {
             val base64Image = bitmapToBase64(bitmap)
-            val responseJson = callClaudeAPI(apiKey, base64Image, userDescription)
+            val responseJson = callClaudeAPI(apiKey, base64Image, userDescription, glucoseContext)
             return@withContext parseResponse(responseJson)
         } catch (e: Exception) {
             return@withContext FoodAnalysisPrompt.emptyErrorResult("Claude Error", e.message ?: "Unknown error")
@@ -30,7 +30,7 @@ class ClaudeVisionProvider : AIVisionProvider {
         return Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP)
     }
     
-    private fun callClaudeAPI(apiKey: String, base64Image: String, userDescription: String): String {
+    private fun callClaudeAPI(apiKey: String, base64Image: String, userDescription: String, glucoseContext: String?): String {
         val url = URL("https://api.anthropic.com/v1/messages")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
@@ -41,11 +41,11 @@ class ClaudeVisionProvider : AIVisionProvider {
         connection.connectTimeout = 30000
         connection.readTimeout = 45000
         
-        val userPrompt = if (userDescription.isNotBlank()) {
-            "User description: \"$userDescription\". Analyze this meal image and return JSON only according to the required schema."
-        } else {
-            "Analyze this meal image and return JSON only according to the required schema."
-        }
+        val userPrompt = StringBuilder().apply {
+            if (userDescription.isNotBlank()) append("User description: \"$userDescription\". ")
+            if (glucoseContext != null) append("$glucoseContext. ")
+            append("Analyze this meal image and return JSON only according to the required schema.")
+        }.toString()
 
         val jsonBody = JSONObject().apply {
             put("model", "claude-3-5-sonnet-20240620")

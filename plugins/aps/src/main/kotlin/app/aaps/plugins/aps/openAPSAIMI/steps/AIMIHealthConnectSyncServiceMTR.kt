@@ -269,18 +269,20 @@ class AIMIHealthConnectSyncServiceMTR @Inject constructor(
                     val windows = listOf(5, 10, 15, 30, 60, 180)
                     val stepsMap = mutableMapOf<Int, Long>()
                     
-                    // Fetch steps for each window
+                    // 🚀 STRICT FIX: Use aggregate() to respect system data priority
+                    // ReadRecordsRequest + sumOf { it.count } ignores user settings and double-counts
                     for (windowMin in windows) {
                         val startTime = Instant.ofEpochMilli(nowMs - (windowMin * 60 * 1000L))
                         val endTime = Instant.ofEpochMilli(nowMs)
                         
-                        val request = ReadRecordsRequest(
-                            recordType = StepsRecord::class,
-                            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+                        val response = client.aggregate(
+                            androidx.health.connect.client.request.AggregateRequest(
+                                metrics = setOf(StepsRecord.COUNT_TOTAL),
+                                timeRangeFilter = androidx.health.connect.client.time.TimeRangeFilter.between(startTime, endTime)
+                            )
                         )
                         
-                        val response = client.readRecords(request)
-                        val totalSteps = response.records.sumOf { it.count }
+                        val totalSteps = response[StepsRecord.COUNT_TOTAL] ?: 0L
                         stepsMap[windowMin] = totalSteps
                     }
                     
@@ -293,7 +295,7 @@ class AIMIHealthConnectSyncServiceMTR @Inject constructor(
                         steps180min = (stepsMap[180] ?: 0L).toInt(),
                         source = SOURCE_DEVICE,
                         lastUpdateMillis = nowMs,
-                        isValid = (stepsMap[5] ?: 0) > 0
+                        isValid = (stepsMap[5] ?: 0) > 0 || (stepsMap[30] ?: 0) > 0 // More robust check
                     )
                 } catch (e: Exception) {
                     aapsLogger.error(LTag.APS, "[$TAG] Health Connect steps read error", e)

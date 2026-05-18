@@ -113,6 +113,24 @@ class VirtualIobCalculator(
         for ((pos, i) in (0 until len).withIndex()) {
             val t = now + i * 5 * 60000
             val iob = calculateTotalIob(t, profile)
+            
+            // 🔧 FIX: Add expected zero temp basal for next 240 minutes (Match SMB requirement)
+            // This prevents the IllegalStateException in DetermineBasalSMB
+            val basalIobWithZeroTemp = iob.copy()
+            val zt = TB(
+                timestamp = now + 60 * 1000L,
+                duration = 240 * 60 * 1000L,
+                rate = 0.0,
+                isAbsolute = true,
+                type = TB.Type.NORMAL
+            )
+            if (zt.timestamp < t) {
+                val impact = calculateIobForTB(zt, t, profile)
+                basalIobWithZeroTemp.basaliob += impact.iobContrib
+                basalIobWithZeroTemp.activity += impact.activityContrib
+            }
+            iob.iobWithZeroTemp = basalIobWithZeroTemp
+            
             array[pos] = iob
         }
         return array
@@ -122,7 +140,9 @@ class VirtualIobCalculator(
      * Calculates a single IobTotal for the current time.
      */
     fun calculateIobTotalForTime(time: Long, profile: OapsProfile): IobTotal {
-        return calculateTotalIob(time, profile)
+        val iob = calculateTotalIob(time, profile)
+        iob.iobWithZeroTemp = iob.copy() // Simplification for single tick
+        return iob
     }
 
     private fun calculateTotalIob(
@@ -148,33 +168,45 @@ class VirtualIobCalculator(
         // 2. Virtual Temp Basals
         reservoir.virtualTempBasals.forEach { tb ->
            if (tb.timestamp < time) {
-                // INLINE IMPLEMENTATION OF TB IOB
-                val realDuration = tb.getPassedDurationToTimeInMinutes(time)
-                if (realDuration > 0) {
-                     val aboutFiveMinIntervals = ceil(realDuration / 5.0).toInt()
-                     val tempBolusSpacing = realDuration / aboutFiveMinIntervals.toDouble()
-                     for (j in 0L until aboutFiveMinIntervals) {
-                        val calcDate = (tb.timestamp + j * tempBolusSpacing * 60 * 1000 + 0.5 * tempBolusSpacing * 60 * 1000).toLong()
-                        // Use constant basal from snapshot profile
-                        val basalRate = profile.current_basal
-                        // Simple absolute TB logic (SMB always sets absolute)
-                        val netRate = if (tb.isAbsolute) tb.rate - basalRate else (tb.rate - 100)/100.0 * basalRate
-                        
-                        val term = time - dia * 60 * 60 * 1000
-                        if (calcDate > term && calcDate <= time) {
-                            val tempBolusSize = netRate * tempBolusSpacing / 60.0
-                            val tempBolusPart = BS(timestamp = calcDate, amount = tempBolusSize, type = BS.Type.NORMAL)
-                            val aIOB = calculateIobForTreatment(tempBolusPart, time, dia)
-                            total.basaliob += aIOB.iobContrib
-                            total.activity += aIOB.activityContrib
-                            total.netbasalinsulin += tempBolusPart.amount
-                             if (tempBolusPart.amount > 0) total.hightempinsulin += tempBolusPart.amount
-                        }
-                     }
-                }
+                val aIOB = calculateIobForTB(tb, time, profile)
+                total.basaliob += aIOB.iobContrib
+                total.activity += aIOB.activityContrib
+                total.netbasalinsulin += aIOB.netBasalAmount
+                if (aIOB.netBasalAmount > 0) total.hightempinsulin += aIOB.netBasalAmount
            }
         }
         return total
+    }
+
+    private data class TbIobResult(val iobContrib: Double, val activityContrib: Double, val netBasalAmount: Double)
+
+    private fun calculateIobForTB(tb: TB, time: Long, profile: OapsProfile): TbIobResult {
+        var iobContrib = 0.0
+        var activityContrib = 0.0
+        var netBasalAmount = 0.0
+        val dia = profile.dia
+        
+        val realDuration = tb.getPassedDurationToTimeInMinutes(time)
+        if (realDuration > 0) {
+            val aboutFiveMinIntervals = ceil(realDuration / 5.0).toInt()
+            val tempBolusSpacing = realDuration / aboutFiveMinIntervals.toDouble()
+            for (j in 0L until aboutFiveMinIntervals) {
+                val calcDate = (tb.timestamp + j * tempBolusSpacing * 60 * 1000 + 0.5 * tempBolusSpacing * 60 * 1000).toLong()
+                val basalRate = profile.current_basal
+                val netRate = if (tb.isAbsolute) tb.rate - basalRate else (tb.rate - 100)/100.0 * basalRate
+                
+                val term = time - dia * 60 * 60 * 1000
+                if (calcDate > term && calcDate <= time) {
+                    val tempBolusSize = netRate * tempBolusSpacing / 60.0
+                    val tempBolusPart = BS(timestamp = calcDate, amount = tempBolusSize, type = BS.Type.NORMAL)
+                    val res = calculateIobForTreatment(tempBolusPart, time, dia)
+                    iobContrib += res.iobContrib
+                    activityContrib += res.activityContrib
+                    netBasalAmount += tempBolusPart.amount
+                }
+            }
+        }
+        return TbIobResult(iobContrib, activityContrib, netBasalAmount)
     }
 
     /**

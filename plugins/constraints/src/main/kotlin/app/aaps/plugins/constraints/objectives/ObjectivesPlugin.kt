@@ -30,7 +30,7 @@ class ObjectivesPlugin @Inject constructor(
     aapsLogger: AAPSLogger,
     rh: ResourceHelper,
     preferences: Preferences,
-    config: Config,
+    val config: Config,
     val objectives: List<@JvmSuppressWildcards Objective>
 ) : PluginBaseWithPreferences(
     pluginDescription = PluginDescription()

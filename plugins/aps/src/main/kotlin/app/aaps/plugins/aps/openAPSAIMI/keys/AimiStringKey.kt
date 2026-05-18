@@ -1,5 +1,6 @@
 package app.aaps.plugins.aps.openAPSAIMI.keys
 
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.interfaces.StringPreferenceKey
 
 enum class AimiStringKey(
@@ -18,4 +19,7 @@ enum class AimiStringKey(
 ) : StringPreferenceKey {
     PregnancyDueDateString("aimi_pregnancy_due_date_string", ""),
     RemoteControlPin("aimi_remote_control_pin", "", isPin = true, isPassword = true),
+    FatSecretClientId("aimi_fatsecret_client_id", "", negativeDependency = BooleanKey.OApsAIMIUseOpenFoodFacts),
+    FatSecretClientSecret("aimi_fatsecret_client_secret", "", negativeDependency = BooleanKey.OApsAIMIUseOpenFoodFacts),
+    FatSecretRegion("aimi_fatsecret_region", "RU", negativeDependency = BooleanKey.OApsAIMIUseOpenFoodFacts),
 }
