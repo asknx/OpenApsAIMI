@@ -56,7 +56,7 @@ class StatusV1(
     val isDefaultBasal get() = command.objectData[12].toBoolean()
 
     /** Is pump locked? */
-    val isLocked get() = command.objectData[12].toBoolean()
+    val isLocked get() = command.objectData[13].toBoolean()
 
     /** Current basal pattern index */
     val currentBasalPattern get() = command.objectData[14].toUByte().toInt()

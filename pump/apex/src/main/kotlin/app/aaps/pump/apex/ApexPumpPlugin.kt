@@ -38,6 +38,7 @@ import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.constraints.ConstraintObject
+import app.aaps.core.utils.notifyAll
 import app.aaps.core.utils.waitMillis
 import app.aaps.core.validators.preferences.AdaptiveDoublePreference
 import app.aaps.core.validators.preferences.AdaptiveListPreference
@@ -289,7 +290,6 @@ class ApexPumpPlugin @Inject constructor(
         return true
     }
 
-    @Synchronized
     override fun deliverTreatment(detailedBolusInfo: DetailedBolusInfo): PumpEnactResult {
         // Insulin value must be greater than 0
         require(detailedBolusInfo.carbs == 0.0) { detailedBolusInfo.toString() }
@@ -351,9 +351,14 @@ class ApexPumpPlugin @Inject constructor(
         }
     }
 
-    @Synchronized
     override fun stopBolusDelivering() {
         if (!isInitialized() || !isConnected()) return
+        pump.inProgressBolus?.let { ib: ApexPump.InProgressBolus ->
+            synchronized(ib) {
+                ib.cancelled = true
+                ib.notifyAll()
+            }
+        }
         service!!.cancelBolus("ApexPumpPlugin-stopBolusDelivering")
     }
 

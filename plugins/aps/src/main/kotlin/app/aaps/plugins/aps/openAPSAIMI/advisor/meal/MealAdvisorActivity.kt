@@ -68,6 +68,7 @@ class MealAdvisorActivity : TranslatedDaggerAppCompatActivity() {
     private lateinit var riskWarningText: TextView
 
     private var currentEstimate: EstimationResult? = null
+    private var lastCalculatedDose: MealDose? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -585,42 +586,53 @@ class MealAdvisorActivity : TranslatedDaggerAppCompatActivity() {
         recalculateProposal()
     }
 
+    data class MealDose(
+        val mealInsulin: Double,
+        val correctionInsulin: Double,
+        val totalIob: Double,
+        val totalInsulin: Double
+    )
+
+    private fun calculateMealDose(carbs: Double): MealDose? {
+        val profile = profileFunction.getProfile() ?: return null
+        val cr = if (profile.getIc() > 0.1) profile.getIc() else 10.0
+        val mealInsulin = carbs / cr
+
+        // Correction Insulin calculation
+        val lastBg = persistenceLayer.getLastGlucoseValue()?.value ?: 100.0
+        val target = profile.getTargetMgdl()
+        val isf = profile.getIsfMgdl("MealAdvisor")
+
+        // Fetch IOB
+        val bolusIob = iobCobCalculator.calculateIobFromBolus().iob
+        val basalIob = iobCobCalculator.calculateIobFromTempBasalsIncludingConvertedExtended().basaliob
+        val totalIob = bolusIob + basalIob
+
+        val correctionInsulin = if (isf > 1.0) (lastBg - target) / isf else 0.0
+        val totalInsulin = (mealInsulin + correctionInsulin - totalIob).coerceAtLeast(0.0)
+
+        return MealDose(mealInsulin, correctionInsulin, totalIob, totalInsulin)
+    }
+
     private fun recalculateProposal() {
         try {
             val carbs = carbsInput.text.toString().toDoubleOrNull() ?: 0.0
-            val profile = profileFunction.getProfile()
-            if (profile == null) {
+            val dose = calculateMealDose(carbs)
+            lastCalculatedDose = dose
+            if (dose == null) {
                 confirmButton.text = "CONFIRM INJECTION"
                 return
             }
 
-            val cr = if (profile.getIc() > 0.1) profile.getIc() else 10.0
-            val mealInsulin = carbs / cr
-            
-            // Correction Insulin calculation
-            val lastBg = persistenceLayer.getLastGlucoseValue()?.value ?: 100.0
-            val target = profile.getTargetMgdl()
-            val isf = profile.getIsfMgdl("MealAdvisor")
-            
-            // Fetch IOB
-            val bolusIob = iobCobCalculator.calculateIobFromBolus().iob
-            val basalIob = iobCobCalculator.calculateIobFromTempBasalsIncludingConvertedExtended().basaliob
-            val totalIob = bolusIob + basalIob
-            
-            val correctionInsulin = if (isf > 1.0) (lastBg - target) / isf else 0.0
-            val totalInsulin = (mealInsulin + correctionInsulin - totalIob).coerceAtLeast(0.0)
-
-            val unitStr = if (profileFunction.getUnits() == app.aaps.core.data.model.GlucoseUnit.MMOL) "mmol/L" else "mg/dL"
-            val bgDisplay = if (profileFunction.getUnits() == app.aaps.core.data.model.GlucoseUnit.MMOL) lastBg / 18.0182 else lastBg
-            
-            if (Math.abs(correctionInsulin) > 0.1 || Math.abs(totalIob) > 0.1) {
-                confirmButton.text = "INJECT ${carbs.toInt()}g CARBS\nMeal: %.1fU + Corr: %.1fU - IOB: %.1fU = %.1f U".format(mealInsulin, correctionInsulin, totalIob, totalInsulin)
+            if (Math.abs(dose.correctionInsulin) > 0.1 || Math.abs(dose.totalIob) > 0.1) {
+                confirmButton.text = "INJECT ${carbs.toInt()}g CARBS\nMeal: %.1fU + Corr: %.1fU - IOB: %.1fU = %.1f U"
+                    .format(dose.mealInsulin, dose.correctionInsulin, dose.totalIob, dose.totalInsulin)
             } else {
-                confirmButton.text = "INJECT ${carbs.toInt()}g CARBS\nConsolidated Dose: %.1f U".format(totalInsulin)
+                confirmButton.text = "INJECT ${carbs.toInt()}g CARBS\nConsolidated Dose: %.1f U".format(dose.totalInsulin)
             }
-            
-            aapsLogger.debug(LTag.APS, "MealAdvisor calculation: carbs=$carbs, bg=$lastBg, target=$target, isf=$isf, iob=$totalIob, mealInsulin=$mealInsulin, correction=$correctionInsulin")
-            
+
+            aapsLogger.debug(LTag.APS, "MealAdvisor calculation: carbs=$carbs, mealInsulin=${dose.mealInsulin}, correction=${dose.correctionInsulin}, iob=${dose.totalIob}")
+
         } catch (e: Exception) {
             confirmButton.text = "CONFIRM INJECTION"
         }
@@ -629,31 +641,25 @@ class MealAdvisorActivity : TranslatedDaggerAppCompatActivity() {
     private fun confirmInjection() {
         val valCarbs = carbsInput.text.toString().toDoubleOrNull() ?: return
         if (valCarbs <= 0.0) return
-        
-        val profile = profileFunction.getProfile()
-        val cr = if ((profile != null) && (profile.getIc() > 0.1)) profile.getIc() else 10.0
-        val mealInsulin = valCarbs / cr
-        
-        // Final recalculation of correction
+
+        val dose = lastCalculatedDose ?: calculateMealDose(valCarbs) ?: return
         val lastBg = persistenceLayer.getLastGlucoseValue()?.value ?: 100.0
-        val target = profile?.getTargetMgdl() ?: 100.0
-        val isf = profile?.getIsfMgdl("MealAdvisor") ?: 50.0
-        val correctionInsulin = (lastBg - target) / isf
-        val totalInsulin = (mealInsulin + correctionInsulin).coerceAtLeast(0.0)
+
+        val msg = "What would you like to do with these ${valCarbs.toInt()}g carbs?\n\n(Current BG: %.1f, Total Dose: %.1f U)".format(
+            if (profileFunction.getUnits() == app.aaps.core.data.model.GlucoseUnit.MMOL) lastBg / 18.0182 else lastBg,
+            dose.totalInsulin
+        )
 
         app.aaps.core.ui.dialogs.OKDialog.showThreeOptions(
             this,
             "Confirm Meal Entry",
-            "What would you like to do with these ${valCarbs.toInt()}g carbs?\n\n(Current BG: %.1f, Total Dose: %.1f U)".format(
-                if (profileFunction.getUnits() == app.aaps.core.data.model.GlucoseUnit.MMOL) lastBg / 18.0182 else lastBg,
-                totalInsulin
-            ),
-            "Inject Bolus",
-            { performInjection(valCarbs, totalInsulin, isDirectBolus = true) },
-            "Propose for AIMI",
-            { performInjection(valCarbs, totalInsulin, isDirectBolus = false, isAimiPropose = true) },
-            "Record Only",
-            { performInjection(valCarbs, totalInsulin, isDirectBolus = false, isAimiPropose = false) }
+            msg,
+            "INJECT BOLUS",
+            { performInjection(valCarbs, dose.totalInsulin, isDirectBolus = true) },
+            "PROPOSE FOR AIMI",
+            { performInjection(valCarbs, dose.totalInsulin, isDirectBolus = false, isAimiPropose = true) },
+            "CANCEL",
+            null
         )
     }
 

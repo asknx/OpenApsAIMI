@@ -72,7 +72,7 @@ class BolusProgressDialog : DaggerDialogFragment() {
             binding.stopPressed.visibility = View.VISIBLE
             binding.stop.visibility = View.INVISIBLE
             uel.log(Action.CANCEL_BOLUS, Sources.Overview, BolusProgressData.status)
-            commandQueue.cancelAllBoluses(BolusProgressData.id)
+            Thread { commandQueue.cancelAllBoluses(BolusProgressData.id) }.start()
         }
         binding.progressbar.max = 100
         binding.status.text = BolusProgressData.status
@@ -113,8 +113,10 @@ class BolusProgressDialog : DaggerDialogFragment() {
                 aapsLogger.debug(LTag.UI, "Status: ${BolusProgressData.status} Percent: ${BolusProgressData.percent}")
                 binding.status.text = BolusProgressData.status
                 binding.progressbar.progress = BolusProgressData.percent
-                if (BolusProgressData.percent == 100) {
-                    binding.stop.visibility = View.INVISIBLE
+                if (BolusProgressData.percent == 100 || BolusProgressData.stopPressed) {
+                    if (BolusProgressData.percent == 100) {
+                        binding.stop.visibility = View.INVISIBLE
+                    }
                     scheduleDismiss()
                 }
             }

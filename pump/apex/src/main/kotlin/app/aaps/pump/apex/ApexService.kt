@@ -104,7 +104,7 @@ class ApexService: DaggerService(), ApexBluetoothCallback {
         const val USED_BASAL_PATTERN_INDEX = 7
         const val HEARTBEAT_PERIOD_MINUTES = 2
         val FIRST_SUPPORTED_PROTO = ProtocolVersion.PROTO_4_9
-        val LAST_SUPPORTED_PROTO = ProtocolVersion.PROTO_4_11
+        val LAST_SUPPORTED_PROTO = ProtocolVersion.PROTO_4_12
     }
 
     private data class InCommandResponse(
@@ -900,6 +900,10 @@ class ApexService: DaggerService(), ApexBluetoothCallback {
             )
             rxBus.send(EventOverviewBolusProgress(rh.gs(R.string.status_delivered, dose), null, 100))
 
+            synchronized(it) {
+                it.notifyAll()
+            }
+
             // Request new bolus history to fixup bolus ID.
             Thread { getBoluses("ApexService-onBolusCompleted") }.start()
         }
@@ -920,6 +924,9 @@ class ApexService: DaggerService(), ApexBluetoothCallback {
             if (cancelled) {
                 it.cancelled = true
                 rxBus.send(EventOverviewBolusProgress(rh.gs(R.string.status_bolus_cancelled)))
+                synchronized(it) {
+                    it.notifyAll()
+                }
             }
 
             if (it.currentDose >= 0.025) {
