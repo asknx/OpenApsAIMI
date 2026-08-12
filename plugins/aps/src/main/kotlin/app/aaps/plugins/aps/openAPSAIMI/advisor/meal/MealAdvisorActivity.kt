@@ -590,51 +590,84 @@ class MealAdvisorActivity : TranslatedDaggerAppCompatActivity() {
         val mealInsulin: Double,
         val correctionInsulin: Double,
         val totalIob: Double,
+        val currentCob: Double,
+        val netIob: Double,
         val totalInsulin: Double
     )
 
     private fun calculateMealDose(carbs: Double): MealDose? {
         val profile = profileFunction.getProfile() ?: return null
-        val cr = if (profile.getIc() > 0.1) profile.getIc() else 10.0
-        val mealInsulin = carbs / cr
+        val ic = if (profile.getIc() > 0.1) profile.getIc() else 10.0
+        val isf = profile.getIsfMgdl("MealAdvisor")
+        
+        // 1. Insulin for NEW carbs
+        val mealInsulin = carbs / ic
 
-        // Correction Insulin calculation
+        // 2. Fetch current status
         val lastBg = persistenceLayer.getLastGlucoseValue()?.value ?: 100.0
         val target = profile.getTargetMgdl()
-        val isf = profile.getIsfMgdl("MealAdvisor")
-
-        // Fetch IOB
+        
+        // 3. IOB & COB Balance
         val bolusIob = iobCobCalculator.calculateIobFromBolus().iob
         val basalIob = iobCobCalculator.calculateIobFromTempBasalsIncludingConvertedExtended().basaliob
         val totalIob = bolusIob + basalIob
+        
+        val currentCob = iobCobCalculator.getMealDataWithWaitingForCalculationFinish().mealCOB
+        
+        // 🚨 CRITICAL FIX: Net IOB is the IOB that is NOT currently covering existing carbs.
+        // If we have 38g COB and IC is 5.2, then 38/5.2 = 7.3U is "reserved" for that COB.
+        // If total IOB is 6.4U, then Net IOB is 6.4 - 7.3 = -0.9U (clamped to 0.0), 
+        // meaning we have NO excess insulin to subtract from the new meal dose.
+        val insulinReservedForCob = currentCob / ic
+        val netIob = (totalIob - insulinReservedForCob).coerceAtLeast(0.0)
 
+        // 4. Correction for BG
         val correctionInsulin = if (isf > 1.0) (lastBg - target) / isf else 0.0
-        val totalInsulin = (mealInsulin + correctionInsulin - totalIob).coerceAtLeast(0.0)
+        
+        // 5. Final Dose: (New Meal + Correction) - (Unreserved IOB)
+        val totalInsulin = (mealInsulin + correctionInsulin - netIob).coerceAtLeast(0.0)
 
-        return MealDose(mealInsulin, correctionInsulin, totalIob, totalInsulin)
+        return MealDose(mealInsulin, correctionInsulin, totalIob, currentCob, netIob, totalInsulin)
     }
 
     private fun recalculateProposal() {
-        try {
-            val carbs = carbsInput.text.toString().toDoubleOrNull() ?: 0.0
-            val dose = calculateMealDose(carbs)
-            lastCalculatedDose = dose
-            if (dose == null) {
-                confirmButton.text = "CONFIRM INJECTION"
-                return
+        lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                val carbs = carbsInput.text.toString().toDoubleOrNull() ?: 0.0
+                val dose = calculateMealDose(carbs)
+                lastCalculatedDose = dose
+
+                withContext(Dispatchers.Main) {
+                    if (dose == null) {
+                        confirmButton.text = "CONFIRM INJECTION"
+                        return@withContext
+                    }
+
+                    if (Math.abs(dose.correctionInsulin) > 0.1 || Math.abs(dose.totalIob) > 0.1 || dose.currentCob > 0.1) {
+                        val cobText = if (dose.currentCob > 1.0) " (COB: ${dose.currentCob.toInt()}г)" else ""
+                        confirmButton.text = "ВВЕСТИ ${carbs.toInt()}г УГЛЕВОДОВ$cobText\nЕда: %.1fед + Корр: %.1fед - ЧистыйIOB: %.1fед = %.1f ед"
+                            .format(dose.mealInsulin, dose.correctionInsulin, dose.netIob, dose.totalInsulin)
+
+                        if (dose.currentCob > 1.0 && dose.totalIob > 0.1) {
+                            reasoningText.text = "Обоснование: ${currentEstimate?.reasoning ?: ""}\n" +
+                                    "IOB (%.1fед) частично сбалансирован COB (%dг), Чистый IOB: %.1fед"
+                                        .format(dose.totalIob, dose.currentCob.toInt(), dose.netIob)
+                        }
+                    } else {
+                        confirmButton.text = "ВВЕСТИ ${carbs.toInt()}г УГЛЕВОДОВ\nОбщая доза: %.1f ед".format(dose.totalInsulin)
+                    }
+
+                    aapsLogger.debug(
+                        LTag.APS,
+                        "MealAdvisor calculation: carbs=$carbs, mealInsulin=${dose.mealInsulin}, correction=${dose.correctionInsulin}, iob=${dose.totalIob}, cob=${dose.currentCob}, netIob=${dose.netIob}"
+                    )
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    confirmButton.text = "CONFIRM INJECTION"
+                }
             }
-
-            if (Math.abs(dose.correctionInsulin) > 0.1 || Math.abs(dose.totalIob) > 0.1) {
-                confirmButton.text = "INJECT ${carbs.toInt()}g CARBS\nMeal: %.1fU + Corr: %.1fU - IOB: %.1fU = %.1f U"
-                    .format(dose.mealInsulin, dose.correctionInsulin, dose.totalIob, dose.totalInsulin)
-            } else {
-                confirmButton.text = "INJECT ${carbs.toInt()}g CARBS\nConsolidated Dose: %.1f U".format(dose.totalInsulin)
-            }
-
-            aapsLogger.debug(LTag.APS, "MealAdvisor calculation: carbs=$carbs, mealInsulin=${dose.mealInsulin}, correction=${dose.correctionInsulin}, iob=${dose.totalIob}")
-
-        } catch (e: Exception) {
-            confirmButton.text = "CONFIRM INJECTION"
         }
     }
 
@@ -645,84 +678,113 @@ class MealAdvisorActivity : TranslatedDaggerAppCompatActivity() {
         val dose = lastCalculatedDose ?: calculateMealDose(valCarbs) ?: return
         val lastBg = persistenceLayer.getLastGlucoseValue()?.value ?: 100.0
 
-        val msg = "What would you like to do with these ${valCarbs.toInt()}g carbs?\n\n(Current BG: %.1f, Total Dose: %.1f U)".format(
+        val cobInfo = if (dose.currentCob > 1.0) "\nТекущие COB: ${dose.currentCob.toInt()}г" else ""
+        val iobInfo = if (dose.totalIob > 0.1 && dose.currentCob > 1.0) 
+            "\nЧистый IOB: %.1fед (Всего IOB: %.1fед)".format(dose.netIob, dose.totalIob) 
+            else if (dose.totalIob > 0.1) "\nIOB: %.1fед".format(dose.totalIob)
+            else ""
+
+        val msg = "Что вы хотите сделать с этими ${valCarbs.toInt()}г углеводов?$cobInfo$iobInfo\n\n(Тек. ГК: %.1f, Общая доза: %.1f ед)".format(
             if (profileFunction.getUnits() == app.aaps.core.data.model.GlucoseUnit.MMOL) lastBg / 18.0182 else lastBg,
             dose.totalInsulin
         )
 
         app.aaps.core.ui.dialogs.OKDialog.showThreeOptions(
             this,
-            "Confirm Meal Entry",
+            "Подтверждение еды",
             msg,
-            "INJECT BOLUS",
+            "ВВЕСТИ БОЛЮС",
             { performInjection(valCarbs, dose.totalInsulin, isDirectBolus = true) },
-            "PROPOSE FOR AIMI",
+            "ОТПРАВИТЬ В AIMI",
             { performInjection(valCarbs, dose.totalInsulin, isDirectBolus = false, isAimiPropose = true) },
-            "CANCEL",
+            "ОТМЕНА",
             null
         )
     }
 
     private fun performInjection(valCarbs: Double, insulin: Double, isDirectBolus: Boolean, isAimiPropose: Boolean = false) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            confirmButton.isEnabled = false
+            confirmButton.text = "PROCESSING..."
+        }
         lifecycleScope.launch(Dispatchers.IO) {
-            val ca = app.aaps.core.data.model.CA(
-                timestamp = System.currentTimeMillis(),
-                isValid = true,
-                duration = 0,
-                amount = valCarbs,
-                notes = "AIMI V2: ${currentEstimate?.description ?: ""}",
-                ids = app.aaps.core.data.model.IDs()
-            )
-            persistenceLayer.insertOrUpdateCarbs(ca, app.aaps.core.data.ue.Action.TREATMENT, app.aaps.core.data.ue.Sources.CarbDialog, ca.notes).blockingGet()
-            
-            if (isDirectBolus) {
-                withContext(Dispatchers.Main) {
-                    val detailedBolusInfo = app.aaps.core.interfaces.pump.DetailedBolusInfo()
-                    detailedBolusInfo.eventType = app.aaps.core.data.model.TE.Type.CORRECTION_BOLUS
-                    detailedBolusInfo.insulin = insulin
-                    detailedBolusInfo.context = this@MealAdvisorActivity
-                    detailedBolusInfo.notes = ca.notes
-                    detailedBolusInfo.timestamp = ca.timestamp
-
-                    commandQueue.bolus(detailedBolusInfo, object : app.aaps.core.interfaces.queue.Callback() {
-                        override fun run() {
-                            runOnUiThread {
-                                if (result.success) {
-                                    Toast.makeText(this@MealAdvisorActivity, "Bolus delivered and carbs recorded.", Toast.LENGTH_LONG).show()
-                                } else {
-                                    Toast.makeText(this@MealAdvisorActivity, "Bolus delivery error: ${result.comment}", Toast.LENGTH_LONG).show()
-                                }
-                                // 🔄 Always trigger loop to sync state
-                                loop.invoke("MealAdvisor_Direct", true)
-                                finish()
-                            }
-                        }
-                    })
-                }
-            } else if (isAimiPropose) {
-                // Scenario: Open Loop with "Propose for AIMI"
-                preferences.put(app.aaps.core.keys.BooleanKey.OApsAIMIMealAdvisorTrigger, true)
-                preferences.put(DoubleKey.OApsAIMILastEstimatedCarbs, valCarbs)
-                val nowMs = System.currentTimeMillis()
-                preferences.put(DoubleKey.OApsAIMILastEstimatedCarbTime, nowMs.toDouble())
-                aapsLogger.debug(
-                    LTag.APS,
-                    "MEAL_ADVISOR_TRACE confirmInjection carbs=${"%.1f".format(Locale.US, valCarbs)}g trigger=true estimateTimeMs=$nowMs mode=${loop.runningMode}"
+            try {
+                val ca = app.aaps.core.data.model.CA(
+                    timestamp = System.currentTimeMillis(),
+                    isValid = true,
+                    duration = 0,
+                    amount = valCarbs,
+                    notes = "AIMI V2: ${currentEstimate?.description ?: ""}",
+                    ids = app.aaps.core.data.model.IDs()
                 )
-                
-                // 🔄 Refresh Loop to process carbs and show TBR/SMB proposal immediately
-                loop.invoke("MealAdvisor", true)
+                persistenceLayer.insertOrUpdateCarbs(ca, app.aaps.core.data.ue.Action.TREATMENT, app.aaps.core.data.ue.Sources.CarbDialog, ca.notes).blockingGet()
 
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MealAdvisorActivity, "Carbs recorded. Check Adjustments.", Toast.LENGTH_SHORT).show()
-                    finish()
+                if (isDirectBolus) {
+                    if (insulin > 0.05) {
+                        withContext(Dispatchers.Main) {
+                            val detailedBolusInfo = app.aaps.core.interfaces.pump.DetailedBolusInfo()
+                            detailedBolusInfo.eventType = app.aaps.core.data.model.TE.Type.CORRECTION_BOLUS
+                            detailedBolusInfo.insulin = insulin
+                            detailedBolusInfo.context = this@MealAdvisorActivity
+                            detailedBolusInfo.notes = ca.notes
+                            detailedBolusInfo.timestamp = ca.timestamp
+
+                            commandQueue.bolus(detailedBolusInfo, object : app.aaps.core.interfaces.queue.Callback() {
+                                override fun run() {
+                                    // 🔄 Trigger loop on background thread (current thread is already background)
+                                    loop.invoke("MealAdvisor_Direct", true)
+                                    runOnUiThread {
+                                        if (result.success) {
+                                            Toast.makeText(this@MealAdvisorActivity, "Bolus delivered and carbs recorded.", Toast.LENGTH_LONG).show()
+                                        } else {
+                                            Toast.makeText(this@MealAdvisorActivity, "Bolus delivery error: ${result.comment}", Toast.LENGTH_LONG).show()
+                                            confirmButton.isEnabled = true
+                                            recalculateProposal()
+                                        }
+                                        if (result.success) finish()
+                                    }
+                                }
+                            })
+                        }
+                    } else {
+                        // Direct but 0 units - skip bolus command to avoid PumpPluginAbstract crash/hang
+                        loop.invoke("MealAdvisor_Direct", true)
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@MealAdvisorActivity, "Carbs recorded. No bolus needed.", Toast.LENGTH_SHORT).show()
+                            finish()
+                        }
+                    }
+                } else if (isAimiPropose) {
+                    // Scenario: Open Loop with "Propose for AIMI"
+                    preferences.put(app.aaps.core.keys.BooleanKey.OApsAIMIMealAdvisorTrigger, true)
+                    preferences.put(DoubleKey.OApsAIMILastEstimatedCarbs, valCarbs)
+                    val nowMs = System.currentTimeMillis()
+                    preferences.put(DoubleKey.OApsAIMILastEstimatedCarbTime, nowMs.toDouble())
+                    aapsLogger.debug(
+                        LTag.APS,
+                        "MEAL_ADVISOR_TRACE confirmInjection carbs=${"%.1f".format(Locale.US, valCarbs)}g trigger=true estimateTimeMs=$nowMs mode=${loop.runningMode}"
+                    )
+
+                    // 🔄 Refresh Loop to process carbs and show TBR/SMB proposal immediately
+                    loop.invoke("MealAdvisor", true)
+
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MealAdvisorActivity, "Carbs recorded. Check Adjustments.", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                } else {
+                    // Scenario: Record Only
+                    loop.invoke("MealAdvisor_Record", true)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MealAdvisorActivity, "Carbs recorded.", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
                 }
-            } else {
-                // Scenario: Record Only
-                loop.invoke("MealAdvisor_Record", true)
+            } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MealAdvisorActivity, "Carbs recorded.", Toast.LENGTH_SHORT).show()
-                    finish()
+                    Toast.makeText(this@MealAdvisorActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    confirmButton.isEnabled = true
+                    recalculateProposal()
                 }
             }
         }

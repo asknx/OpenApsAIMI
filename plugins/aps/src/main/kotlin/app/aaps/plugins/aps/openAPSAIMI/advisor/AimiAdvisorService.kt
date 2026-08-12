@@ -6,8 +6,34 @@ import kotlin.math.max
 import kotlin.math.min
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.BooleanKey
+import app.aaps.core.keys.IntKey
+import app.aaps.core.keys.StringKey
+import app.aaps.core.keys.UnitDoubleKey
+import app.aaps.core.keys.interfaces.*
 import app.aaps.core.interfaces.aps.GlucoseStatusAIMI
+import app.aaps.core.interfaces.profile.Profile
+import app.aaps.core.interfaces.profile.ProfileStore
+import app.aaps.core.interfaces.profile.ProfileSource
+import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.events.EventProfileStoreChanged
+import app.aaps.core.interfaces.rx.events.EventPreferenceChange
+import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.data.configuration.Constants
+import app.aaps.core.data.model.GlucoseUnit
+import app.aaps.core.data.ue.Action
+import app.aaps.core.data.ue.Sources
+import app.aaps.plugins.aps.openAPSAIMI.model.AimiAction
+import app.aaps.plugins.aps.openAPSAIMI.model.AimiDomain
+import app.aaps.plugins.aps.openAPSAIMI.model.AimiPriority
+import app.aaps.plugins.aps.openAPSAIMI.plugins.impl.StableControlPlugin
+import app.aaps.plugins.aps.openAPSAIMI.plugins.impl.SafetyAggressionPlugin
+import app.aaps.plugins.aps.openAPSAIMI.plugins.impl.TherapyAdvisorPlugin
+import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
  * =============================================================================
@@ -42,6 +68,9 @@ class AimiAdvisorService {
     private val tirCalculator: app.aaps.core.interfaces.stats.TirCalculator?
     private val rh: app.aaps.core.interfaces.resources.ResourceHelper?
     private val aapsLogger: app.aaps.core.interfaces.logging.AAPSLogger?
+    private val dateUtil: DateUtil?
+    private val rxBus: RxBus?
+    private val auditorAIService: app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService?
     private val pluginManager: app.aaps.plugins.aps.openAPSAIMI.plugins.AimiPluginManager
 
     // Constructor injection for dependencies
@@ -54,7 +83,10 @@ class AimiAdvisorService {
         tddCalculator: app.aaps.core.interfaces.stats.TddCalculator? = null,
         tirCalculator: app.aaps.core.interfaces.stats.TirCalculator? = null,
         pluginManager: app.aaps.plugins.aps.openAPSAIMI.plugins.AimiPluginManager? = null,
-        aapsLogger: app.aaps.core.interfaces.logging.AAPSLogger? = null
+        auditorAIService: app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService? = null,
+        aapsLogger: app.aaps.core.interfaces.logging.AAPSLogger? = null,
+        dateUtil: DateUtil? = null,
+        rxBus: RxBus? = null
     ) {
         this.profileFunction = profileFunction
         this.persistenceLayer = persistenceLayer
@@ -64,6 +96,9 @@ class AimiAdvisorService {
         this.tddCalculator = tddCalculator
         this.tirCalculator = tirCalculator
         this.aapsLogger = aapsLogger
+        this.dateUtil = dateUtil
+        this.rxBus = rxBus
+        this.auditorAIService = auditorAIService
         this.pluginManager = pluginManager ?: app.aaps.plugins.aps.openAPSAIMI.plugins.AimiPluginManager(aapsLogger ?: object : app.aaps.core.interfaces.logging.AAPSLogger {
             override fun debug(message: String) {}
             override fun debug(enable: Boolean, tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
@@ -85,6 +120,11 @@ class AimiAdvisorService {
             override fun warn(className: String, methodName: String, lineNumber: Int, tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
             override fun error(className: String, methodName: String, lineNumber: Int, tag: app.aaps.core.interfaces.logging.LTag, message: String) {}
         })
+        
+        // Register core and sub-modules
+        this.pluginManager.register(StableControlPlugin())
+        this.pluginManager.register(SafetyAggressionPlugin())
+        this.pluginManager.register(TherapyAdvisorPlugin(persistenceLayer))
     }
 
     /**
@@ -126,7 +166,6 @@ class AimiAdvisorService {
         }
 
         // 1. Calculate Metrics (from Persistence Layer)
-        // We'll trust persistenceLayer to give us stats or we calculate from raw data
         val metrics = calculateMetrics(periodDays)
 
         // 2. Snapshot Profile
@@ -140,18 +179,31 @@ class AimiAdvisorService {
                 isf = calculateWeightedAverage(profile.getIsfsMgdlValues()),
                 targetBg = calculateWeightedAverage(profile.getSingleTargetsMgdl()),
                 dia = profile.dia,
-                totalBasal = totalBasalCalc
+                totalBasal = totalBasalCalc,
+                originalName = profileFunction.getOriginalProfileName()
             )
         } else {
-            AimiProfileSnapshot(0.5, 10.0, 40.0, 100.0, 5.0, 12.0) // Fallback
+            AimiProfileSnapshot(0.5, 10.0, 40.0, 100.0, 5.0, 12.0, "Unknown") // Fallback
         }
 
-        // 3. Snapshot Preferences
+        // 3. Snapshot Preferences (Captured all AIMI and key AAPS settings)
+        val aimiToggles = mutableMapOf<String, Boolean>()
+        // Core toggles
+        aimiToggles[BooleanKey.ApsUseDynamicSensitivity.key] = preferences.get(BooleanKey.ApsUseDynamicSensitivity)
+        aimiToggles[BooleanKey.ApsUseAutosens.key] = preferences.get(BooleanKey.ApsUseAutosens)
+        aimiToggles[BooleanKey.ApsUseSmb.key] = preferences.get(BooleanKey.ApsUseSmb)
+        aimiToggles[BooleanKey.ApsUseUam.key] = preferences.get(BooleanKey.ApsUseUam)
+        aimiToggles[BooleanKey.ApsSensitivityRaisesTarget.key] = preferences.get(BooleanKey.ApsSensitivityRaisesTarget)
+        aimiToggles[BooleanKey.ApsResistanceLowersTarget.key] = preferences.get(BooleanKey.ApsResistanceLowersTarget)
+        aimiToggles[BooleanKey.AimiPhysioAssistantEnable.key] = preferences.get(BooleanKey.AimiPhysioAssistantEnable)
+        aimiToggles[BooleanKey.OApsAIMIPkpdEnabled.key] = preferences.get(BooleanKey.OApsAIMIPkpdEnabled)
+
         val prefsSnapshot = AimiPrefsSnapshot(
             maxSmb = preferences.get(DoubleKey.OApsAIMIMaxSMB),
             lunchFactor = preferences.get(DoubleKey.OApsAIMILunchFactor),
             unifiedReactivityFactor = 1.0, // Default for now
-            autodriveMaxBasal = preferences.get(DoubleKey.autodriveMaxBasal)
+            autodriveMaxBasal = preferences.get(DoubleKey.autodriveMaxBasal),
+            allToggles = aimiToggles
         )
         
         // 4. Snapshot PKPD Preferences
@@ -215,7 +267,6 @@ class AimiAdvisorService {
         // 1. Calculate Real TIR (70-180)
         if (tirCalculator != null) {
             try {
-                // Main Range (70-180)
                 val tirs = tirCalculator.calculate(days.toLong(), 70.0, 180.0)
                 val avgTir = tirCalculator.averageTIR(tirs)
                 
@@ -225,34 +276,26 @@ class AimiAdvisorService {
                     timeAbove180 = (avgTir.abovePct() ?: 0.0) / 100.0
                 }
 
-                // Very Low (<54) - Calculate with low=54
                 val tirs54 = tirCalculator.calculate(days.toLong(), 54.0, 180.0)
                 val avg54 = tirCalculator.averageTIR(tirs54)
                 if (avg54 != null) {
                     timeBelow54 = (avg54.belowPct() ?: 0.0) / 100.0
                 }
                 
-                // Very High (>250) - Calculate with high=250
                 val tirs250 = tirCalculator.calculate(days.toLong(), 70.0, 250.0)
                 val avg250 = tirCalculator.averageTIR(tirs250)
                 if (avg250 != null) {
                     timeAbove250 = (avg250.abovePct() ?: 0.0) / 100.0
                 }
 
-                // Tight Range (70-140)
                 val tirs140 = tirCalculator.calculate(days.toLong(), 70.0, 140.0)
                 val avg140 = tirCalculator.averageTIR(tirs140)
                 if (avg140 != null) {
                     tir70_140 = (avg140.inRangePct() ?: 0.0) / 100.0
                 }
                 
-                // Today's TIR
                 val dailyTirs = tirCalculator.calculateDaily(70.0, 180.0)
                 if (dailyTirs != null && dailyTirs.size() > 0) {
-                     // Get the entry with the largest timestamp (latest)
-                     // LongSparseArray doesn't ensure order by key?
-                     // Usually appended. Let's iterate or assume logic.
-                     // Finding max key
                      var maxDate = 0L
                      var todayStat: app.aaps.core.interfaces.stats.TIR? = null
                      for(i in 0 until dailyTirs.size()) {
@@ -298,35 +341,28 @@ class AimiAdvisorService {
         // 3. Calculate Mean BG & GMI
         if (persistenceLayer != null) {
             try {
-                // Fetch BG readings directly for the period
                 val now = System.currentTimeMillis()
                 val fromTime = now - (days * 24 * 3600 * 1000L)
                 val bgReadings = persistenceLayer.getBgReadingsDataFromTimeToTime(fromTime, now, ascending = false)
                 
-                android.util.Log.d("AIMI_ADVISOR", "📊 Mean BG calculation: fetched ${bgReadings.size} BG readings")
-                
                 if (bgReadings.isEmpty()) {
-                    android.util.Log.w("AIMI_ADVISOR", "⚠️ No BG readings found for last $days days. Using fallback meanBg=$meanBg")
+                    android.util.Log.w("AIMI_ADVISOR", "⚠️ No BG readings found for last $days days.")
                 } else {
-                    // Extract valid glucose values (GV objects have .value property)
                     val bgValues = bgReadings
                         .map { it.value }
-                        .filter { it > 30.0 } // Filter out noise
+                        .filter { it > 30.0 } 
                     
                     if (bgValues.isNotEmpty()) {
                         meanBg = bgValues.average()
-                        android.util.Log.d("AIMI_ADVISOR", "✅ Calculated Mean BG: ${meanBg.toInt()} mg/dL from ${bgValues.size} readings")
-                    } else {
-                        android.util.Log.w("AIMI_ADVISOR", "⚠️ No valid BG data after filtering. Using fallback $meanBg")
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("AIMI_ADVISOR", "❌ Failed to calculate Mean BG: ${e.message}")
                 e.printStackTrace()
             }
-        } else {
-            android.util.Log.w("AIMI_ADVISOR", "⚠️ PersistenceLayer is null, cannot calculate mean BG. Using fallback $meanBg")
         }
+
+        // 4. Therapy Stats for Sub-module
+        val therapyStats = collectTherapyStats(days)
 
         return AdvisorMetrics(
             periodLabel = "Last $days days",
@@ -337,22 +373,67 @@ class AimiAdvisorService {
             timeAbove180 = timeAbove180,
             timeAbove250 = timeAbove250,
             meanBg = meanBg,
-            gmi = 3.31 + (0.02392 * meanBg), // GMI = 3.31 + 0.02392 * MeanBG (mg/dL)
+            gmi = 3.31 + (0.02392 * meanBg),
             tdd = tdd,
             basalPercent = basalPercent,
-            hypoEvents = 0, // Need Notification/Treatment analysis
+            hypoEvents = 0,
             severeHypoEvents = 0,
             hyperEvents = 0,
             todayTir = todayTir,
-            todayTdd = todayTdd
+            todayTdd = todayTdd,
+            therapyStats = therapyStats
         )
     }
 
+    private fun collectTherapyStats(days: Int): TherapyStats? {
+        if (persistenceLayer == null) return null
+        val now = System.currentTimeMillis()
+        val fromTime = now - (days * 24 * 3600 * 1000L)
+        
+        try {
+            val boluses = persistenceLayer.getBolusesFromTimeToTime(fromTime, now, false)
+            val carbs = persistenceLayer.getCarbsFromTimeToTimeExpanded(fromTime, now, false)
+            val tbrs = persistenceLayer.getTemporaryBasalsStartingFromTimeToTime(fromTime, now, false)
+            
+            val meals = carbs.map { carb ->
+                val startTime = carb.timestamp
+                val endTime2h = startTime + (2 * 3600 * 1000L)
+                val endTime4h = startTime + (4 * 3600 * 1000L)
+                
+                val relevantBoluses = boluses.filter { it.timestamp in startTime..endTime2h }
+                val insulinIn2h = relevantBoluses.sumOf { it.amount }
+                
+                val bgReadings = persistenceLayer.getBgReadingsDataFromTimeToTime(startTime, endTime4h, true)
+                val bgStart = bgReadings.firstOrNull()?.value ?: 0.0
+                val bgMax2h = bgReadings.filter { it.timestamp <= endTime2h }.maxByOrNull { it.value }?.value ?: 0.0
+                val bgEnd4h = bgReadings.lastOrNull()?.value ?: 0.0
+                
+                MealOutcome(
+                    timestamp = startTime,
+                    carbs = carb.amount,
+                    insulin2h = insulinIn2h,
+                    bgStart = bgStart,
+                    bgMax2h = bgMax2h,
+                    bgEnd4h = bgEnd4h,
+                    success = bgEnd4h in 70.0..140.0 && bgMax2h < 180.0
+                )
+            }
+            
+            return TherapyStats(
+                meals = meals,
+                totalCarbs = carbs.sumOf { it.amount },
+                totalInsulin = boluses.sumOf { it.amount },
+                totalSmb = boluses.filter { it.type == app.aaps.core.data.model.BS.Type.SMB }.sumOf { it.amount },
+                totalBasal = tbrs.sumOf { it.rate * (it.duration / 3600000.0) } 
+            )
+        } catch (e: Exception) {
+            return null
+        }
+    }
+
     private fun computeGlobalScore(m: AdvisorMetrics): Double {
-        // Simple weighted score
-        // TIR (50%), Hypo Avoidance (30%), Stability (20%)
         val tirScore = m.tir70_180 * 10.0
-        val hypoScore = (1.0 - (m.timeBelow70 * 5).coerceAtMost(1.0)) * 10.0 // penalized heavily
+        val hypoScore = (1.0 - (m.timeBelow70 * 5).coerceAtMost(1.0)) * 10.0
         val hyperScore = (1.0 - m.timeAbove180) * 10.0
         
         return (tirScore * 0.5) + (hypoScore * 0.3) + (hyperScore * 0.2)
@@ -379,8 +460,8 @@ class AimiAdvisorService {
     private fun getEmptyContext(): AdvisorContext {
         return AdvisorContext(
             metrics = AdvisorMetrics("N/A",0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0,0,0, null, null),
-            profile = AimiProfileSnapshot(0.0,0.0,0.0,0.0, 5.0, 12.0),
-            prefs = AimiPrefsSnapshot(0.0,0.0,0.0,0.0),
+            profile = AimiProfileSnapshot(0.0,0.0,0.0,0.0, 5.0, 12.0, "Unknown"),
+            prefs = AimiPrefsSnapshot(0.0,0.0,0.0,0.0, emptyMap()),
             pkpdPrefs = PkpdPrefsSnapshot(false,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
         )
     }
@@ -393,13 +474,66 @@ class AimiAdvisorService {
      * Generate recommendations based on Context using the Plugin System.
      */
     fun generateRecommendations(ctx: AdvisorContext, history: List<app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.AdvisorActionLog>): List<AimiRecommendation> {
-        val currentProfile = profileFunction?.getProfile()
-        
         if (preferences == null) return emptyList()
+
+        // 🛡️ REFINEMENT: Use Real Profile for recommendation logic
+        val realProfile = profileFunction?.getProfile()
+        val oapsProfile = if (realProfile != null) {
+             app.aaps.core.interfaces.aps.OapsProfileAimi(
+                dia = realProfile.dia,
+                min_5m_carbimpact = 8.0, 
+                max_iob = preferences.get(DoubleKey.ApsSmbMaxIob),
+                max_daily_basal = realProfile.getMaxDailyBasal(),
+                max_basal = preferences.get(DoubleKey.ApsMaxBasal),
+                min_bg = realProfile.getTargetLowMgdl(),
+                max_bg = realProfile.getTargetHighMgdl(),
+                target_bg = realProfile.getTargetMgdl(),
+                carb_ratio = realProfile.getIc(),
+                sens = realProfile.getIsfMgdl("Advisor"),
+                autosens_adjust_targets = true,
+                max_daily_safety_multiplier = preferences.get(DoubleKey.ApsMaxDailyMultiplier),
+                current_basal_safety_multiplier = preferences.get(DoubleKey.ApsMaxCurrentBasalMultiplier),
+                lgsThreshold = preferences.get(UnitDoubleKey.ApsLgsThreshold).toInt(),
+                high_temptarget_raises_sensitivity = true,
+                low_temptarget_lowers_sensitivity = true,
+                sensitivity_raises_target = true,
+                resistance_lowers_target = true,
+                adv_target_adjustments = true,
+                exercise_mode = false,
+                half_basal_exercise_target = 160,
+                maxCOB = 120,
+                skip_neutral_temps = true,
+                remainingCarbsCap = 90,
+                enableUAM = true,
+                A52_risk_enable = true,
+                SMBInterval = 3,
+                enableSMB_with_COB = true,
+                enableSMB_with_temptarget = true,
+                allowSMB_with_high_temptarget = true,
+                enableSMB_always = true,
+                enableSMB_after_carbs = true,
+                maxSMBBasalMinutes = 120,
+                maxUAMSMBBasalMinutes = 120,
+                bolus_increment = 0.05,
+                carbsReqThreshold = 1,
+                current_basal = realProfile.getBasal(),
+                temptargetSet = false,
+                autosens_max = 1.2,
+                out_units = "mg/dL",
+                variable_sens = 1.0,
+                insulinDivisor = 30,
+                TDD = ctx.metrics.tdd,
+                peakTime = 75.0,
+                futureActivity = 0.0,
+                sensorLagActivity = 0.0,
+                historicActivity = 0.0,
+                currentActivity = 0.0
+            )
+        } else createDummyProfile()
 
         val loopCtx = app.aaps.plugins.aps.openAPSAIMI.model.AimiPluginContext(
             glucose = app.aaps.core.interfaces.aps.GlucoseStatusAIMI(glucose = ctx.metrics.meanBg),
-            profile = createDummyProfile(),
+            profile = oapsProfile,
             iob = emptyList(),
             cob = 0.0,
             preferences = preferences
@@ -412,93 +546,13 @@ class AimiAdvisorService {
         val recs = actions.map { action ->
             AimiRecommendation(
                 titleResId = app.aaps.plugins.aps.R.string.aimi_advisor_recommendations_title,
-                descriptionResId = 0, // Should be dynamic
+                descriptionResId = 0, 
                 priority = action.priority,
                 domain = action.domain,
                 action = action
             )
         }.toMutableList()
 
-        // Pragmatic SMB/PKPD governance recommendations
-        if (preferences != null) {
-            val reliefEnabled = preferences.get(BooleanKey.OApsAIMIPkpdPragmaticReliefEnabled)
-            val reliefMinFactor = preferences.get(DoubleKey.OApsAIMIPkpdPragmaticReliefMinFactor)
-            val redCarpetRestore = preferences.get(DoubleKey.OApsAIMIRedCarpetRestoreThreshold)
-            val maxIobFactor = preferences.get(DoubleKey.OApsAIMIPriorityMaxIobFactor)
-            val maxIobExtra = preferences.get(DoubleKey.OApsAIMIPriorityMaxIobExtraU)
-
-            if (!reliefEnabled && ctx.metrics.timeAbove180 > 0.25 && ctx.metrics.timeBelow70 < 0.04) {
-                recs.add(
-                    AimiRecommendation(
-                        titleResId = R.string.aimi_adv_rec_pkpd_relief_enable_title,
-                        descriptionResId = R.string.aimi_adv_rec_pkpd_relief_enable_desc,
-                        priority = app.aaps.plugins.aps.openAPSAIMI.model.AimiPriority.Medium,
-                        domain = app.aaps.plugins.aps.openAPSAIMI.model.AimiDomain.Pkpd,
-                        action = app.aaps.plugins.aps.openAPSAIMI.model.AimiAction.PreferenceUpdate(
-                            key = BooleanKey.OApsAIMIPkpdPragmaticReliefEnabled,
-                            newValue = true,
-                            reason = "Enable pragmatic relief to avoid excessive soft damping in explicit meal/high-rise contexts."
-                        )
-                    )
-                )
-            }
-
-            if (reliefEnabled && reliefMinFactor < 0.70 && ctx.metrics.timeAbove180 > 0.25) {
-                recs.add(
-                    AimiRecommendation(
-                        titleResId = R.string.aimi_adv_rec_pkpd_relief_factor_title,
-                        descriptionResId = R.string.aimi_adv_rec_pkpd_relief_factor_desc,
-                        priority = app.aaps.plugins.aps.openAPSAIMI.model.AimiPriority.Medium,
-                        domain = app.aaps.plugins.aps.openAPSAIMI.model.AimiDomain.Pkpd,
-                        action = app.aaps.plugins.aps.openAPSAIMI.model.AimiAction.PreferenceUpdate(
-                            key = DoubleKey.OApsAIMIPkpdPragmaticReliefMinFactor,
-                            newValue = 0.75,
-                            reason = "Increase minimum PKPD factor to preserve SMB intent in priority contexts."
-                        ),
-                        descriptionArgs = listOf(String.format(java.util.Locale.US, "%.2f", reliefMinFactor))
-                    )
-                )
-            }
-
-            if (reliefEnabled && redCarpetRestore < 0.65 && ctx.metrics.timeAbove180 > 0.25) {
-                recs.add(
-                    AimiRecommendation(
-                        titleResId = R.string.aimi_adv_rec_redcarpet_restore_title,
-                        descriptionResId = R.string.aimi_adv_rec_redcarpet_restore_desc,
-                        priority = app.aaps.plugins.aps.openAPSAIMI.model.AimiPriority.Medium,
-                        domain = app.aaps.plugins.aps.openAPSAIMI.model.AimiDomain.Profile,
-                        action = app.aaps.plugins.aps.openAPSAIMI.model.AimiAction.PreferenceUpdate(
-                            key = DoubleKey.OApsAIMIRedCarpetRestoreThreshold,
-                            newValue = 0.75,
-                            reason = "Raise restore threshold to avoid excessive final SMB collapse."
-                        ),
-                        descriptionArgs = listOf(String.format(java.util.Locale.US, "%.2f", redCarpetRestore))
-                    )
-                )
-            }
-
-            if (reliefEnabled && (maxIobFactor < 1.10 || maxIobExtra < 1.0) && ctx.metrics.timeAbove180 > 0.30 && ctx.metrics.timeBelow70 < 0.04) {
-                recs.add(
-                    AimiRecommendation(
-                        titleResId = R.string.aimi_adv_rec_priority_maxiob_title,
-                        descriptionResId = R.string.aimi_adv_rec_priority_maxiob_desc,
-                        priority = app.aaps.plugins.aps.openAPSAIMI.model.AimiPriority.Medium,
-                        domain = app.aaps.plugins.aps.openAPSAIMI.model.AimiDomain.Profile,
-                        action = app.aaps.plugins.aps.openAPSAIMI.model.AimiAction.PreferenceUpdate(
-                            key = DoubleKey.OApsAIMIPriorityMaxIobFactor,
-                            newValue = 1.20,
-                            reason = "Increase priority MaxIOB headroom factor in explicit aggressive contexts."
-                        ),
-                        descriptionArgs = listOf(
-                            String.format(java.util.Locale.US, "%.2f", maxIobFactor),
-                            String.format(java.util.Locale.US, "%.2f", maxIobExtra)
-                        )
-                    )
-                )
-            }
-        }
-
-        // 5) If nothing alarming -> positive message
         if (recs.isEmpty()) {
             recs.add(AimiRecommendation(
                 titleResId = app.aaps.plugins.aps.R.string.aimi_adv_rec_profile_ok_title,
@@ -510,6 +564,172 @@ class AimiAdvisorService {
         }
 
         return recs
+    }
+
+    /**
+     * Apply only Profile-related recommendations (Basal, ISF, IC, Target).
+     * Creates a new profile with the current date/time.
+     */
+    fun applyProfileRecommendations(recs: List<AimiRecommendation>) {
+        if (persistenceLayer == null || profileFunction == null || preferences == null) return
+        
+        val actions = recs.mapNotNull { it.action }
+        val profileActions = actions.filter { it.domain in listOf(AimiDomain.Profile, AimiDomain.Basal, AimiDomain.Isf, AimiDomain.Target) }
+        
+        if (profileActions.isNotEmpty()) {
+            createNewAdvisorProfile(profileActions)
+        }
+    }
+
+    /**
+     * Apply only Settings-related recommendations (Preference Updates).
+     */
+    fun applySettingRecommendations(recs: List<AimiRecommendation>) {
+        if (preferences == null) return
+        
+        val actions = recs.mapNotNull { it.action }
+        val prefActions = actions.filterIsInstance<AimiAction.PreferenceUpdate>()
+        
+        prefActions.forEach { update ->
+            try {
+                val key = update.key
+                val value = update.newValue
+                
+                when (key) {
+                    is BooleanKey -> preferences.put(key, value as Boolean)
+                    is DoubleKey -> preferences.put(key, value as Double)
+                    is IntKey -> preferences.put(key, value as Int)
+                    is StringKey -> preferences.put(key, value as String)
+                    is UnitDoubleKey -> preferences.put(key, value as Double)
+                }
+                
+                aapsLogger?.info(app.aaps.core.interfaces.logging.LTag.APS, "Applied Preference Update: ${update.key.key} -> ${update.newValue}")
+            } catch (e: Exception) {
+                aapsLogger?.error(app.aaps.core.interfaces.logging.LTag.APS, "Failed update: ${update.key.key}", e)
+            }
+        }
+        
+        if (prefActions.isNotEmpty()) {
+             prefActions.firstOrNull()?.let { rxBus?.send(app.aaps.core.interfaces.rx.events.EventPreferenceChange(it.key.key)) }
+        }
+    }
+
+    /**
+     * unified application of ALL recommendations in a report.
+     * @deprecated Use split apply methods for better UX
+     */
+    fun applyRecommendations(recs: List<AimiRecommendation>) {
+        applyProfileRecommendations(recs)
+        applySettingRecommendations(recs)
+    }
+
+    private fun createNewAdvisorProfile(actions: List<AimiAction>) {
+        val currentProfile = profileFunction?.getProfile() ?: return
+        val date = dateUtil?.now() ?: System.currentTimeMillis()
+        
+        val name = "Advisor " + SimpleDateFormat("dd.MM HH:mm", Locale.getDefault()).format(Date(date))
+        
+        // Mock non-preference keys to avoid dependency cycle
+        val amountKey = object : IntNonPreferenceKey {
+            override val key: String = "LocalProfile_profiles"
+            override val defaultValue: Int = 0
+            override val exportable: Boolean = true
+        }
+        val amount = preferences?.get(amountKey) ?: 0
+        val index = amount
+        
+        val profileJson = currentProfile.toPureNsJson(dateUtil ?: object : app.aaps.core.interfaces.utils.DateUtil {
+            override fun fromISODateString(isoDateString: String): Long = 0
+            override fun toISOString(date: Long): String = ""
+            override fun toISOAsUTC(timestamp: Long): String = ""
+            override fun toISONoZone(timestamp: Long): String = ""
+            override fun secondsOfTheDayToMillisecondsOfHoursAndMinutes(seconds: Int): Long = 0
+            override fun secondsOfTheDayToMilliseconds(seconds: Int): Long = 0
+            override fun toSeconds(hhColonMm: String): Int = 0
+            override fun dateString(mills: Long): String = ""
+            override fun dateStringRelative(mills: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+            override fun dateStringShort(mills: Long): String = ""
+            override fun timeString(): String = ""
+            override fun timeString(mills: Long): String = ""
+            override fun secondString(): String = ""
+            override fun secondString(mills: Long): String = ""
+            override fun minuteString(): String = ""
+            override fun minuteString(mills: Long): String = ""
+            override fun hourString(): String = ""
+            override fun hourString(mills: Long): String = ""
+            override fun amPm(): String = ""
+            override fun amPm(mills: Long): String = ""
+            override fun dayNameString(format: String): String = ""
+            override fun dayNameString(mills: Long, format: String): String = ""
+            override fun dayString(): String = ""
+            override fun dayString(mills: Long): String = ""
+            override fun monthString(format: String): String = ""
+            override fun monthString(mills: Long, format: String): String = ""
+            override fun weekString(): String = ""
+            override fun weekString(mills: Long): String = ""
+            override fun timeStringWithSeconds(mills: Long): String = ""
+            override fun dateAndTimeRangeString(start: Long, end: Long): String = ""
+            override fun timeRangeString(start: Long, end: Long): String = ""
+            override fun dateAndTimeString(mills: Long): String = ""
+            override fun dateAndTimeStringNullable(mills: Long?): String? = null
+            override fun dateAndTimeAndSecondsString(mills: Long): String = ""
+            override fun minAgo(rh: app.aaps.core.interfaces.resources.ResourceHelper, time: Long?): String = ""
+            override fun minOrSecAgo(rh: app.aaps.core.interfaces.resources.ResourceHelper, time: Long?): String = ""
+            override fun minAgoShort(time: Long?): String = ""
+            override fun minAgoLong(rh: app.aaps.core.interfaces.resources.ResourceHelper, time: Long?): String = ""
+            override fun hourAgo(time: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+            override fun dayAgo(time: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper, round: Boolean): String = ""
+            override fun beginOfDay(mills: Long): Long = 0
+            override fun timeStringFromSeconds(seconds: Int): String = ""
+            override fun timeFrameString(timeInMillis: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+            override fun sinceString(timestamp: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+            override fun now(): Long = System.currentTimeMillis()
+            override fun nowWithoutMilliseconds(): Long = 0
+            override fun isOlderThan(date: Long, minutes: Long): Boolean = false
+            override fun getTimeZoneOffsetMs(): Long = 0
+            override fun getTimeZoneOffsetMsWithDST(): Long = 0
+            override fun getTimeZoneOffsetMinutes(timestamp: Long): Int = 0
+            override fun isSameDay(timestamp1: Long, timestamp2: Long): Boolean = false
+            override fun isAfterNoon(): Boolean = false
+            override fun isSameDayGroup(timestamp1: Long, timestamp2: Long): Boolean = false
+            override fun computeDiff(date1: Long, date2: Long): Map<TimeUnit, Long> = emptyMap()
+            override fun age(milliseconds: Long, useShortText: Boolean, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+            override fun timeAgoFullString(milliseconds: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+            override fun niceTimeScalar(time: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+            override fun qs(x: Double, numDigits: Int): String = ""
+            override fun formatHHMM(timeAsSeconds: Int): String = ""
+            override fun untilString(timestamp: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+            override fun timeZoneByOffset(offsetInMilliseconds: Long): String = "UTC"
+            override fun timeStampToUtcDateMillis(timestamp: Long): Long = 0
+            override fun getTimestampWithCurrentTimeOfDay(timestamp: Long): Long = 0
+            override fun mergeUtcDateToTimestamp(timestamp: Long, dateUtcMillis: Long): Long = 0
+            override fun mergeHourMinuteToTimestamp(timestamp: Long, hour: Int, minute: Int, randomSecond: Boolean): Long = 0
+        })
+
+        // Use anonymous interface implementations to avoid dependency on :plugins:main
+        preferences?.run {
+            put(amountKey, amount + 1)
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_name_"; override val format = "%d"; override val defaultValue = ""; override val exportable = true }, index, value = name)
+            put(object : DoubleComposedNonPreferenceKey { override val key = "LocalProfile_dia_"; override val format = "%d"; override val defaultValue = 0.0; override val exportable = true }, index, value = currentProfile.dia)
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_basal_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = profileJson.getJSONArray("basal").toString())
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_isf_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = profileJson.getJSONArray("sens").toString())
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_ic_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = profileJson.getJSONArray("carbratio").toString())
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_targetlow_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = profileJson.getJSONArray("target_low").toString())
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_targethigh_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = profileJson.getJSONArray("target_high").toString())
+            put(object : BooleanComposedNonPreferenceKey { override val key = "LocalProfile_mgdl_"; override val format = "%d"; override val defaultValue = true; override val exportable = true }, index, value = currentProfile.units == GlucoseUnit.MGDL)
+        }
+        
+        profileFunction.createProfileSwitch(
+            durationInMinutes = 0,
+            percentage = 100,
+            timeShiftInHours = 0,
+            action = Action.PROFILE_SWITCH,
+            source = Sources.LocalProfile,
+            note = "Applied by AIMI Advisor",
+            listValues = emptyList()
+        )
+        
+        rxBus?.send(EventProfileStoreChanged())
     }
 
     private fun createDummyProfile(): app.aaps.core.interfaces.aps.OapsProfileAimi {
@@ -530,110 +750,55 @@ class AimiAdvisorService {
         )
     }
 
-    private fun percent(value: Double): Int = (value * 100.0).roundToInt()
-
-    /**
-     * Level 1 Analysis: Generates a deterministic text summary of the recommendations.
-     */
-    fun generatePlainTextAnalysis(context: AdvisorContext, report: AdvisorReport): String {
+    suspend fun generatePlainTextAnalysis(context: AdvisorContext, report: AdvisorReport): String {
         val sb = StringBuilder()
         
+        // 1. Try AI Analysis (Strategic Coaching)
+        val aiAnalysis = auditorAIService?.let { service ->
+            val prompt = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.TherapyPromptBuilder.buildAnalysisPrompt(context, report)
+            val provider = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService.Provider.GEMINI_35_FLASH_LITE // High-speed, efficient for coaching
+            service.getChatCompletion(prompt, provider, useHighPerf = false)
+        }
+        
+        if (!aiAnalysis.isNullOrBlank()) {
+            sb.append(aiAnalysis).append("\n\n---\n")
+        }
+
+        // 2. Local Fallback/Append (Tactical Observatons)
         if (rh != null) {
-            // Introduction based on score
             if (report.overallScore >= 8.5) {
-                sb.append(rh.gs(R.string.aimi_adv_analysis_intro_excellent) + "\n\n")
+                sb.append(rh.gs(R.string.aimi_adv_analysis_all_good) + "\n\n")
             } else if (report.overallScore >= 5.5) {
-                sb.append(rh.gs(R.string.aimi_adv_analysis_intro_good) + "\n\n")
+                sb.append("Stable result, but minor adjustments possible.\n\n")
             } else {
-                sb.append(rh.gs(R.string.aimi_adv_analysis_intro_poor) + "\n\n")
+                sb.append("Critical attention required to improve control.\n\n")
             }
-            
-            // Summary of Issues
             if (report.recommendations.isNotEmpty()) {
-                sb.append(rh.gs(R.string.aimi_adv_analysis_issues_header) + "\n")
-                report.recommendations.forEach { rec ->
-                    // Just print the title of the recommendation
+                report.recommendations.take(3).forEach { rec ->
                     val title = try { rh.gs(rec.titleResId) } catch (e: Exception) { "-" }
                     sb.append("- $title\n")
                 }
-            } else {
-                sb.append(rh.gs(R.string.aimi_adv_analysis_all_good))
             }
-            
-            sb.append("\n" + rh.gs(R.string.aimi_adv_generated_footer, formatTime(report.generatedAt)))
-
+            sb.append("\n" + SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(report.generatedAt)))
         } else {
              sb.append("Analysis available in app.")
         }
-
         return sb.toString()
-    }
-    
-    private fun formatTime(time: Long): String {
-         return java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault()).format(java.util.Date(time))
-    }
-
-    /**
-     * Payload generator for future AI (LLM).
-     */
-    fun generatePayloadForAI(report: AdvisorReport, context: AdvisorContext): String {
-        return """
-            {
-              "score": ${report.overallScore},
-              "metrics": {
-                "tir": ${context.metrics.tir70_180},
-                "hypos": ${context.metrics.timeBelow70},
-                "hypers": ${context.metrics.timeAbove180},
-                "meanBg": ${context.metrics.meanBg},
-                "tdd": ${context.metrics.tdd}
-              },
-              "pkpd": {
-                "enabled": ${context.pkpdPrefs.pkpdEnabled},
-                "dia": ${context.pkpdPrefs.initialDiaH},
-                "peak": ${context.pkpdPrefs.initialPeakMin},
-                "isfFusionMax": ${context.pkpdPrefs.isfFusionMaxFactor},
-                "smbTailDamping": ${context.pkpdPrefs.smbTailDamping}
-              },
-              "suggestions": [
-                ${report.recommendations.filter { it.domain is app.aaps.plugins.aps.openAPSAIMI.model.AimiDomain.Pkpd }.joinToString(",") { "\"${try{rh?.gs(it.titleResId)}catch(e:Exception){it.descriptionResId}}\"" }}
-              ]
-            }
-        """.trimIndent()
     }
 
     fun generateBasalProfileProposal(periodDays: Int = 7): BasalProfileProposal {
         val metrics = calculateMetrics(periodDays)
         val profile = profileFunction?.getProfile()
         if (profile == null) {
-            return BasalProfileProposal(
-                generatedAt = System.currentTimeMillis(),
-                periodDays = periodDays,
-                strategy = "NO_PROFILE",
-                scalingFactor = 1.0,
-                rationale = "Profile unavailable",
-                rows = emptyList()
-            )
+            return BasalProfileProposal(System.currentTimeMillis(), periodDays, "NO_PROFILE", 1.0, "Profile unavailable", emptyList())
         }
-
         val (factor, strategy, rationale) = computeBasalProposalFactor(metrics)
         val rows = (0 until 24).map { hour ->
             val current = profile.getBasal((hour * 3600).toLong())
             val proposed = (current * factor).coerceIn(current * 0.85, current * 1.15)
-            BasalHourProposal(
-                hour = hour,
-                current = current,
-                proposed = proposed
-            )
+            BasalHourProposal(hour, current, proposed)
         }
-
-        return BasalProfileProposal(
-            generatedAt = System.currentTimeMillis(),
-            periodDays = periodDays,
-            strategy = strategy,
-            scalingFactor = factor,
-            rationale = rationale,
-            rows = rows
-        )
+        return BasalProfileProposal(System.currentTimeMillis(), periodDays, strategy, factor, rationale, rows)
     }
 
     fun exportBasalProfileProposalText(proposal: BasalProfileProposal): String {
@@ -642,164 +807,66 @@ class AimiAdvisorService {
             appendLine("generatedAt=${proposal.generatedAt}")
             appendLine("periodDays=${proposal.periodDays}")
             appendLine("strategy=${proposal.strategy}")
-            appendLine("scalingFactor=${"%.3f".format(java.util.Locale.US, proposal.scalingFactor)}")
+            appendLine("scalingFactor=${"%.3f".format(Locale.US, proposal.scalingFactor)}")
             appendLine("rationale=${proposal.rationale}")
             appendLine("hour,current,proposed,deltaPct")
         }
-
         val lines = proposal.rows.joinToString(separator = "\n") { row ->
             val deltaPct = if (row.current > 0.0) ((row.proposed / row.current) - 1.0) * 100.0 else 0.0
-            String.format(
-                java.util.Locale.US,
-                "%02d,%.3f,%.3f,%+.1f",
-                row.hour,
-                row.current,
-                row.proposed,
-                deltaPct
-            )
+            String.format(Locale.US, "%02d,%.3f,%.3f,%+.1f", row.hour, row.current, row.proposed, deltaPct)
         }
         return header + lines + "\n"
     }
 
     private fun computeBasalProposalFactor(metrics: AdvisorMetrics): Triple<Double, String, String> {
         return when {
-            metrics.timeBelow54 >= 0.01 || metrics.timeBelow70 >= 0.06 -> {
-                Triple(0.95, "SAFETY_REDUCTION", "Hypo pressure detected in lookback window")
-            }
-            metrics.timeAbove180 >= 0.35 && metrics.tir70_180 < 0.60 && metrics.timeBelow70 <= 0.03 -> {
-                Triple(1.06, "GENTLE_INCREASE", "Persistent hyperglycemia with low hypo pressure")
-            }
-            else -> {
-                Triple(1.00, "HOLD_BASELINE", "No robust pattern for profile-level shift")
-            }
+            metrics.timeBelow54 >= 0.01 || metrics.timeBelow70 >= 0.06 -> Triple(0.95, "SAFETY_REDUCTION", "Hypo pressure detected")
+            metrics.timeAbove180 >= 0.35 && metrics.tir70_180 < 0.60 && metrics.timeBelow70 <= 0.03 -> Triple(1.06, "GENTLE_INCREASE", "Persistent hyperglycemia")
+            else -> Triple(1.00, "HOLD_BASELINE", "No robust pattern")
         }
     }
     
-    /**
-     * Determines if a recommendation should be shown based on history (48h cooldown).
-     * Fix #7: The original logic was INVERTED — it showed recs when a key was recently changed.
-     */
-    private fun shouldShowRecommendation(
-        rec: AimiRecommendation,
-        history: List<app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.AdvisorActionLog>
-    ): Boolean {
-        if (rec.action == null) return true // Informational recs always shown
-
-        // Fix #1b: PKPD adjustments (DIA/Peak) have no effect when T3c Brittle Mode is active.
-        // In T3c, the basal is driven by heuristics, not by the PKPD model. Suppress to avoid confusion.
+    private fun shouldShowRecommendation(rec: AimiRecommendation, history: List<app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.AdvisorActionLog>): Boolean {
+        if (rec.action == null) return true 
         if (rec.domain is app.aaps.plugins.aps.openAPSAIMI.model.AimiDomain.Pkpd) {
-            val isT3cActive = preferences?.get(app.aaps.core.keys.BooleanKey.OApsAIMIT3cBrittleMode) ?: false
+            val brittleKey = object : BooleanNonPreferenceKey {
+                override val key: String = "oa_aimi_t3c_brittle_mode"
+                override val defaultValue: Boolean = false
+                override val exportable: Boolean = true
+            }
+            val isT3cActive = preferences?.get(brittleKey) ?: false
             if (isT3cActive) return false
         }
-
-        // Fix #7: If action is UpdatePreference, suppress if key was recently changed to avoid recommendation loops.
         if (rec.action is app.aaps.plugins.aps.openAPSAIMI.model.AimiAction.PreferenceUpdate) {
             val update = rec.action as app.aaps.plugins.aps.openAPSAIMI.model.AimiAction.PreferenceUpdate
-            // Suppress (return false) if this key was recently modified (48h cooldown)
             return !wasRecentlyChanged(history, update.key.key)
         }
         return true
     }
 
-    private fun wasRecentlyChanged(
-        history: List<app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.AdvisorActionLog>,
-        keyString: String
-    ): Boolean {
-        // Check last 48h
+    private fun wasRecentlyChanged(history: List<app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.AdvisorActionLog>, keyString: String): Boolean {
         val threshold = System.currentTimeMillis() - (48 * 3600 * 1000L)
-        return history.any { 
-            it.timestamp > threshold && 
-            it.key == keyString 
-        }
+        return history.any { it.timestamp > threshold && it.key == keyString }
     }
-    /**
-     * Generates a detailed clinical report (JSON) for expert analysis.
-     */
+
     fun generateClinicalExport(periodDays: Int = 14): String {
         try {
-            if (persistenceLayer == null || tddCalculator == null || tirCalculator == null) {
-                return "{ \"error\": \"Dependencies missing\" }"
-            }
-
-            // 1. Fetch Raw Data
+            if (persistenceLayer == null || tddCalculator == null || tirCalculator == null) return "{ \"error\": \"Dependencies missing\" }"
             val now = System.currentTimeMillis()
             val fromTime = now - (periodDays * 24 * 3600 * 1000L)
-            
-            val bgReadings = try {
-                persistenceLayer.getBgReadingsDataFromTimeToTime(fromTime, now, false)
-                    .map { it.value }
-                    .filter { it > 30.0 }
-            } catch (e: Exception) {
-                emptyList<Double>()
-            }
-            
-            // 2. Build Context
+            val bgReadings = try { persistenceLayer.getBgReadingsDataFromTimeToTime(fromTime, now, false).map { it.value }.filter { it > 30.0 } } catch (e: Exception) { emptyList<Double>() }
             val metrics = calculateMetrics(periodDays)
-            val profile = profileFunction?.getProfile()
-            val isf = profile?.getIsfMgdlTimeFromMidnight(0) ?: 40.0 // Default or specific logic needed to get specific ISF
-            
-            // Dummy Physio Manager (No access to instance here easily without DI)
-            // In a real integration, we'd pass the PhysioManagerMTR instance.
-            // For now, allow null or partial data.
-            
-            // Note: We cannot easily access PhysioManager here. 
-            // We'll create a lightweight engine instance manually.
-            // WARNING: PhysioManager is missing, so physio section will be empty/mocked.
-            
-            val clinicalCtx = AimiClinicalReportEngine.ClinicalContext(
-                bgReadings = bgReadings,
-                isfProfile = isf,
-                metrics = metrics
-            )
-            
-            // Create Engine (We pass null for PhysioManager as we can't access it easily here - TODO: Fix DI)
-            // Wait, we need to handle the missing PhysioManager arg in constructor or make it nullable?
-            // I'll modify ClinicalReportEngine to accept nullable manager? 
-            // Better: use empty mocks.
-            
-            // Using a hack for now: We won't use the Engine class directly if we can't inject.
-            // Actually, I can just reimplement the math logic locally or create a simplified local ReportBuilder 
-            // to avoid DI hell in this existing Service.
-            
-            // Let's implement the logic inline here to ensure it works immediately without breaking DI.
-            
             val stats = JSONObject()
-            
-            // Metabolic
             val mean = if(bgReadings.isNotEmpty()) bgReadings.average() else 0.0
             val stdDev = if(bgReadings.isNotEmpty()) kotlin.math.sqrt(bgReadings.map { (it-mean)*(it-mean) }.sum() / bgReadings.size) else 0.0
             val cv = if(mean > 0) stdDev/mean * 100 else 0.0
-            
-            // LBGI
             var lbgiSum = 0.0
-            bgReadings.forEach { bg ->
-                if(bg > 10) {
-                    val f = 1.509 * (java.lang.Math.pow(java.lang.Math.log(bg), 1.084) - 5.381)
-                    if(f < 0) lbgiSum += 10 * f * f
-                }
-            }
+            bgReadings.forEach { bg -> if(bg > 10) { val f = 1.509 * (java.lang.Math.pow(java.lang.Math.log(bg), 1.084) - 5.381); if(f < 0) lbgiSum += 10 * f * f } }
             val lbgi = if(bgReadings.isNotEmpty()) lbgiSum/bgReadings.size else 0.0
-
             stats.put("meta", JSONObject().put("generated", now))
-            stats.put("metabolic", JSONObject().apply {
-                put("gmi", 3.31 + 0.02392 * mean)
-                put("cv", cv)
-                put("lbgi", lbgi)
-                put("tir", metrics.tir70_180)
-            })
-            
-            stats.put("advisor_metrics", JSONObject().apply {
-                put("hypos", metrics.timeBelow70)
-                put("hypers", metrics.timeAbove180)
-                put("basalRatio", metrics.basalPercent)
-            })
-
+            stats.put("metabolic", JSONObject().apply { put("gmi", 3.31 + 0.02392 * mean); put("cv", cv); put("lbgi", lbgi); put("tir", metrics.tir70_180) })
+            stats.put("advisor_metrics", JSONObject().apply { put("hypos", metrics.timeBelow70); put("hypers", metrics.timeAbove180); put("basalRatio", metrics.basalPercent) })
             return stats.toString(2)
-
-        } catch (e: Exception) {
-            return "{ \"error\": \"${e.message}\" }"
-        }
+        } catch (e: Exception) { return "{ \"error\": \"${e.message}\" }" }
     }
 }
-
-

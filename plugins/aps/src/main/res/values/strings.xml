@@ -1027,4 +1027,19 @@
     <string name="reason_strong_rise_basal">Strong rise (Δmax=%1$.1f) → basal x%2$.2f.</string>
     <string name="aimi_prefs_gemini_oauth_project_id_title">Gemini OAuth Project ID</string>
     <string name="aimi_prefs_gemini_oauth_project_id_summary">Google Cloud Project ID (Required for OAuth headers)</string>
+    <string name="aimi_prefs_openrouter_key_title">OpenRouter API Key</string>
+    <string name="aimi_prefs_openrouter_key_summary">Enter your OpenRouter API Key (sk-or-...)</string>
+    <string name="aimi_prefs_groq_key_title">Groq API Key</string>
+    <string name="aimi_prefs_groq_key_summary">Enter your Groq API Key (gsk_...)</string>
+    <string name="aimi_prefs_custom_url_title">Custom Endpoint URL</string>
+    <string name="aimi_prefs_custom_url_summary">OpenAI-compatible URL (e.g. http://localhost:5000/v1/chat/completions)</string>
+    <string name="aimi_prefs_custom_key_title">Custom API Key (Optional)</string>
+    <string name="aimi_prefs_custom_key_summary">API Key for custom endpoint</string>
+    <string name="aimi_prefs_model_title">Model ID Override</string>
+    <string name="aimi_prefs_model_summary">Specify model ID (e.g. "google/gemini-2.0-flash-exp:free" for OpenRouter)</string>
+    <string name="aimi_prefs_fetch_models_title">Fetch &amp; Test Available Models</string>
+    <string name="aimi_prefs_fetch_models_summary">Fetch models from provider and test connection</string>
+    <string name="aimi_adv_apply_profile">Apply Profile</string>
+    <string name="aimi_adv_apply_settings">Apply Settings</string>
+    <string name="aimi_adv_report_title">Clinical Report &amp; Analysis</string>
 </resources>

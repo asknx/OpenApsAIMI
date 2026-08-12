@@ -1,13 +1,10 @@
 package app.aaps.plugins.aps.openAPSAIMI.physio.gate
 
 import app.aaps.core.interfaces.logging.AAPSLogger
-import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
-import app.aaps.core.keys.interfaces.BooleanPreferenceKey
-import app.aaps.core.keys.interfaces.DoublePreferenceKey
-import app.aaps.core.keys.interfaces.IntPreferenceKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.plugins.aps.openAPSAIMI.physio.GateInput
 import app.aaps.plugins.aps.openAPSAIMI.physio.KernelType
 import app.aaps.plugins.aps.openAPSAIMI.physio.PhysioStateMTR
@@ -15,32 +12,33 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.util.prefs.Preferences
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.whenever
 
 class CosineTrajectoryGateTest {
 
     private lateinit var gate: CosineTrajectoryGate
-    private lateinit var mockSp: MockSP
-    private lateinit var mockLogger: MockLogger
+    private lateinit var mockSp: Preferences
+    private lateinit var mockLogger: AAPSLogger
 
     @Before
     fun setup() {
-        mockSp = MockSP()
-        mockLogger = MockLogger()
+        mockSp = mock(Preferences::class.java)
+        mockLogger = mock(AAPSLogger::class.java)
         gate = CosineTrajectoryGate(mockSp, mockLogger)
         
         // Defaults
-        mockSp.setBoolean(BooleanKey.AimiCosineGateEnabled, true)
-        mockSp.setDouble(DoubleKey.AimiCosineGateAlpha, 2.0)
-        mockSp.setDouble(DoubleKey.AimiCosineGateMinDataQuality, 0.3)
-        mockSp.setDouble(DoubleKey.AimiCosineGateMinSensitivity, 0.7)
-        mockSp.setDouble(DoubleKey.AimiCosineGateMaxSensitivity, 1.3)
-        mockSp.setInt(IntKey.AimiCosineGateMaxPeakShift, 15)
+        whenever(mockSp.get(BooleanKey.AimiCosineGateEnabled)).thenReturn(true)
+        whenever(mockSp.get(DoubleKey.AimiCosineGateAlpha)).thenReturn(2.0)
+        whenever(mockSp.get(DoubleKey.AimiCosineGateMinDataQuality)).thenReturn(0.3)
+        whenever(mockSp.get(DoubleKey.AimiCosineGateMinSensitivity)).thenReturn(0.7)
+        whenever(mockSp.get(DoubleKey.AimiCosineGateMaxSensitivity)).thenReturn(1.3)
+        whenever(mockSp.get(IntKey.AimiCosineGateMaxPeakShift)).thenReturn(15)
     }
 
     @Test
     fun `test Neutral Output when Disabled`() {
-        mockSp.setBoolean(BooleanKey.AimiCosineGateEnabled, false)
+        whenever(mockSp.get(BooleanKey.AimiCosineGateEnabled)).thenReturn(false)
         val input = createInput()
         val result = gate.compute(input)
         assertEquals(1.0, result.effectiveSensitivityMultiplier, 0.01)
@@ -82,11 +80,11 @@ class CosineTrajectoryGateTest {
 
     @Test
     fun `test ACTIVITY Kernel match`() {
-        // Delta -5.0 (norm -0.5), Steps 1500 (norm 1.0), ActivityDetected
+        // Delta -5.0 (norm -0.5), Steps 1500 (norm 1.0), Activity detected via steps + optimal state
         val input = createInput(
             delta = -5.0,
             steps = 1500,
-            physioState = PhysioStateMTR.ACTIVITY_DETECTED
+            physioState = PhysioStateMTR.OPTIMAL
         )
         val result = gate.compute(input)
        
@@ -123,39 +121,5 @@ class CosineTrajectoryGateTest {
             physioState = physioState,
             dataQuality = dataQuality
         )
-    }
-
-    // --- Minimal Stub for SP ---
-    class MockSP : SP {
-        private val bools = mutableMapOf<String, Boolean>()
-        private val doubles = mutableMapOf<String, Double>()
-        private val ints = mutableMapOf<String, Int>()
-
-        fun setBoolean(key: BooleanPreferenceKey, value: Boolean) { bools[key.key] = value }
-        fun setDouble(key: DoublePreferenceKey, value: Double) { doubles[key.key] = value }
-        fun setInt(key: IntPreferenceKey, value: Int) { ints[key.key] = value }
-        
-        // Needed by CosineTrajectoryGate
-        override fun getBoolean(key: BooleanPreferenceKey): Boolean = bools[key.key] ?: false
-        override fun getDouble(key: DoublePreferenceKey, defaultValue: Double): Double = doubles[key.key] ?: defaultValue
-        override fun getInt(key: IntPreferenceKey, defaultValue: Int): Int = ints[key.key] ?: defaultValue
-
-        // Unused stubs to satisfy interface
-        override fun getBoolean(key: String, defaultValue: Boolean): Boolean = bools[key] ?: defaultValue
-        override fun getInt(key: String, defaultValue: Int): Int = ints[key] ?: defaultValue
-        override fun getDouble(key: String, defaultValue: Double): Double = doubles[key] ?: defaultValue
-        override fun getString(key: String, defaultValue: String): String = ""
-        override fun getLong(key: String, defaultValue: Long): Long = 0L
-        override fun contains(key: String): Boolean = false
-        override fun getLong(key: String, defaultValue: Int): Long = 0L
-        // Add others if compilation fails, assume minimal SP interface here for "Mock"
-    }
-    
-    class MockLogger : AAPSLogger {
-        override fun debug(tag: String, msg: String) { println("DEBUG: $msg") }
-        override fun info(tag: String, msg: String) { println("INFO: $msg") }
-        override fun warn(tag: String, msg: String) { println("WARN: $msg") }
-        override fun error(tag: String, msg: String) { println("ERROR: $msg") }
-        override fun error(tag: String, msg: String, t: Throwable) { println("ERROR: $msg") }
     }
 }

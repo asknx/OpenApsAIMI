@@ -59,7 +59,7 @@ class OpenFoodFactsService @Inject constructor(
         null
     }
 
-    private fun parseProductJson(product: JSONObject): ProductInfo {
+    internal fun parseProductJson(product: JSONObject): ProductInfo {
         // Пытаемся получить русское название, если нет - берем дефолтное
         val nameRu = product.optString("product_name_ru", "")
         val name = if (nameRu.isNotBlank()) nameRu else product.optString("product_name", "Unknown Product")
@@ -67,30 +67,54 @@ class OpenFoodFactsService @Inject constructor(
         // OFF отдает БЖУ в отдельном объекте "nutriments"
         val nutriments = product.optJSONObject("nutriments")
 
-        // В отличие от FatSecret, OFF ВСЕГДА приводит данные к 100г/100мл.
-        // Это идеально для AAPS, не нужно искать правильную порцию.
-        val carbs = nutriments?.optDouble("carbohydrates_100g", 0.0) ?: 0.0
-        val protein = nutriments?.optDouble("proteins_100g", 0.0) ?: 0.0
-        val fat = nutriments?.optDouble("fat_100g", 0.0) ?: 0.0
-        val calories = nutriments?.optDouble("energy-kcal_100g", 0.0) ?: 0.0
-
-        // Достаем описание стандартной порции, если оно есть (например "500 ml")
-        var servingDesc = product.optString("serving_size", "")
-        if (servingDesc.isBlank()) {
-            servingDesc = "100 g/ml"
-        } else {
-            servingDesc = "100 g/ml (Package size: $servingDesc)"
+        // Пытаемся найти размер порции/упаковки для пересчета
+        var servingSizeStr = product.optString("serving_size", "")
+        if (servingSizeStr.isBlank()) {
+            servingSizeStr = product.optString("product_quantity", "")
         }
+        if (servingSizeStr.isBlank()) {
+            servingSizeStr = product.optString("quantity", "")
+        }
+
+        val packageSize = extractNumericValue(servingSizeStr)
+        val ratio = if (packageSize > 0) packageSize / 100.0 else 1.0
+
+        // Приоритет: 1. Значение на порцию (если есть), 2. Пересчитанное из 100г, 3. Просто 100г
+        val carbs = nutriments?.optDouble("carbohydrates_serving")?.takeIf { !it.isNaN() }
+            ?: (nutriments?.optDouble("carbohydrates_100g", 0.0)?.times(ratio) ?: 0.0)
+            
+        val protein = nutriments?.optDouble("proteins_serving")?.takeIf { !it.isNaN() }
+            ?: (nutriments?.optDouble("proteins_100g", 0.0)?.times(ratio) ?: 0.0)
+            
+        val fat = nutriments?.optDouble("fat_serving")?.takeIf { !it.isNaN() }
+            ?: (nutriments?.optDouble("fat_100g", 0.0)?.times(ratio) ?: 0.0)
+            
+        val calories = nutriments?.optDouble("energy-kcal_serving")?.takeIf { !it.isNaN() }
+            ?: (nutriments?.optDouble("energy-kcal_100g", 0.0)?.times(ratio) ?: 0.0)
+
+        // Формируем описание порции
+        val servingDesc = if (packageSize > 0) servingSizeStr else "100 g/ml"
 
         return ProductInfo(
             name = name,
-            // optDouble может вернуть NaN, если в JSON была кривая строка. Проверяем для безопасности AAPS.
             carbs = if (carbs.isNaN()) 0.0 else carbs,
             protein = if (protein.isNaN()) 0.0 else protein,
             fat = if (fat.isNaN()) 0.0 else fat,
             calories = if (calories.isNaN()) 0.0 else calories,
             servingDescription = servingDesc
         )
+    }
+
+    private fun extractNumericValue(input: String): Double {
+        if (input.isBlank()) return 0.0
+        return try {
+            // Ищем первое число в строке (может быть с точкой)
+            val regex = Regex("(\\d+[.,]?\\d*)")
+            val match = regex.find(input)
+            match?.value?.replace(',', '.')?.toDouble() ?: 0.0
+        } catch (e: Exception) {
+            0.0
+        }
     }
 
     data class ProductInfo(

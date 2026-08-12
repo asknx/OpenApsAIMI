@@ -22,36 +22,24 @@ class SafetyAggressionPlugin : AimiDecisionPlugin {
     override fun analyze(context: AimiPluginContext): List<AimiAction> {
         val actions = mutableListOf<AimiAction>()
         
-        // Note: Real metrics calculation should happen here or be passed in context.
-        // For this refactoring step, we simulate the logic from AimiAdvisorService.
+        // Use Mean BG from context to assess overall safety
+        val meanBg = context.glucose.glucose
         
-        // Assuming glucose status contains enough info for basic risk assessment
-        val bg = context.glucose.glucose
-        val delta = context.glucose.delta
-        
-        // Critical Rule: If we are low or dropping fast towards low
-        if (bg < 75.0 || (bg < 100.0 && delta < -10.0)) {
+        // Critical Rule: If Mean BG is too low or we have high hypo risk
+        if (meanBg < 105.0) {
             val maxSmb = context.preferences.get(DoubleKey.OApsAIMIMaxSMB)
             
-            if (maxSmb > 1.0) {
-                val newValue = (maxSmb * 0.7 * 10.0).roundToInt() / 10.0
+            if (maxSmb > 0.5) {
+                val reduction = if (meanBg < 90.0) 0.7 else 0.85
+                val newValue = (maxSmb * reduction * 10.0).roundToInt() / 10.0
+                
                 actions.add(
                     AimiAction.PreferenceUpdate(
                         key = DoubleKey.OApsAIMIMaxSMB,
                         newValue = newValue,
-                        reason = "High hypo risk detected (BG: ${bg.toInt()}, Delta: $delta). Reducing Max SMB for safety.",
+                        reason = "Mean BG is low (${meanBg.toInt()} mg/dL). Reducing Max SMB to prevent hypos.",
                         domain = AimiDomain.Safety,
                         priority = AimiPriority.Critical
-                    )
-                )
-                
-                actions.add(
-                    AimiAction.Notification(
-                        title = "Safety Intervention",
-                        message = "SMB aggression reduced automatically due to hypo risk.",
-                        domain = AimiDomain.Safety,
-                        priority = AimiPriority.High,
-                        reason = "Hypo prevention"
                     )
                 )
             }

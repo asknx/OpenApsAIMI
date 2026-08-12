@@ -390,13 +390,19 @@ class AuditorOrchestrator @Inject constructor(
      * Get selected AI provider from preferences
      */
     private fun getProvider(): AuditorAIService.Provider {
-        val providerName = preferences.get(StringKey.AimiAdvisorProvider)
-        return when (providerName.uppercase()) {
-            "OPENAI" -> AuditorAIService.Provider.OPENAI
-            "GEMINI" -> AuditorAIService.Provider.GEMINI
-            "DEEPSEEK" -> AuditorAIService.Provider.DEEPSEEK
-            "CLAUDE" -> AuditorAIService.Provider.CLAUDE
-            else -> AuditorAIService.Provider.GEMINI  // Default
+        val providerName = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
+        return when {
+            providerName.contains("OPENAI") -> AuditorAIService.Provider.OPENAI
+            providerName.contains("GEMINI-3.1-PRO") -> AuditorAIService.Provider.GEMINI_31_PRO
+            providerName.contains("GEMINI-3.5-FLASH-LITE") -> AuditorAIService.Provider.GEMINI_35_FLASH_LITE
+            providerName.contains("GEMINI-3.5-FLASH") -> AuditorAIService.Provider.GEMINI_35_FLASH
+            providerName.contains("GEMINI-2.0-FLASH") -> AuditorAIService.Provider.GEMINI_20_FLASH
+            providerName.contains("DEEPSEEK") -> AuditorAIService.Provider.DEEPSEEK
+            providerName.contains("CLAUDE") -> AuditorAIService.Provider.CLAUDE
+            providerName.contains("OPENROUTER") -> AuditorAIService.Provider.OPENROUTER
+            providerName.contains("GROQ") -> AuditorAIService.Provider.GROQ
+            providerName.contains("CUSTOM") -> AuditorAIService.Provider.CUSTOM
+            else -> AuditorAIService.Provider.GEMINI_35_FLASH_LITE // New Default
         }
     }
     

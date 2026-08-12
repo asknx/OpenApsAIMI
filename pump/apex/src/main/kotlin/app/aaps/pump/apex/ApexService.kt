@@ -452,7 +452,7 @@ class ApexService: DaggerService(), ApexBluetoothCallback {
 
         if (response.code == CommandResponse.Code.Invalid) {
             aapsLogger.error(LTag.PUMPCOMM, "[caller=$caller] Cannot begin bolus while in special mode")
-            createSpecialModeAlarm()
+            createSpecialModeNotification()
             return false
         }
 
@@ -1401,11 +1401,11 @@ class ApexService: DaggerService(), ApexBluetoothCallback {
         if (!manualDisconnect) spawnLoop()
     }
 
-    private fun createSpecialModeAlarm() {
-        uiInteraction.runAlarm(
+    private fun createSpecialModeNotification() {
+        uiInteraction.addNotification(
+            Notification.PUMP_WARNING,
             rh.gs(R.string.bolus_error_pump_special_mode),
-            rh.gs(R.string.pump_special_mode),
-            app.aaps.core.ui.R.raw.boluserror
+            Notification.NORMAL
         )
     }
 

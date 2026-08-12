@@ -38,8 +38,6 @@ class AuditorNotificationManager @Inject constructor(
         private const val CHANNEL_ID = "AIMI_AUDITOR_INSIGHTS"
         private const val CHANNEL_NAME = "AIMI Auditor Insights"
         private const val NOTIFICATION_ID = 8888  // Unique ID for Auditor
-        
-        private const val ACTION_OPEN_REPORT = "app.aaps.AUDITOR_OPEN_REPORT"
     }
     
     init {
@@ -155,16 +153,15 @@ class AuditorNotificationManager @Inject constructor(
      * TODO: Replace with actual AuditorVerdictActivity intent
      */
     private fun createOpenReportIntent(): PendingIntent {
-        // For now, use a generic intent
-        // Replace with actual deep link to AuditorVerdictActivity
-        val intent = Intent(ACTION_OPEN_REPORT).apply {
-            setPackage(context.packageName)
+        // 🚀 FIX: Open AimiProfileAdvisorActivity directly instead of a non-existent action
+        val intent = Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiProfileAdvisorActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("FROM_NOTIFICATION", true)
         }
         
         return PendingIntent.getActivity(
             context,
-            0,
+            NOTIFICATION_ID, // Use unique request code
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

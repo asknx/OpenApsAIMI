@@ -21,19 +21,21 @@ class StableControlPlugin : AimiDecisionPlugin {
     override fun analyze(context: AimiPluginContext): List<AimiAction> {
         val actions = mutableListOf<AimiAction>()
         
-        // Simulation of AimiAdvisorService Rule 2
+        // Use Mean BG from context to decide if we need more aggression
+        val meanBg = context.glucose.glucose
         val lunchFactor = context.preferences.get(DoubleKey.OApsAIMILunchFactor)
         
-        // If we have headroom to increase aggression
-        if (lunchFactor < 1.2) {
-            val newValue = (lunchFactor + 0.1 * 10.0).roundToInt() / 10.0
+        // If mean BG is suboptimal (> 140 mg/dL) and we have headroom
+        if (meanBg > 140.0 && lunchFactor < 2.0) {
+            val increment = if (meanBg > 180.0) 0.2 else 0.1
+            val newValue = ((lunchFactor + increment) * 10.0).roundToInt() / 10.0
             actions.add(
                 AimiAction.PreferenceUpdate(
                     key = DoubleKey.OApsAIMILunchFactor,
                     newValue = newValue,
-                    reason = "Stable glucose but TIR suboptimal. Increasing Lunch Factor for better post-prandial control.",
+                    reason = "Mean BG is high (${meanBg.toInt()} mg/dL). Increasing Lunch Factor to improve post-prandial control.",
                     domain = AimiDomain.Basal,
-                    priority = AimiPriority.High
+                    priority = AimiPriority.Medium
                 )
             )
         }

@@ -43,19 +43,20 @@ class AuditorAIService @Inject constructor(
     }
     
     enum class Provider(val id: String, val displayName: String) {
-        OPENAI("openai", "ChatGPT (GPT-5.2)"),
-        GEMINI("gemini", "Gemini (3.0 Flash)"),
+        OPENAI("openai", "OpenAI (GPT-5.2)"),
+        GEMINI_31_PRO("gemini-3.1-pro", "Gemini 3.1 Pro (Heavy Lifter)"),
+        GEMINI_35_FLASH("gemini-3.5-flash", "Gemini 3.5 Flash (High Speed)"),
+        GEMINI_35_FLASH_LITE("gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite (Cost Efficient)"),
+        GEMINI_20_FLASH("gemini-2.0-flash", "Gemini 2.0 Flash (Experimental)"),
         DEEPSEEK("deepseek", "DeepSeek (Chat)"),
-        CLAUDE("claude", "Claude (3.5 Sonnet)")
+        CLAUDE("claude", "Claude (3.5 Sonnet)"),
+        OPENROUTER("openrouter", "OpenRouter (Universal)"),
+        GROQ("groq", "Groq (Ultra-Fast)"),
+        CUSTOM("custom", "Custom (OpenAI-compatible)")
     }
     
     /**
      * Get audit verdict from AI provider
-     * 
-     * @param input Complete auditor input
-     * @param provider AI provider to use
-     * @param timeoutMs Timeout in milliseconds
-     * @return Auditor verdict or null if failed/timeout
      */
     suspend fun getVerdict(
         input: AuditorInput,
@@ -67,11 +68,12 @@ class AuditorAIService @Inject constructor(
         // Get API key or OAuth Token
         val apiKey = getApiKey(provider)
         val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth)
-        val oauthToken = if (provider == Provider.GEMINI && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
+        val isGemini = provider in listOf(Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH)
+        val oauthToken = if (isGemini && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
             geminiOAuthManager.getValidAccessToken()
         } else null
 
-        if (apiKey.isBlank() && oauthToken == null) {
+        if (apiKey.isBlank() && oauthToken == null && provider != Provider.CUSTOM) {
             AuditorStatusTracker.updateStatus(AuditorStatusTracker.Status.OFFLINE_NO_APIKEY)
             auditorStatusLiveData.notifyUpdate()
             return@withContext null
@@ -89,10 +91,17 @@ class AuditorAIService @Inject constructor(
                 // Call AI with timeout
                 val responseJson = withTimeoutOrNull(timeoutMs) {
                     when (provider) {
-                        Provider.OPENAI -> callOpenAI(apiKey, prompt, useHighPerf)
-                        Provider.GEMINI -> callGemini(apiKey, oauthToken, prompt, useHighPerf)
-                        Provider.DEEPSEEK -> callDeepSeek(apiKey, prompt) // DeepSeek is always cheap/fast
+                        Provider.OPENAI -> callOpenAICompatible(apiKey, "https://api.openai.com/v1/chat/completions", getModel(provider, useHighPerf), prompt)
+                        Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH -> callGemini(apiKey, oauthToken, prompt, useHighPerf, provider)
+                        Provider.DEEPSEEK -> callOpenAICompatible(apiKey, "https://api.deepseek.com/v1/chat/completions", getModel(provider, useHighPerf), prompt)
                         Provider.CLAUDE -> callClaude(apiKey, prompt, useHighPerf)
+                        Provider.OPENROUTER -> callOpenAICompatible(apiKey, "https://openrouter.ai/api/v1/chat/completions", getModel(provider, useHighPerf), prompt)
+                        Provider.GROQ -> callOpenAICompatible(apiKey, "https://api.groq.com/openai/v1/chat/completions", getModel(provider, useHighPerf), prompt)
+                        Provider.CUSTOM -> {
+                            val url = preferences.get(StringKey.AimiAdvisorCustomUrl)
+                            val model = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "custom-model" }
+                            callOpenAICompatible(apiKey, url, model, prompt)
+                        }
                     }
                 }
                 
@@ -101,36 +110,29 @@ class AuditorAIService @Inject constructor(
                     try {
                         return@withContext parseVerdict(responseJson, provider)
                     } catch (e: Exception) {
-                        // JSON parsing failed - unlikely to succeed on retry unless response was partial
                         AuditorStatusTracker.updateStatus(AuditorStatusTracker.Status.ERROR_PARSE)
                         auditorStatusLiveData.notifyUpdate()
                         return@withContext null
                     }
                 } else {
-                    // Time out in coroutine
                     throw java.net.SocketTimeoutException("Coroutine timeout after ${timeoutMs}ms")
                 }
 
             } catch (e: Exception) {
                 lastException = e
-                // Only retry on network/timeout/server errors
                 val isRetryable = e is java.net.SocketTimeoutException || 
                                   e is java.io.IOException || 
                                   e is java.net.UnknownHostException
                                   
                 if (attempt < maxRetries && isRetryable) {
-                    val backoff = attempt * 2000L // 2s, 4s
-                    // Log retry
-                    println("⚠️ Auditor ${provider} attempt $attempt failed: ${e.message}. Retrying in ${backoff}ms...")
-                    Thread.sleep(backoff) // Blocking inside IO dispatcher is acceptable here
+                    val backoff = attempt * 2000L
+                    kotlinx.coroutines.delay(backoff)
                 } else {
-                    // Final failure or non-retryable
                     break
                 }
             }
         }
         
-        // Identify final error
         when (lastException) {
             is java.net.UnknownHostException -> AuditorStatusTracker.updateStatus(AuditorStatusTracker.Status.OFFLINE_NO_NETWORK)
             is java.net.SocketTimeoutException -> AuditorStatusTracker.updateStatus(AuditorStatusTracker.Status.ERROR_TIMEOUT)
@@ -140,33 +142,102 @@ class AuditorAIService @Inject constructor(
         auditorStatusLiveData.notifyUpdate()
         return@withContext null
     }
-    
+
     /**
-     * Get API key for provider from preferences
+     * Generic Chat Completion for AI Coaching and reasoning
      */
-    private fun getApiKey(provider: Provider): String {
-        return when (provider) {
-            Provider.OPENAI -> preferences.get(StringKey.AimiAdvisorOpenAIKey)
-            Provider.GEMINI -> preferences.get(StringKey.AimiAdvisorGeminiKey)
-            Provider.DEEPSEEK -> preferences.get(StringKey.AimiAdvisorDeepSeekKey)
-            Provider.CLAUDE -> preferences.get(StringKey.AimiAdvisorClaudeKey)
+    suspend fun getChatCompletion(
+        prompt: String,
+        provider: Provider,
+        useHighPerf: Boolean = true
+    ): String? = withContext(Dispatchers.IO) {
+        val apiKey = getApiKey(provider)
+        val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth)
+        val isGemini = provider in listOf(Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH)
+        val oauthToken = if (isGemini && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
+            geminiOAuthManager.getValidAccessToken()
+        } else null
+
+        try {
+            val responseJson = when (provider) {
+                Provider.OPENAI -> callOpenAICompatible(apiKey, "https://api.openai.com/v1/chat/completions", getModel(provider, useHighPerf), prompt)
+                Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH -> callGemini(apiKey, oauthToken, prompt, useHighPerf, provider)
+                Provider.DEEPSEEK -> callOpenAICompatible(apiKey, "https://api.deepseek.com/v1/chat/completions", getModel(provider, useHighPerf), prompt)
+                Provider.CLAUDE -> callClaude(apiKey, prompt, useHighPerf)
+                Provider.OPENROUTER -> callOpenAICompatible(apiKey, "https://openrouter.ai/api/v1/chat/completions", getModel(provider, useHighPerf), prompt)
+                Provider.GROQ -> callOpenAICompatible(apiKey, "https://api.groq.com/openai/v1/chat/completions", getModel(provider, useHighPerf), prompt)
+                Provider.CUSTOM -> {
+                    val url = preferences.get(StringKey.AimiAdvisorCustomUrl)
+                    val model = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "custom-model" }
+                    callOpenAICompatible(apiKey, url, model, prompt)
+                }
+            }
+
+            val root = JSONObject(responseJson)
+            return@withContext when (provider) {
+                Provider.OPENAI, Provider.DEEPSEEK, Provider.OPENROUTER, Provider.GROQ, Provider.CUSTOM -> {
+                    root.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
+                }
+                Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH -> {
+                    root.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
+                }
+                Provider.CLAUDE -> {
+                    root.getJSONArray("content").getJSONObject(0).getString("text")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext null
         }
     }
     
-    /**
-     * Call OpenAI API
-     */
-    private fun callOpenAI(apiKey: String, prompt: String, useHighPerf: Boolean): String {
-        val model = if (useHighPerf) "gpt-4o" else "gpt-4o-mini"
+    private fun getApiKey(provider: Provider): String {
+        return when (provider) {
+            Provider.OPENAI -> preferences.get(StringKey.AimiAdvisorOpenAIKey)
+            Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH ->
+                preferences.get(StringKey.AimiAdvisorGeminiKey)
+            Provider.DEEPSEEK -> preferences.get(StringKey.AimiAdvisorDeepSeekKey)
+            Provider.CLAUDE -> preferences.get(StringKey.AimiAdvisorClaudeKey)
+            Provider.OPENROUTER -> preferences.get(StringKey.AimiAdvisorOpenRouterKey)
+            Provider.GROQ -> preferences.get(StringKey.AimiAdvisorGroqKey)
+            Provider.CUSTOM -> preferences.get(StringKey.AimiAdvisorCustomKey)
+        }
+    }
+    
+    private fun getModel(provider: Provider, useHighPerf: Boolean): String {
+        val userModel = preferences.get(StringKey.AimiAdvisorModel)
+        val isGemini = provider in listOf(Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH)
+        if (userModel.isNotBlank() && !isGemini) return userModel
+        
+        return when (provider) {
+            Provider.OPENAI -> "gpt-5.2" 
+            Provider.GEMINI_31_PRO -> "gemini-3.1-pro-preview"
+            Provider.GEMINI_35_FLASH -> "gemini-3.5-flash"
+            Provider.GEMINI_35_FLASH_LITE -> "gemini-3.5-flash-lite"
+            Provider.GEMINI_20_FLASH -> "gemini-2.0-flash"
+            Provider.DEEPSEEK -> "deepseek-chat"
+            Provider.CLAUDE -> if (useHighPerf) "claude-3-5-sonnet-20241022" else "claude-3-5-haiku-20241022"
+            Provider.OPENROUTER -> "google/gemini-2.0-flash-exp:free"
+            Provider.GROQ -> if (useHighPerf) "llama-3.3-70b-versatile" else "llama-3.1-8b-instant"
+            Provider.CUSTOM -> ""
+        }
+    }
 
-        val url = URL(OPENAI_URL)
+    private fun callOpenAICompatible(apiKey: String, baseUrl: String, model: String, prompt: String): String {
+        val url = URL(baseUrl)
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Authorization", "Bearer $apiKey")
-            connectTimeout = 15_000 // Reduced per audit
-            readTimeout = DEFAULT_TIMEOUT_MS.toInt()   // Reduced per audit
+            if (apiKey.isNotBlank()) setRequestProperty("Authorization", "Bearer $apiKey")
+            
+            if (baseUrl.contains("openrouter.ai")) {
+                setRequestProperty("HTTP-Referer", "https://aaps.app")
+                setRequestProperty("X-Title", "AAPS AIMI Advisor")
+            }
+            
+            connectTimeout = 15_000
+            readTimeout = DEFAULT_TIMEOUT_MS.toInt()
         }
         
         val requestBody = JSONObject().apply {
@@ -178,20 +249,24 @@ class AuditorAIService @Inject constructor(
                 })
             })
             put("max_tokens", 2048)
-            put("response_format", JSONObject().put("type", "json_object"))
+            put("temperature", 0.3)
+            if (!baseUrl.contains("groq") && !baseUrl.contains("openrouter")) {
+                put("response_format", JSONObject().put("type", "json_object"))
+            }
         }
         
         OutputStreamWriter(connection.outputStream).use { it.write(requestBody.toString()) }
         
         val responseCode = connection.responseCode
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw Exception("HTTP $responseCode")
+             val errorStream = connection.errorStream ?: connection.inputStream
+             val errorResponse = errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
+             throw Exception("HTTP $responseCode: $errorResponse")
         }
         
-        // Robust stream reading (same as Vision Providers fix)
         val response = StringBuilder()
         connection.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-            val buffer = CharArray(8192)  // 8KB chunks
+            val buffer = CharArray(8192)
             var charsRead: Int
             while (reader.read(buffer).also { charsRead = it } != -1) {
                 response.append(buffer, 0, charsRead)
@@ -202,20 +277,14 @@ class AuditorAIService @Inject constructor(
     
     private val geminiResolver = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiModelResolver(context)
 
-    /**
-     * Call Gemini API
-     */
-    private fun callGemini(apiKey: String?, oauthToken: String?, prompt: String, useHighPerf: Boolean): String {
-        // 1. Select Model based on complexity
-        val modelName = if (useHighPerf) "gemini-3.1-pro" else "gemini-3.1-flash"
-        
+    private fun callGemini(apiKey: String?, oauthToken: String?, prompt: String, useHighPerf: Boolean, provider: Provider): String {
+        val modelName = getModel(provider, useHighPerf)
         val primaryModel = geminiResolver.resolveGenerateContentModel(apiKey, oauthToken, modelName)
         
         try {
             return executeGeminiRequest(apiKey, oauthToken, prompt, primaryModel)
         } catch (e: Exception) {
-            // 2. Fallback
-            val fallbackModel = "gemini-3.1-flash"
+            val fallbackModel = if (provider == Provider.GEMINI_35_FLASH_LITE) "gemini-3.5-flash-lite" else "gemini-1.5-flash"
             return executeGeminiRequest(apiKey, oauthToken, prompt, fallbackModel)
         }
     }
@@ -234,7 +303,6 @@ class AuditorAIService @Inject constructor(
             setRequestProperty("Content-Type", "application/json")
             if (oauthToken != null) {
                 setRequestProperty("Authorization", "Bearer $oauthToken")
-                // 🚨 Crucial: x-goog-user-project is often required for OAuth in AI Studio
                 geminiOAuthManager.getProjectId()?.let { 
                     if (it.isNotEmpty()) setRequestProperty("x-goog-user-project", it) 
                 }
@@ -281,57 +349,8 @@ class AuditorAIService @Inject constructor(
         }
     }
     
-    /**
-     * Call DeepSeek API
-     */
-    private fun callDeepSeek(apiKey: String, prompt: String): String {
-        val url = URL(DEEPSEEK_URL)
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            doOutput = true
-            setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Authorization", "Bearer $apiKey")
-            connectTimeout = 15_000 // Reduced per audit
-            readTimeout = DEFAULT_TIMEOUT_MS.toInt()   // Reduced per audit
-        }
-        
-        val requestBody = JSONObject().apply {
-            put("model", "deepseek-chat")
-            put("messages", JSONArray().apply {
-                put(JSONObject().apply {
-                    put("role", "user")
-                    put("content", prompt)
-                })
-            })
-            put("max_tokens", 2048)  // FIX: Was missing - same as other providers
-            put("temperature", 0.3)
-            put("response_format", JSONObject().put("type", "json_object"))
-        }
-        
-        OutputStreamWriter(connection.outputStream).use { it.write(requestBody.toString()) }
-        
-        val responseCode = connection.responseCode
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw Exception("HTTP $responseCode")
-        }
-        
-        // Robust stream reading (same as Vision Providers fix)
-        val response = StringBuilder()
-        connection.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-            val buffer = CharArray(8192)  // 8KB chunks
-            var charsRead: Int
-            while (reader.read(buffer).also { charsRead = it } != -1) {
-                response.append(buffer, 0, charsRead)
-            }
-        }
-        return response.toString()
-    }
-    
-    /**
-     * Call Claude API
-     */
     private fun callClaude(apiKey: String, prompt: String, useHighPerf: Boolean): String {
-        val model = if (useHighPerf) "claude-3-5-sonnet-20241022" else "claude-3-haiku-20240307"
+        val model = getModel(Provider.CLAUDE, useHighPerf)
         val url = URL(CLAUDE_URL)
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -339,8 +358,8 @@ class AuditorAIService @Inject constructor(
             setRequestProperty("Content-Type", "application/json")
             setRequestProperty("x-api-key", apiKey)
             setRequestProperty("anthropic-version", "2023-06-01")
-            connectTimeout = 15_000 // Reduced per audit
-            readTimeout = DEFAULT_TIMEOUT_MS.toInt()   // Reduced per audit
+            connectTimeout = 15_000
+            readTimeout = DEFAULT_TIMEOUT_MS.toInt()
         }
         
         val requestBody = JSONObject().apply {
@@ -362,10 +381,9 @@ class AuditorAIService @Inject constructor(
             throw Exception("HTTP $responseCode")
         }
         
-        // Robust stream reading (same as Vision Providers fix)
         val response = StringBuilder()
         connection.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-            val buffer = CharArray(8192)  // 8KB chunks
+            val buffer = CharArray(8192)
             var charsRead: Int
             while (reader.read(buffer).also { charsRead = it } != -1) {
                 response.append(buffer, 0, charsRead)
@@ -374,52 +392,71 @@ class AuditorAIService @Inject constructor(
         return response.toString()
     }
     
-    /**
-     * Parse verdict from API response
-     */
     private fun parseVerdict(responseJson: String, provider: Provider): AuditorVerdict {
         val root = JSONObject(responseJson)
         
         val contentJson = when (provider) {
-            Provider.OPENAI, Provider.DEEPSEEK -> {
-                // OpenAI/DeepSeek format: choices[0].message.content
-                root.getJSONArray("choices")
-                    .getJSONObject(0)
-                    .getJSONObject("message")
-                    .getString("content")
+            Provider.OPENAI, Provider.DEEPSEEK, Provider.OPENROUTER, Provider.GROQ, Provider.CUSTOM -> {
+                root.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
             }
-            Provider.GEMINI -> {
-                // Gemini format: candidates[0].content.parts[0].text
-                root.getJSONArray("candidates")
-                    .getJSONObject(0)
-                    .getJSONObject("content")
-                    .getJSONArray("parts")
-                    .getJSONObject(0)
-                    .getString("text")
+            Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH -> {
+                root.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
             }
             Provider.CLAUDE -> {
-                // Claude format: content[0].text
-                root.getJSONArray("content")
-                    .getJSONObject(0)
-                    .getString("text")
+                root.getJSONArray("content").getJSONObject(0).getString("text")
             }
         }
         
-        // Extract JSON from markdown code block if present
         val jsonStr = if (contentJson.contains("```json")) {
-            contentJson.substringAfter("```json")
-                .substringBefore("```")
-                .trim()
+            contentJson.substringAfter("```json").substringBefore("```").trim()
         } else if (contentJson.contains("```")) {
-            contentJson.substringAfter("```")
-                .substringBefore("```")
-                .trim()
+            contentJson.substringAfter("```").substringBefore("```").trim()
         } else {
             contentJson.trim()
         }
         
-        // Parse verdict JSON
         val verdictJson = JSONObject(jsonStr)
         return AuditorVerdict.fromJSON(verdictJson)
+    }
+
+    suspend fun fetchAvailableModels(provider: Provider): List<String> = withContext(Dispatchers.IO) {
+        val apiKey = getApiKey(provider)
+        val baseUrl = when (provider) {
+            Provider.OPENAI -> "https://api.openai.com/v1/models"
+            Provider.OPENROUTER -> "https://openrouter.ai/api/v1/models"
+            Provider.GROQ -> "https://api.groq.com/openai/v1/models"
+            Provider.CUSTOM -> {
+                val url = preferences.get(StringKey.AimiAdvisorCustomUrl)
+                if (url.isBlank()) return@withContext emptyList()
+                if (url.contains("/chat/completions")) url.replace("/chat/completions", "/models")
+                else if (url.endsWith("/")) url + "models"
+                else url.substringBeforeLast("/") + "/models"
+            }
+            else -> return@withContext emptyList()
+        }
+
+        try {
+            val url = URL(baseUrl)
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                if (apiKey.isNotBlank()) setRequestProperty("Authorization", "Bearer $apiKey")
+                connectTimeout = 5000
+                readTimeout = 5000
+            }
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                val root = JSONObject(response)
+                val data = root.getJSONArray("data")
+                val models = mutableListOf<String>()
+                for (i in 0 until data.length()) {
+                    models.add(data.getJSONObject(i).getString("id"))
+                }
+                return@withContext models.sorted()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return@withContext emptyList()
     }
 }

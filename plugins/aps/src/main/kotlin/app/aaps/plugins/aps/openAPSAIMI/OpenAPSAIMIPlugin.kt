@@ -540,7 +540,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                 currentBG = glucose, 
                 currentDelta = currentDelta ?: 0.0,
                 iob = iobCalc.iob,
-                cob = mealData.carbs
+                cob = mealData.mealCOB
             )
             if (physioMults.isfFactor != 1.0) {
                 blended *= physioMults.isfFactor
@@ -617,7 +617,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
             currentBG = glucoseForPhysio, 
             currentDelta = deltaForPhysio,
             iob = iobCalc.iob,
-            cob = mealDataForPhysio.carbs
+            cob = mealDataForPhysio.mealCOB
         )
         
         if (!physioMults.isNeutral()) {
@@ -1210,22 +1210,28 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                         stringKey = StringKey.AimiAdvisorProvider,
                         title = R.string.aimi_prefs_provider_title,
                         entries = arrayOf(
-                            rh.gs(R.string.aimi_prefs_provider_openai),
+                            "OpenAI (GPT-5.2)",
                             "Gemini 3.1 Pro (Heavy Lifter)",
-                            "Gemini 3.1 Flash (High Speed)",
-                            "Gemini 3.1 Flash-Lite (Cost Efficient)",
+                            "Gemini 3.5 Flash (High Speed)",
+                            "Gemini 3.5 Flash-Lite (Cost Efficient)",
                             "Gemini 2.0 Flash (Experimental)",
-                            rh.gs(R.string.aimi_prefs_provider_deepseek),
-                            rh.gs(R.string.aimi_prefs_provider_claude)
+                            "DeepSeek (Chat)",
+                            "Claude (3.5 Sonnet)",
+                            "OpenRouter (Universal Hub)",
+                            "Groq (Ultra-Fast)",
+                            "Custom OpenAI Endpoint"
                         ),
                         entryValues = arrayOf(
                             "OPENAI",
                             "GEMINI-3.1-PRO",
-                            "GEMINI-3.1-FLASH",
-                            "GEMINI-3.1-FLASH-LITE",
+                            "GEMINI-3.5-FLASH",
+                            "GEMINI-3.5-FLASH-LITE",
                             "GEMINI-2.0-FLASH",
                             "DEEPSEEK",
-                            "CLAUDE"
+                            "CLAUDE",
+                            "OPENROUTER",
+                            "GROQ",
+                            "CUSTOM"
                         )
                     ).apply {
                         dialogTitle = rh.gs(R.string.aimi_prefs_provider_dialog_title)
@@ -1250,6 +1256,73 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             title = R.string.aimi_prefs_gemini_key_title
                         )
                     )
+                    
+                    // OpenRouter Key
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorOpenRouterKey,
+                            summary = R.string.aimi_prefs_openrouter_key_summary,
+                            title = R.string.aimi_prefs_openrouter_key_title
+                        )
+                    )
+
+                    // Groq Key
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorGroqKey,
+                            summary = R.string.aimi_prefs_groq_key_summary,
+                            title = R.string.aimi_prefs_groq_key_title
+                        )
+                    )
+
+                    // Custom Provider Settings
+                    addPreference(PreferenceCategory(context).apply {
+                        title = "Custom Endpoint Settings"
+                    })
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorCustomUrl,
+                            summary = R.string.aimi_prefs_custom_url_summary,
+                            title = R.string.aimi_prefs_custom_url_title
+                        )
+                    )
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorCustomKey,
+                            summary = R.string.aimi_prefs_custom_key_summary,
+                            title = R.string.aimi_prefs_custom_key_title
+                        )
+                    )
+
+                    // Model Selection
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorModel,
+                            summary = R.string.aimi_prefs_model_summary,
+                            title = R.string.aimi_prefs_model_title
+                        )
+                    )
+
+                    // Fetch Models Action
+                    addPreference(app.aaps.core.validators.preferences.AdaptiveClickPreference(context, title = R.string.aimi_prefs_fetch_models_title, stringKey = StringKey.AimiAdvisorModel).apply {
+                        setOnPreferenceClickListener {
+                            MainScope().launch {
+                                try {
+                                    val providerStr = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
+                                    Toast.makeText(context, "Testing connection to $providerStr...", Toast.LENGTH_SHORT).show()
+                                    // Connection test logic could be here, but needs AuditorAIService
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            true
+                        }
+                    })
                     
                     // Gemini Auth Switch (Hidden for Stable Commit)
                     addPreference(app.aaps.core.validators.preferences.AdaptiveSwitchPreference(

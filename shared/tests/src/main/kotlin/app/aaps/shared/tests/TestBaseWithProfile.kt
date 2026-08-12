@@ -15,7 +15,6 @@ import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.ProcessedTbrEbData
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.iob.IobCobCalculator
-import app.aaps.core.interfaces.insulin.ConcentrationHelper
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileStore
@@ -85,7 +84,6 @@ open class TestBaseWithProfile : TestBase() {
     @Mock lateinit var typedArray: TypedArray
     @Mock lateinit var sharedPreferences: SharedPreferences
     @Mock lateinit var sharedPreferencesEditor: SharedPreferences.Editor
-    @Mock lateinit var ch: ConcentrationHelper
 
     lateinit var dateUtil: DateUtil
     lateinit var profileUtil: ProfileUtil
@@ -187,9 +185,7 @@ open class TestBaseWithProfile : TestBase() {
         dateUtil = spy(DateUtilImpl(context))
         decimalFormatter = DecimalFormatterImpl(rh)
         profileUtil = ProfileUtilImpl(preferences, decimalFormatter)
-        testPumpPlugin = TestPumpPlugin(rh, ch)
-        whenever(ch.fromPump(anyDouble())).doAnswer { it.getArgument(0) }
-        whenever(ch.toPump(anyDouble())).doAnswer { it.getArgument(0) }
+        testPumpPlugin = TestPumpPlugin(rh)
         whenever(context.applicationContext).thenReturn(context)
         whenever(context.androidInjector()).thenReturn(injector.androidInjector())
         whenever(context.theme).thenReturn(theme)
@@ -198,7 +194,7 @@ open class TestBaseWithProfile : TestBase() {
         whenever(activePlugin.activePump).thenReturn(testPumpPlugin)
         whenever(preferences.get(StringKey.GeneralUnits)).thenReturn(GlucoseUnit.MGDL.asText)
         deltaCalculator = DeltaCalculator(aapsLogger)
-        apsResultProvider = Provider { DetermineBasalResult(aapsLogger, constraintsChecker, preferences, activePlugin, processedTbrEbData, profileFunction, rh, decimalFormatter, dateUtil, apsResultProvider, ch) }
+        apsResultProvider = Provider { DetermineBasalResult(aapsLogger, constraintsChecker, preferences, activePlugin, processedTbrEbData, profileFunction, rh, decimalFormatter, dateUtil, apsResultProvider) }
         hardLimits = HardLimitsMock(preferences, rh)
         validProfile = ProfileSealed.Pure(pureProfileFromJson(JSONObject(validProfileJSON), dateUtil)!!, activePlugin)
         effectiveProfileSwitch = EPS(
@@ -330,7 +326,7 @@ open class TestBaseWithProfile : TestBase() {
             val arg3 = invocation.getArgument<String?>(3)
             String.format(rh.gs(string), arg1, arg2, arg3)
         }.whenever(rh).gs(anyInt(), anyString(), anyInt(), anyString())
-        pumpEnactResultProvider = Provider { PumpEnactResultObject(rh, ch) }
+        pumpEnactResultProvider = Provider { PumpEnactResultObject(rh) }
         profileStoreProvider = Provider { ProfileStoreObject(aapsLogger, activePlugin, config, rh, rxBus, hardLimits, dateUtil) }
         glucoseStatusCalculatorSMB = GlucoseStatusCalculatorSMB(aapsLogger, iobCobCalculator, dateUtil, decimalFormatter, DeltaCalculator(aapsLogger))
     }

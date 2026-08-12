@@ -106,6 +106,11 @@ android {
 
     namespace = "app.aaps"
 
+    configurations.all {
+        exclude(group = "org.json", module = "json")
+        exclude(group = "com.vaadin.external.google", module = "android-json")
+    }
+
     defaultConfig {
         // Remplace par des valeurs fixes si besoin (ex. 21, 34, etc.)
         minSdk = Versions.minSdk
@@ -272,7 +277,9 @@ dependencies {
     testImplementation(project(":shared:tests"))
     androidTestImplementation(project(":shared:tests"))
     androidTestImplementation(libs.androidx.test.rules)
-    androidTestImplementation(libs.org.skyscreamer.jsonassert)
+    androidTestImplementation(libs.org.skyscreamer.jsonassert) {
+        exclude(group = "com.vaadin.external.google", module = "android-json")
+    }
 
     debugImplementation(libs.com.squareup.leakcanary.android)
 

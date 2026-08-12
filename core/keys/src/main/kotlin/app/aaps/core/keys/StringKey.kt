@@ -68,6 +68,11 @@ enum class StringKey(
     AimiAdvisorGeminiKey("aimi_advisor_gemini_key", "", isPassword = true),
     AimiAdvisorDeepSeekKey("aimi_advisor_deepseek_key", "", isPassword = true),
     AimiAdvisorClaudeKey("aimi_advisor_claude_key", "", isPassword = true),
+    AimiAdvisorOpenRouterKey("aimi_advisor_openrouter_key", "", isPassword = true),
+    AimiAdvisorGroqKey("aimi_advisor_groq_key", "", isPassword = true),
+    AimiAdvisorCustomUrl("aimi_advisor_custom_url", ""),
+    AimiAdvisorCustomKey("aimi_advisor_custom_key", "", isPassword = true),
+    AimiAdvisorModel("aimi_advisor_model", ""),
     AimiAdvisorProvider("aimi_advisor_provider", "OPENAI"),
     AimiAuditorMode("aimi_auditor_mode", "AUDIT_ONLY"),  // 🧠 AI Auditor mode: AUDIT_ONLY, SOFT_MODULATION, HIGH_RISK_ONLY
 

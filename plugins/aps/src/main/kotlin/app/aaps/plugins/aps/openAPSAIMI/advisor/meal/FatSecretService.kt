@@ -173,7 +173,7 @@ class FatSecretService @Inject constructor(
         null
     }
 
-    private fun parseFoodJson(food: JSONObject): ProductInfo {
+    internal fun parseFoodJson(food: JSONObject): ProductInfo {
         val name = food.getString("food_name")
         val servingsObj = food.optJSONObject("servings")
         
@@ -181,16 +181,8 @@ class FatSecretService @Inject constructor(
             servingsObj?.has("serving") == true -> {
                 val servingItem = servingsObj.get("serving")
                 if (servingItem is JSONArray) {
-                    var bestMatch: JSONObject? = null
-                    for (i in 0 until servingItem.length()) {
-                        val s = servingItem.getJSONObject(i)
-                        val desc = s.optString("serving_description", "").lowercase()
-                        if (desc.contains("100") && (desc.contains("g") || desc.contains("г"))) {
-                            bestMatch = s
-                            break
-                        }
-                    }
-                    bestMatch ?: servingItem.getJSONObject(0)
+                    // Используем первую порцию в списке, так как FatSecret обычно ставит основную/упаковку первой
+                    servingItem.getJSONObject(0)
                 } else {
                     servingItem as JSONObject
                 }

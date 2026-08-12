@@ -140,7 +140,8 @@ class BasalPlannerTest {
         val profile = LoopProfile(
             targetMgdl = 100.0,
             isfMgdlPerU = 50.0,
-            basalProfileUph = profileBasal
+            basalProfileUph = profileBasal,
+            lgsThreshold = 70.0
         )
         val pump = PumpCaps(
             basalStep = 0.05,

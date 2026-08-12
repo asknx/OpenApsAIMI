@@ -40,7 +40,7 @@ class ChargingStateReceiver : DaggerBroadcastReceiver() {
             plugged == BatteryManager.BATTERY_PLUGGED_AC ||
                 plugged == BatteryManager.BATTERY_PLUGGED_USB ||
                 plugged == BatteryManager.BATTERY_PLUGGED_WIRELESS ||
-                plugged == BatteryManager.BATTERY_PLUGGED_DOCK
+                (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && plugged == BatteryManager.BATTERY_PLUGGED_DOCK)
 
         return EventChargingState(isCharging, batteryLevel).also { receiverStatusStore.lastChargingEvent = it }
     }

@@ -485,11 +485,11 @@ class LoopPlugin @Inject constructor(
 
     @Synchronized
     fun isEmptyQueue(): Boolean {
-        val maxMinutes = 2L
+        val maxSeconds = 10L
         val start = dateUtil.now()
-        while (start + T.mins(maxMinutes).msecs() > dateUtil.now()) {
+        while (start + T.secs(maxSeconds).msecs() > dateUtil.now()) {
             if (commandQueue.size() == 0 && commandQueue.performing() == null) return true
-            SystemClock.sleep(1000)
+            SystemClock.sleep(200)
         }
         return false
     }
@@ -515,7 +515,8 @@ class LoopPlugin @Inject constructor(
                 return
             }
 
-            if (!isEmptyQueue()) {
+            val skipQueueCheck = initiator == "MealAdvisor_Direct" || initiator == "tempBasalFallback"
+            if (!skipQueueCheck && !isEmptyQueue()) {
                 aapsLogger.debug(LTag.APS, rh.gs(app.aaps.core.ui.R.string.pump_busy))
                 rxBus.send(EventLoopSetLastRunGui(rh.gs(app.aaps.core.ui.R.string.pump_busy)))
                 return

@@ -5563,6 +5563,9 @@ class DetermineBasalaimiSMB2 @Inject constructor(
         // Moved to helper to avoid VerifyError (Method too large/complex)
         hydrateMealDataIfTriggered(mealData)
 
+        // 🎯 FIX: Sync core COB from OREF/MealData immediately
+        this.cob = mealData.mealCOB.toFloat()
+
         // Restore variable needed for later logic (Fix Unresolved Reference)
         val isExplicitAdvisorRun = preferences.get(BooleanKey.OApsAIMIMealAdvisorTrigger)
         val tdd7P = preferences.get(DoubleKey.OApsAIMITDD7)
