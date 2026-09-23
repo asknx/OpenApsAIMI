@@ -156,7 +156,7 @@ class ObjectivesFragment : DaggerFragment() {
             return ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.objectives_item, parent, false))
         }
 
-        @SuppressLint("SetTextI18n")
+        @SuppressLint("SetTextI18n", "RecyclerView")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val objective = objectivesPlugin.objectives[position]
             holder.binding.title.text = rh.gs(R.string.nth_objective, position + 1)

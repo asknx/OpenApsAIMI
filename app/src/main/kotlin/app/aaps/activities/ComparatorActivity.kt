@@ -13,7 +13,6 @@ import app.aaps.plugins.configuration.activities.DaggerAppCompatActivityWithResu
 import app.aaps.plugins.aps.openAPSAIMI.comparison.*
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import com.github.mikephil.charting.components.XAxis
@@ -61,7 +60,7 @@ class ComparatorActivity : DaggerAppCompatActivityWithResult() {
     }
 
     private fun loadData() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+        if (!Environment.isExternalStorageManager()) {
             Toast.makeText(this, getString(R.string.comparator_storage_permission_required), Toast.LENGTH_LONG).show()
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
             intent.data = Uri.parse("package:$packageName")

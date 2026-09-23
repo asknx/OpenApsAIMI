@@ -30,6 +30,7 @@ import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventProfileSwitchChanged
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
+import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.LongNonKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.profile.ProfileSealed
@@ -136,7 +137,7 @@ class KeepAliveWorker(
         localAlertUtils.checkStaleBGAlert()
         checkPump()
         checkAPS()
-        maintenancePlugin.deleteLogs(30)
+        maintenancePlugin.deleteLogs(7)
         workerDbStatus()
         databaseCleanup()
 
@@ -144,13 +145,20 @@ class KeepAliveWorker(
     }
 
     // Perform history data cleanup every day
-    // Keep 6 months
+    // Keep 30 days of history
     private fun databaseCleanup() {
         val lastRun = preferences.get(LongNonKey.LastCleanupRun)
-        if (lastRun < dateUtil.now() - T.days(1).msecs()) {
-            val result = persistenceLayer.cleanupDatabase(6 * 31, deleteTrackedChanges = false)
+        val v1Done = preferences.get(BooleanNonKey.AutoStorageCleanupV1Done)
+
+        if (!v1Done || lastRun < dateUtil.now() - T.days(1).msecs()) {
+            val result = persistenceLayer.cleanupDatabase(30, deleteTrackedChanges = true)
+            maintenancePlugin.deleteLogs(7)
             aapsLogger.debug(LTag.CORE, "Cleanup result: $result")
             preferences.put(LongNonKey.LastCleanupRun, dateUtil.now())
+            if (!v1Done) {
+                preferences.put(BooleanNonKey.AutoStorageCleanupV1Done, true)
+                aapsLogger.info(LTag.CORE, "Completed automatic post-update storage cleanup (V1)")
+            }
         }
     }
 

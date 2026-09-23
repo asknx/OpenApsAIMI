@@ -162,12 +162,12 @@ open class TestBaseWithProfile : TestBase() {
 
     @BeforeEach
     fun prepareMock() {
-        validProfileJSON = "{\"dia\":\"5\",\"carbratio\":[{\"time\":\"00:00\",\"value\":\"30\"}],\"carbs_hr\":\"20\",\"delay\":\"20\",\"sens\":[{\"time\":\"00:00\",\"value\":\"3\"}," +
-            "{\"time\":\"2:00\",\"value\":\"3.4\"}],\"timezone\":\"UTC\",\"basal\":[{\"time\":\"00:00\",\"value\":\"1\"}],\"target_low\":[{\"time\":\"00:00\",\"value\":\"4.5\"}]," +
-            "\"target_high\":[{\"time\":\"00:00\",\"value\":\"7\"}],\"startDate\":\"1970-01-01T00:00:00.000Z\",\"units\":\"mmol\"}"
-        invalidProfileJSON = "{\"dia\":\"1\",\"carbratio\":[{\"time\":\"00:00\",\"value\":\"30\"}],\"carbs_hr\":\"20\",\"delay\":\"20\",\"sens\":[{\"time\":\"00:00\",\"value\":\"3\"}," +
-            "{\"time\":\"2:00\",\"value\":\"3.4\"}],\"timezone\":\"UTC\",\"basal\":[{\"time\":\"00:00\",\"value\":\"1\"}],\"target_low\":[{\"time\":\"00:00\",\"value\":\"4.5\"}]," +
-            "\"target_high\":[{\"time\":\"00:00\",\"value\":\"7\"}],\"startDate\":\"1970-01-01T00:00:00.000Z\",\"units\":\"mmol\"}"
+        validProfileJSON = "{\"dia\":5,\"carbratio\":[{\"time\":\"00:00\",\"value\":30}],\"carbs_hr\":20,\"delay\":20,\"sens\":[{\"time\":\"00:00\",\"value\":3}," +
+            "{\"time\":\"2:00\",\"value\":3.4}],\"timezone\":\"UTC\",\"basal\":[{\"time\":\"00:00\",\"value\":1}],\"target_low\":[{\"time\":\"00:00\",\"value\":4.5}]," +
+            "\"target_high\":[{\"time\":\"00:00\",\"value\":7}],\"startDate\":\"1970-01-01T00:00:00.000Z\",\"units\":\"mmol\"}"
+        invalidProfileJSON = "{\"dia\":1,\"carbratio\":[{\"time\":\"00:00\",\"value\":30}],\"carbs_hr\":20,\"delay\":20,\"sens\":[{\"time\":\"00:00\",\"value\":3}," +
+            "{\"time\":\"2:00\",\"value\":3.4}],\"timezone\":\"UTC\",\"basal\":[{\"time\":\"00:00\",\"value\":1}],\"target_low\":[{\"time\":\"00:00\",\"value\":4.5}]," +
+            "\"target_high\":[{\"time\":\"00:00\",\"value\":7}],\"startDate\":\"1970-01-01T00:00:00.000Z\",\"units\":\"mmol\"}"
 
         // Mock SharedPreferences for AdaptiveListIntPreference
         whenever(sharedPreferences.getInt(any(), any())).thenReturn(-1)
@@ -193,6 +193,8 @@ open class TestBaseWithProfile : TestBase() {
         whenever(dateUtil.now()).thenReturn(now)
         whenever(activePlugin.activePump).thenReturn(testPumpPlugin)
         whenever(preferences.get(StringKey.GeneralUnits)).thenReturn(GlucoseUnit.MGDL.asText)
+        whenever(preferences.get(StringKey.SafetyAge)).thenReturn("adult")
+        whenever(rh.gsa(any())).thenReturn(arrayOf("child", "teenage", "adult", "resistantadult", "pregnant"))
         deltaCalculator = DeltaCalculator(aapsLogger)
         apsResultProvider = Provider { DetermineBasalResult(aapsLogger, constraintsChecker, preferences, activePlugin, processedTbrEbData, profileFunction, rh, decimalFormatter, dateUtil, apsResultProvider) }
         hardLimits = HardLimitsMock(preferences, rh)

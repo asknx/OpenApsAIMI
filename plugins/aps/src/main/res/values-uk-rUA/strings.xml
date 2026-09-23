@@ -86,7 +86,7 @@
     <string name="oaps_aimi_hyper_factor_summary"><![CDATA[Reactivity factor when bg > 120]]></string>
     <string name="oaps_aimi_hyper_factor_title"><![CDATA[Reactivity factor BG > 120, for Child BG > 180]]></string>
     <string name="DynISFAdjusthyper_summary"><![CDATA[Increasing this value will increase the velocity to send smb when bg > 120]]></string>
-    <string name="DynISFAdjusthyper_title"><![CDATA[Dynisf Adjustment factor % BG > 120]]></string>
+    <string name="DynISFAdjusthyper_title"><![CDATA[Dynisf Adjustment factor %% BG > 120]]></string>
     <string name="prebolus_meal_mode_summary">If you set a note in action page, with the work meal, you will receive one time this value like a pre-bolus.</string>
     <string name="prebolus_meal_mode_title">Meal mode pre-bolus</string>
     <string name="prebolus_highcarb_mode_title">Mode high carb pre-bolus</string>

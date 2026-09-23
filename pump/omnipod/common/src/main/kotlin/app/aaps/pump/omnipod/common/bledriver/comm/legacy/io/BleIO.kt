@@ -2,6 +2,7 @@
 
 package app.aaps.pump.omnipod.common.bledriver.comm.legacy.io
 
+import android.annotation.SuppressLint
 import app.aaps.pump.omnipod.common.bledriver.comm.exceptions.ConnectException
 import app.aaps.pump.omnipod.common.bledriver.comm.interfaces.io.BleCharacteristicIO
 import app.aaps.pump.omnipod.common.bledriver.comm.interfaces.io.BleSendErrorConfirming
@@ -50,6 +51,7 @@ open class BleIO(
     /**
      * @param payload the data to send
      */
+    @SuppressLint("MissingPermission")
     @Suppress("ReturnCount", "DEPRECATION")
     override fun sendAndConfirmPacket(payload: ByteArray): BleSendResult {
         aapsLogger.debug(LTag.PUMPBTCOMM, "BleIO: Sending on $type: ${payload.toHex()}")

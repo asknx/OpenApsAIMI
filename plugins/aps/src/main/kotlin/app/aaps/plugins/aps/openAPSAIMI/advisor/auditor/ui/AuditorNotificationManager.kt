@@ -1,5 +1,6 @@
 package app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.ui
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -68,6 +69,7 @@ class AuditorNotificationManager @Inject constructor(
     /**
      * Show notification for new insights
      */
+    @SuppressLint("MissingPermission")
     fun showInsightAvailable(uiState: AuditorUIState) {
         // Don't notify if not appropriate
         if (!uiState.shouldNotify) return

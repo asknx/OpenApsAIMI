@@ -26,7 +26,7 @@ import kotlinx.coroutines.withContext
 @Singleton
 class AiCoachingService @Inject constructor() {
 
-    enum class Provider { OPENAI, GEMINI, DEEPSEEK, CLAUDE }
+    enum class Provider { OPENAI, GEMINI, DEEPSEEK, CLAUDE, GLM }
 
     companion object {
         private const val OPENAI_URL = "https://api.openai.com/v1/chat/completions"
@@ -67,6 +67,7 @@ class AiCoachingService @Inject constructor() {
                 Provider.GEMINI -> callGemini(androidContext, apiKey, tokenToUse, prompt)
                 Provider.DEEPSEEK -> callDeepSeek(apiKey, prompt)
                 Provider.CLAUDE -> callClaude(apiKey, prompt)
+                Provider.GLM -> callGlm(apiKey, prompt)
                 else -> callOpenAI(apiKey, prompt)
             }
 
@@ -96,6 +97,7 @@ class AiCoachingService @Inject constructor() {
                 Provider.GEMINI -> callGemini(context, apiKey, tokenToUse, prompt)
                 Provider.DEEPSEEK -> callDeepSeek(apiKey, prompt)
                 Provider.CLAUDE -> callClaude(apiKey, prompt)
+                Provider.GLM -> callGlm(apiKey, prompt)
                 else -> callOpenAI(apiKey, prompt)
             }
         } catch (e: Exception) {
@@ -510,6 +512,44 @@ class AiCoachingService @Inject constructor() {
             content.getJSONObject(0).getString("text").trim()
         } catch (e: Exception) {
             "Erreur lecture Claude."
+        }
+    }
+
+    private fun callGlm(apiKey: String, prompt: String): String {
+        val jsonBody = JSONObject().apply {
+            put("model", "glm-4-flash")
+            put("messages", JSONArray().apply {
+                put(JSONObject().apply {
+                    put("role", "system")
+                    put("content", "You are an intelligent AI medical and diabetes assistant.")
+                })
+                put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", prompt)
+                })
+            })
+            put("temperature", 0.3)
+        }.toString()
+
+        val url = URL("https://open.bigmodel.cn/api/paas/v4/chat/completions")
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Authorization", "Bearer $apiKey")
+            doOutput = true
+            connectTimeout = 15000
+            readTimeout = 30000
+        }
+
+        OutputStreamWriter(connection.outputStream, "UTF-8").use { it.write(jsonBody) }
+
+        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            val responseStr = connection.inputStream.bufferedReader().use { it.readText() }
+            val root = JSONObject(responseStr)
+            return root.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
+        } else {
+            val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
+            throw Exception("GLM HTTP ${connection.responseCode}: $err")
         }
     }
 }

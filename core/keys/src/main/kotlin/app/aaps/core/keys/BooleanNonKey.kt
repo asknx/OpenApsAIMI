@@ -20,4 +20,5 @@ enum class BooleanNonKey(
     ObjectivesReconnectUsed("ObjectivesReconnectUsed", false),
     ObjectivesTempTargetUsed("ObjectivesTempTargetUsed", false),
     AutosensUsedOnMainPhone("used_autosens_on_main_phone", false),
+    AutoStorageCleanupV1Done("auto_storage_cleanup_v1_done", false),
 }

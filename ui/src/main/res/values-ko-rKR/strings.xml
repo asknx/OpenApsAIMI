@@ -102,7 +102,7 @@
     <string name="profile1">프로파일 1</string>
     <string name="profile2">프로파일 2</string>
     <string name="profile_type">프로파일 종류</string>
-    <string name="basal_pct_from_tdd_label">% basal</string>
+    <string name="basal_pct_from_tdd_label">%% basal</string>
     <string name="selected_profile">선택:</string>
     <string name="compare_profile">프로파일 비교하기</string>
     <string name="nav_profile_helper">프로파일 보조기</string>

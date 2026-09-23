@@ -27,6 +27,7 @@ class FoodRecognitionService(
             providerName.startsWith("GEMINI") -> GeminiVisionProvider(context, preferences, oauthManager)
             providerName == "DEEPSEEK" -> DeepSeekVisionProvider()
             providerName == "CLAUDE" -> ClaudeVisionProvider()
+            providerName == "GLM" -> GlmVisionProvider()
             else -> OpenAIVisionProvider()
         }
     }
@@ -41,6 +42,7 @@ class FoodRecognitionService(
             id.startsWith("GEMINI") -> preferences.get(StringKey.AimiAdvisorGeminiKey)
             id == "DEEPSEEK" -> preferences.get(StringKey.AimiAdvisorDeepSeekKey)
             id == "CLAUDE" -> preferences.get(StringKey.AimiAdvisorClaudeKey)
+            id == "GLM" -> preferences.get(StringKey.AimiAdvisorGlmKey)
             else -> ""
         }
     }

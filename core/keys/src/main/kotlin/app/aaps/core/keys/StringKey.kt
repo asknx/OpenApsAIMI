@@ -68,6 +68,8 @@ enum class StringKey(
     AimiAdvisorGeminiKey("aimi_advisor_gemini_key", "", isPassword = true),
     AimiAdvisorDeepSeekKey("aimi_advisor_deepseek_key", "", isPassword = true),
     AimiAdvisorClaudeKey("aimi_advisor_claude_key", "", isPassword = true),
+    AimiAdvisorGlmKey("aimi_advisor_glm_key", "", isPassword = true),
+    AimiAdvisorGrokKey("aimi_advisor_grok_key", "", isPassword = true),
     AimiAdvisorOpenRouterKey("aimi_advisor_openrouter_key", "", isPassword = true),
     AimiAdvisorGroqKey("aimi_advisor_groq_key", "", isPassword = true),
     AimiAdvisorCustomUrl("aimi_advisor_custom_url", ""),

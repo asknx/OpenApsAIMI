@@ -94,7 +94,7 @@ para cancelar o emparelhamento)\n
     <string name="combov2_reservoir_low_warning">Nível do reservatório da bomba está baixo</string>
     <string name="combov2_setting_tbr_succeeded">Definição de DBT bem sucedida</string>
     <string name="combov2_setting_tbr_failed">Falha ao definir DBT</string>
-    <string name="combov2_letting_emulated_100_tbr_finish">Deixar o processo de DBT a 100% em curso concluir</string>
+    <string name="combov2_letting_emulated_100_tbr_finish">Deixar o processo de DBT a 100%% em curso concluir</string>
     <string name="combov2_ignoring_redundant_100_tbr">Ignorar a requisição redundante de 100% de DBT</string>
     <string name="combov2_hit_unexpected_tbr_limit">Limite inesperado encontrado ao definir a DBT: percentagem alvo era %1$d%%, e atingiu um limite em %2$d%%</string>
     <string name="combov2_cannot_set_absolute_tbr_if_basal_zero">Não é possível definir DBT se a basal é zero</string>

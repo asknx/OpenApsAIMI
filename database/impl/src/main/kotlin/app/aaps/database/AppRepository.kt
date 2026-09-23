@@ -125,6 +125,12 @@ class AppRepository @Inject internal constructor(
             removed.add(Pair("CHANGES HeartRate", database.heartRateDao.deleteTrackedChanges()))
             removed.add(Pair("CHANGES StepsCount", database.stepsCountDao.deleteTrackedChanges()))
         }
+
+        // Execute VACUUM to reclaim free space on disk
+        runCatching {
+            database.openHelper.writableDatabase.execSQL("VACUUM")
+        }
+
         val ret = StringBuilder()
         removed
             .filter { it.second > 0 }

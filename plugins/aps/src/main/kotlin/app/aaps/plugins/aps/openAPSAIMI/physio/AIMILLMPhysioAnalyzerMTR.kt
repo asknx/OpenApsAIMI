@@ -57,11 +57,12 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
             runBlocking {
                 withTimeout(TIMEOUT_MS) {
                     withContext(Dispatchers.IO) {
-                        when (provider) {
-                            "gpt4" -> analyzeWithGPT(features, baseline, context, apiKey)
-                            "gemini" -> analyzeWithGemini(features, baseline, context, apiKey, oauthToken)
-                            "claude" -> analyzeWithClaude(features, baseline, context, apiKey)
-                            "deepseek" -> analyzeWithDeepSeek(features, baseline, context, apiKey)
+                        when {
+                            provider.contains("gpt") || provider.contains("openai") -> analyzeWithGPT(features, baseline, context, apiKey)
+                            provider.contains("gemini") -> analyzeWithGemini(features, baseline, context, apiKey, oauthToken)
+                            provider.contains("claude") -> analyzeWithClaude(features, baseline, context, apiKey)
+                            provider.contains("deepseek") -> analyzeWithDeepSeek(features, baseline, context, apiKey)
+                            provider.contains("glm") -> analyzeWithGlm(features, baseline, context, apiKey)
                             else -> ""
                         }
                     }
@@ -213,12 +214,28 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
         }
     }
 
+    private fun analyzeWithGlm(features: PhysioFeaturesMTR, baseline: PhysioBaselineMTR, context: PhysioContextMTR, apiKey: String): String {
+        val prompt = buildPrompt(features, baseline, context)
+        val requestBody = JSONObject().apply {
+            put("model", "glm-4-flash")
+            put("messages", org.json.JSONArray().apply {
+                put(JSONObject().apply { put("role", "system"); put("content", "Expert physiologist. Brief insights.") })
+                put(JSONObject().apply { put("role", "user"); put("content", prompt) })
+            })
+            put("max_tokens", 150)
+        }
+        val response = makeAPICall("https://open.bigmodel.cn/api/paas/v4/chat/completions", requestBody.toString(), mapOf("Authorization" to "Bearer $apiKey", "Content-Type" to "application/json"))
+        return parseGPTResponse(response)
+    }
+
     private fun getAPIKey(provider: String): String {
-        return when (provider) {
-            "gpt4" -> sp.getString("aimi_openai_api_key", "")
-            "gemini" -> sp.getString("aimi_gemini_api_key", "")
-            "claude" -> sp.getString("aimi_claude_api_key", "")
-            "deepseek" -> sp.getString("aimi_deepseek_api_key", "")
+        val p = provider.lowercase()
+        return when {
+            p.contains("gpt") || p.contains("openai") -> sp.getString(StringKey.AimiAdvisorOpenAIKey.key, sp.getString("aimi_openai_api_key", ""))
+            p.contains("gemini") -> sp.getString(StringKey.AimiAdvisorGeminiKey.key, sp.getString("aimi_gemini_api_key", ""))
+            p.contains("claude") -> sp.getString(StringKey.AimiAdvisorClaudeKey.key, sp.getString("aimi_claude_api_key", ""))
+            p.contains("deepseek") -> sp.getString(StringKey.AimiAdvisorDeepSeekKey.key, sp.getString("aimi_deepseek_api_key", ""))
+            p.contains("glm") -> sp.getString(StringKey.AimiAdvisorGlmKey.key, "")
             else -> ""
         }
     }

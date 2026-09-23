@@ -1025,6 +1025,10 @@
     <string name="aimi_prefs_deepseek_key_summary">Введите ваш API ключ DeepSeek</string>
     <string name="aimi_prefs_claude_key_title">API ключ Claude</string>
     <string name="aimi_prefs_claude_key_summary">Введите ваш API ключ Anthropic Claude</string>
+    <string name="aimi_prefs_glm_key_title">API ключ GLM</string>
+    <string name="aimi_prefs_glm_key_summary">Введите ваш API ключ Zhipu AI GLM</string>
+    <string name="aimi_prefs_grok_key_title">API ключ xAI Grok</string>
+    <string name="aimi_prefs_grok_key_summary">Введите ваш API ключ xAI Grok (xai-...)</string>
     <!-- AIMI ADVISOR STRINGS -->
     <string name="aimi_advisor_title">AIMI Advisor</string>
     <string name="aimi_adv_loading">Выполняется анализ...</string>

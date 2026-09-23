@@ -1,5 +1,6 @@
 package app.aaps.pump.common.hw.rileylink.ble.operations
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCharacteristic
 import android.os.SystemClock
@@ -15,6 +16,7 @@ import java.util.concurrent.TimeUnit
  */
 class CharacteristicReadOperation(private val aapsLogger: AAPSLogger, val gatt: BluetoothGatt, val characteristic: BluetoothGattCharacteristic) : BLECommOperation() {
 
+    @SuppressLint("MissingPermission")
     @Suppress("deprecation") override fun execute(comm: RileyLinkBLE) {
         gatt.readCharacteristic(characteristic)
         // wait here for callback to notify us that value was read.

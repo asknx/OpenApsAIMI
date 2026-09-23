@@ -16,6 +16,7 @@
             </timeBasedFileNamingAndTriggeringPolicy>
             <!-- keep 7 days' worth of history -->
             <maxHistory>7</maxHistory>
+            <totalSizeCap>100MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %.-1level/%logger: %msg%n</pattern>

@@ -217,11 +217,12 @@ Output:
             val prompt = buildEnrichedPrompt(userText, medicalContext)
             
             // Get provider and API key from SHARED preferences (same as Advisor)
-            val providerStr = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "OPENAI")
-            val provider = when (providerStr) {
-                "GEMINI" -> AiCoachingService.Provider.GEMINI
-                "DEEPSEEK" -> AiCoachingService.Provider.DEEPSEEK
-                "CLAUDE" -> AiCoachingService.Provider.CLAUDE
+            val providerStr = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "OPENAI").uppercase()
+            val provider = when {
+                providerStr.contains("GEMINI") -> AiCoachingService.Provider.GEMINI
+                providerStr.contains("DEEPSEEK") -> AiCoachingService.Provider.DEEPSEEK
+                providerStr.contains("CLAUDE") -> AiCoachingService.Provider.CLAUDE
+                providerStr.contains("GLM") -> AiCoachingService.Provider.GLM
                 else -> AiCoachingService.Provider.OPENAI
             }
             
@@ -230,6 +231,7 @@ Output:
                 AiCoachingService.Provider.GEMINI -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorGeminiKey.key, "")
                 AiCoachingService.Provider.DEEPSEEK -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorDeepSeekKey.key, "")
                 AiCoachingService.Provider.CLAUDE -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorClaudeKey.key, "")
+                AiCoachingService.Provider.GLM -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorGlmKey.key, "")
             }
             
             val useOAuth = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth.key, false)

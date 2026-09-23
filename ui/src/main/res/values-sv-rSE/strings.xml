@@ -102,7 +102,7 @@
     <string name="profile1">Profil 1</string>
     <string name="profile2">Profil 2</string>
     <string name="profile_type">Profiltyp</string>
-    <string name="basal_pct_from_tdd_label">% av basal</string>
+    <string name="basal_pct_from_tdd_label">%% av basal</string>
     <string name="selected_profile">Valt:</string>
     <string name="compare_profile">Jämför profiler</string>
     <string name="nav_profile_helper">Profilguide</string>

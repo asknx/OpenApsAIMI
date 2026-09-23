@@ -106,9 +106,11 @@ android {
 
     namespace = "app.aaps"
 
-    configurations.all {
-        exclude(group = "org.json", module = "json")
-        exclude(group = "com.vaadin.external.google", module = "android-json")
+    configurations.configureEach {
+        if (!name.contains("Test", ignoreCase = true)) {
+            exclude(group = "org.json", module = "json")
+            exclude(group = "com.vaadin.external.google", module = "android-json")
+        }
     }
 
     defaultConfig {

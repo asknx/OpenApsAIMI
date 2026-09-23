@@ -14,6 +14,7 @@ import app.aaps.core.interfaces.queue.Command
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventProfileSwitchChanged
+import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.LongNonKey
 import app.aaps.plugins.configuration.maintenance.MaintenancePlugin
 import app.aaps.plugins.constraints.dstHelper.DstHelperPlugin
@@ -47,11 +48,13 @@ class KeepAliveWorkerTest : TestBaseWithProfile() {
 
     @BeforeEach
     fun setUp() {
+
         // Configure mocks provided by the base class or declared here.
         whenever(iobCobCalculator.ads).thenReturn(ads)
-        whenever(workManager.getWorkInfos(any())).thenReturn(listenableFuture)
+        whenever(loop.runningMode).thenReturn(RM.Mode.CLOSED_LOOP)
+        whenever(workManager.getWorkInfos(anyOrNull())).thenReturn(listenableFuture)
         whenever(listenableFuture.get()).thenReturn(emptyList())
-        whenever(workerParameters.inputData).thenReturn(workDataOf("schedule" to "KA_5"))
+        whenever(workerParameters.inputData).thenReturn(workDataOf("schedule" to KeepAliveWorker.KA_0))
     }
 
     // Helper to create the worker instance directly
@@ -74,6 +77,7 @@ class KeepAliveWorkerTest : TestBaseWithProfile() {
             it.localAlertUtils = localAlertUtils
             it.workManager = workManager
             it.rh = rh
+            it.fabricPrivacy = fabricPrivacy
         }
 
     @Test
@@ -142,6 +146,7 @@ class KeepAliveWorkerTest : TestBaseWithProfile() {
     fun `databaseCleanup does NOT run if it was run less than a day ago`() = runBlocking {
         // Arrange
         worker = createWorker()
+        whenever(preferences.get(BooleanNonKey.AutoStorageCleanupV1Done)).thenReturn(true)
         whenever(preferences.get(LongNonKey.LastCleanupRun)).thenReturn(now - T.hours(12).msecs())
 
         // Act
@@ -149,6 +154,22 @@ class KeepAliveWorkerTest : TestBaseWithProfile() {
 
         // Assert
         verify(persistenceLayer, never()).cleanupDatabase(any(), any())
+        Unit
+    }
+
+    @Test
+    fun `databaseCleanup runs immediately if AutoStorageCleanupV1Done is false`() = runBlocking {
+        // Arrange
+        whenever(preferences.get(BooleanNonKey.AutoStorageCleanupV1Done)).thenReturn(false)
+        whenever(preferences.get(LongNonKey.LastCleanupRun)).thenReturn(now - T.hours(1).msecs())
+        worker = createWorker()
+
+        // Act
+        worker.doWorkAndLog()
+
+        // Assert
+        verify(persistenceLayer).cleanupDatabase(30L, true)
+        verify(preferences).put(BooleanNonKey.AutoStorageCleanupV1Done, true)
         Unit
     }
 }

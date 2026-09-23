@@ -3,7 +3,6 @@ package app.aaps
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -248,7 +247,7 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
 
                     R.id.nav_about              -> {
                         var message = "Build: ${config.BUILD_VERSION}\n"
-                        message += "Flavor: ${app.aaps.BuildConfig.FLAVOR}${app.aaps.BuildConfig.BUILD_TYPE}\n"
+                        message += "Flavor: ${BuildConfig.FLAVOR}${BuildConfig.BUILD_TYPE}\n"
                         message += "${rh.gs(app.aaps.plugins.configuration.R.string.configbuilder_nightscoutversion_label)} ${activePlugin.activeNsClient?.detectedNsVersion() ?: rh.gs(app.aaps.plugins.main.R.string.not_available_full)}"
                         if (config.isEngineeringMode()) message += "\n${rh.gs(app.aaps.plugins.configuration.R.string.engineering_mode_enabled)}"
                         if (config.isUnfinishedMode()) message += "\nUnfinished mode enabled"

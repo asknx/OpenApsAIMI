@@ -140,6 +140,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
     // 🏥 Physiological Decision Adapter (The Safety Gate)
     private val physioAdapter: app.aaps.plugins.aps.openAPSAIMI.physio.AIMIInsulinDecisionAdapterMTR,
     private val auditorOrchestrator: app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorOrchestrator, // 🧠 AI Auditor MTR
+    private val auditorAIService: app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService,
     private val contextManager: app.aaps.plugins.aps.openAPSAIMI.context.ContextManager, // 🎯 Context Manager
     private val aimiBackupManager: AimiBackupManager, // ☁️ Cloud Backup Manager (Force Init)
     private val geminiOAuthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager,
@@ -1210,25 +1211,31 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                         stringKey = StringKey.AimiAdvisorProvider,
                         title = R.string.aimi_prefs_provider_title,
                         entries = arrayOf(
-                            "OpenAI (GPT-5.2)",
+                            "OpenAI (GPT-5.4 / GPT-5.2)",
+                            "Gemini 3.7 Flash (High Speed)",
+                            "Gemini 3.6 Flash (Fast)",
+                            "Gemini 3.5 Flash (Balanced)",
                             "Gemini 3.1 Pro (Heavy Lifter)",
-                            "Gemini 3.5 Flash (High Speed)",
-                            "Gemini 3.5 Flash-Lite (Cost Efficient)",
                             "Gemini 2.0 Flash (Experimental)",
-                            "DeepSeek (Chat)",
-                            "Claude (3.5 Sonnet)",
+                            "Claude (Sonnet 5 / Opus 5 / 4.5)",
+                            "GLM (Zhipu AI GLM-5.2 / GLM-5)",
+                            "DeepSeek (V4 / R2 / Chat)",
+                            "xAI Grok (Grok-4 / Grok-3)",
                             "OpenRouter (Universal Hub)",
                             "Groq (Ultra-Fast)",
                             "Custom OpenAI Endpoint"
                         ),
                         entryValues = arrayOf(
                             "OPENAI",
-                            "GEMINI-3.1-PRO",
+                            "GEMINI-3.7-FLASH",
+                            "GEMINI-3.6-FLASH",
                             "GEMINI-3.5-FLASH",
-                            "GEMINI-3.5-FLASH-LITE",
+                            "GEMINI-3.1-PRO",
                             "GEMINI-2.0-FLASH",
-                            "DEEPSEEK",
                             "CLAUDE",
+                            "GLM",
+                            "DEEPSEEK",
+                            "GROK",
                             "OPENROUTER",
                             "GROQ",
                             "CUSTOM"
@@ -1254,6 +1261,46 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             stringKey = StringKey.AimiAdvisorGeminiKey,
                             summary = R.string.aimi_prefs_gemini_key_summary,
                             title = R.string.aimi_prefs_gemini_key_title
+                        )
+                    )
+
+                    // DeepSeek Key
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorDeepSeekKey,
+                            summary = R.string.aimi_prefs_deepseek_key_summary,
+                            title = R.string.aimi_prefs_deepseek_key_title
+                        )
+                    )
+
+                    // Claude Key
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorClaudeKey,
+                            summary = R.string.aimi_prefs_claude_key_summary,
+                            title = R.string.aimi_prefs_claude_key_title
+                        )
+                    )
+
+                    // GLM Key
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorGlmKey,
+                            summary = R.string.aimi_prefs_glm_key_summary,
+                            title = R.string.aimi_prefs_glm_key_title
+                        )
+                    )
+
+                    // Grok Key
+                    addPreference(
+                        AdaptiveStringPreference(
+                            ctx = context,
+                            stringKey = StringKey.AimiAdvisorGrokKey,
+                            summary = R.string.aimi_prefs_grok_key_summary,
+                            title = R.string.aimi_prefs_grok_key_title
                         )
                     )
                     
@@ -1314,8 +1361,28 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             MainScope().launch {
                                 try {
                                     val providerStr = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
-                                    Toast.makeText(context, "Testing connection to $providerStr...", Toast.LENGTH_SHORT).show()
-                                    // Connection test logic could be here, but needs AuditorAIService
+                                    val provider = auditorOrchestrator.getProvider()
+                                    Toast.makeText(context, "Fetching available models for $providerStr...", Toast.LENGTH_SHORT).show()
+                                    
+                                    val models = auditorAIService.fetchAvailableModels(provider)
+                                    if (models.isNotEmpty()) {
+                                        val modelsArray = models.toTypedArray()
+                                        val currentModel = preferences.get(StringKey.AimiAdvisorModel)
+                                        val selectedIndex = models.indexOf(currentModel).coerceAtLeast(0)
+                                        
+                                        androidx.appcompat.app.AlertDialog.Builder(context)
+                                            .setTitle("Select Model ($providerStr)")
+                                            .setSingleChoiceItems(modelsArray, selectedIndex) { dialog, which ->
+                                                val chosenModel = modelsArray[which]
+                                                preferences.put(StringKey.AimiAdvisorModel, chosenModel)
+                                                Toast.makeText(context, "Model set to: $chosenModel", Toast.LENGTH_SHORT).show()
+                                                dialog.dismiss()
+                                            }
+                                            .setNegativeButton(android.R.string.cancel, null)
+                                            .show()
+                                    } else {
+                                        Toast.makeText(context, "Failed to fetch models from $providerStr. Check URL / API Key.", Toast.LENGTH_LONG).show()
+                                    }
                                 } catch (e: Exception) {
                                     Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                                 }

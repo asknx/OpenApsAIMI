@@ -1,7 +1,6 @@
 package app.aaps
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.AlertDialog
 import android.bluetooth.BluetoothDevice
 import android.content.Context
@@ -208,7 +207,7 @@ class MainApp : DaggerApplication() {
             Widget.updateWidget(this@MainApp, "ScheduleEveryMin")
         }
         handler.postDelayed(refreshWidget, 60000)
-        val sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         try {
             val stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
             if (stepSensor != null) {

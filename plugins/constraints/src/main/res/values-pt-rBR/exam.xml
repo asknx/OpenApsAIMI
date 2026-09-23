@@ -11,7 +11,7 @@
     <string name="hypott_wrongbasal">Corrigir hipoglicemias causadas por configurações incorretas da dose basal.</string>
     <string name="hypott_preventoversmb">Para evitar que o AAPS corrija de forma excessiva uma subida rápida na glicose causada por \"carboidratos de alto índice glicêmico\" usados para tratar hipoglicemia.</string>
     <string name="hypott_exercise">Corrigir uma hipoglicemia causada por exercícios físicos.</string>
-    <string name="hypott_0basal">Prevenir que a glicose fique baixa em uma situação em que já há uma dose basal temporária de 0% ativa.</string>
+    <string name="hypott_0basal">Prevenir que a glicose fique baixa em uma situação em que já há uma dose basal temporária de 0%% ativa.</string>
     <string name="pumpdisconnect_label">Motivos para ativar o modo \"Desconectar bomba\" no AndroidAPS</string>
     <string name="pumpdisconnect_unnecessary">É um procedimento desnecessário, pois a insulina não é administrada se a bomba estiver fisicamente desconectada.</string>
     <string name="pumpdisconnect_missinginsulin">Isso impede que o AAPS contabilize a insulina que não foi entregue quando a bomba está fisicamente desconectada.</string>
