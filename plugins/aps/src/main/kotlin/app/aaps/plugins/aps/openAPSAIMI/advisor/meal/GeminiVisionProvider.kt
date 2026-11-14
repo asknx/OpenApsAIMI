@@ -16,7 +16,7 @@ class GeminiVisionProvider(
     private val preferences: app.aaps.core.keys.interfaces.Preferences,
     private val oauthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager
 ) : AIVisionProvider {
-    override val displayName = "Gemini 1.5 Flash (Latest)"
+    override val displayName = "Gemini 3.8 Flash (Latest)"
     override val providerId = "GEMINI"
     
     private val geminiResolver = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiModelResolver(context)
@@ -53,7 +53,7 @@ class GeminiVisionProvider(
         } catch (e: Exception) {
             val msg = e.message?.lowercase() ?: ""
             if (msg.contains("429") || msg.contains("quota") || msg.contains("resource_exhausted")) {
-                val fallbackModel = "gemini-3.1-flash"
+                val fallbackModel = "gemini-3.8-flash"
                 return executeRequest(apiKey, oauthToken, base64Image, fallbackModel, userDescription, glucoseContext)
             }
             throw e

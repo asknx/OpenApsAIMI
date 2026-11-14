@@ -393,12 +393,8 @@ class AuditorOrchestrator @Inject constructor(
         val providerName = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
         return when {
             providerName.contains("OPENAI") -> AuditorAIService.Provider.OPENAI
-            providerName.contains("GEMINI-3.7-FLASH") -> AuditorAIService.Provider.GEMINI_37_FLASH
-            providerName.contains("GEMINI-3.6-FLASH") -> AuditorAIService.Provider.GEMINI_36_FLASH
+            providerName.contains("GEMINI-3.8-FLASH") -> AuditorAIService.Provider.GEMINI_38_FLASH
             providerName.contains("GEMINI-3.1-PRO") -> AuditorAIService.Provider.GEMINI_31_PRO
-            providerName.contains("GEMINI-3.5-FLASH-LITE") -> AuditorAIService.Provider.GEMINI_35_FLASH_LITE
-            providerName.contains("GEMINI-3.5-FLASH") -> AuditorAIService.Provider.GEMINI_35_FLASH
-            providerName.contains("GEMINI-2.0-FLASH") -> AuditorAIService.Provider.GEMINI_20_FLASH
             providerName.contains("DEEPSEEK") -> AuditorAIService.Provider.DEEPSEEK
             providerName.contains("CLAUDE") -> AuditorAIService.Provider.CLAUDE
             providerName.contains("GLM") -> AuditorAIService.Provider.GLM
@@ -406,7 +402,7 @@ class AuditorOrchestrator @Inject constructor(
             providerName.contains("OPENROUTER") -> AuditorAIService.Provider.OPENROUTER
             providerName.contains("GROQ") -> AuditorAIService.Provider.GROQ
             providerName.contains("CUSTOM") -> AuditorAIService.Provider.CUSTOM
-            else -> AuditorAIService.Provider.GEMINI_37_FLASH // New Default
+            else -> AuditorAIService.Provider.GEMINI_38_FLASH // New Default
         }
     }
     

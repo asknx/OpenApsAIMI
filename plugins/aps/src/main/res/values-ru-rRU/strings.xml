@@ -1006,7 +1006,7 @@
     <string name="aimi_prefs_provider_title">AI Провайдер</string>
     <string name="aimi_prefs_provider_dialog_title">Выберите AI Провайдера</string>
     <string name="aimi_prefs_provider_openai">OpenAI (GPT-5.2)</string>
-    <string name="aimi_prefs_provider_gemini">Gemini (3.1 Flash Latest)</string>
+    <string name="aimi_prefs_provider_gemini">Gemini 3.8 Flash</string>
     <string name="aimi_prefs_provider_google_login">Войти через Google (Gemini)</string>
     <string name="aimi_prefs_provider_google_logout">Выйти из Google (Gemini)</string>
     <string name="aimi_prefs_gemini_use_oauth_title">Использовать вход Google для Gemini</string>

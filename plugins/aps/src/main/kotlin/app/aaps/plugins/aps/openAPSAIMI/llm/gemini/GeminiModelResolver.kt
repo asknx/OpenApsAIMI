@@ -37,8 +37,7 @@ class GeminiModelResolver @Inject constructor(
         // Fallback fallback priority list (Realistic Model IDs as of April 2026)
         private val FALLBACK_PRIORITY = listOf(
             "gemini-3.1-pro",
-            "gemini-3.1-flash",
-            "gemini-3.1-flash-lite",
+            "gemini-3.8-flash",
             "gemini-1.5-flash-latest",
             "gemini-1.5-pro-latest",
             "gemini-2.0-flash-exp"
@@ -63,12 +62,11 @@ class GeminiModelResolver @Inject constructor(
         if (!preferredModel.isNullOrBlank()) {
             val mappedModel = when (preferredModel.uppercase(Locale.US)) {
                 "GEMINI-3.1-PRO" -> "gemini-3.1-pro"
-                "GEMINI-3.1-FLASH" -> "gemini-3.1-flash"
-                "GEMINI-3.1-FLASH-LITE" -> "gemini-3.1-flash-lite"
+                "GEMINI-3.8-FLASH" -> "gemini-3.8-flash"
                 "GEMINI-1.5-PRO" -> "gemini-1.5-pro-latest"
                 "GEMINI-1.5-FLASH" -> "gemini-1.5-flash-latest"
                 "GEMINI-2.0-FLASH" -> "gemini-2.0-flash-exp"
-                "GEMINI" -> "gemini-3.1-flash"
+                "GEMINI" -> "gemini-3.8-flash"
                 else -> preferredModel.trim().removePrefix("models/")
             }
 
@@ -86,7 +84,7 @@ class GeminiModelResolver @Inject constructor(
         }
 
         // 3. Last resort
-        return availableModels.firstOrNull { it.contains("gemini") } ?: "gemini-2.5-flash"
+        return availableModels.firstOrNull { it.contains("gemini") } ?: "gemini-3.8-flash"
     }
     
     /**

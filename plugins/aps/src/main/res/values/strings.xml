@@ -829,7 +829,7 @@
     <string name="aimi_prefs_ai_title">🤖 AI Assistant</string>
     <string name="aimi_prefs_provider_title">AI Provider</string>
     <string name="aimi_prefs_provider_openai">OpenAI (GPT-5.2)</string>
-    <string name="aimi_prefs_provider_gemini">Gemini (3.1 Flash Latest)</string>
+    <string name="aimi_prefs_provider_gemini">Gemini 3.8 Flash</string>
     <string name="aimi_prefs_gemini_oauth_client_id_title">Gemini OAuth Client ID</string>
     <string name="aimi_prefs_gemini_oauth_client_id_summary">Optional: Your custom Google Cloud Client ID for account login</string>
     <string name="aimi_prefs_gemini_oauth_client_secret_title">Gemini OAuth Client Secret</string>

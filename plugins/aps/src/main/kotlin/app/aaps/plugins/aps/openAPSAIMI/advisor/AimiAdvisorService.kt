@@ -22,6 +22,7 @@ import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
+import app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService
 import app.aaps.plugins.aps.openAPSAIMI.model.AimiAction
 import app.aaps.plugins.aps.openAPSAIMI.model.AimiDomain
 import app.aaps.plugins.aps.openAPSAIMI.model.AimiPriority
@@ -756,7 +757,7 @@ class AimiAdvisorService {
         // 1. Try AI Analysis (Strategic Coaching)
         val aiAnalysis = auditorAIService?.let { service ->
             val prompt = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.TherapyPromptBuilder.buildAnalysisPrompt(context, report)
-            val provider = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService.Provider.GEMINI_35_FLASH_LITE // High-speed, efficient for coaching
+            val provider = AuditorAIService.Provider.GEMINI_38_FLASH // High-speed, efficient for coaching
             service.getChatCompletion(prompt, provider, useHighPerf = false)
         }
         

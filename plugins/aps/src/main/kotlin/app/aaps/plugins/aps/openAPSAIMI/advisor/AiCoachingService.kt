@@ -208,14 +208,14 @@ class AiCoachingService @Inject constructor() {
 
         val oauthManager = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager(aapsLogger, sp, context)
         
-        val primaryModel = resolver.resolveGenerateContentModel(apiKey, oauthToken, "gemini-3.1-flash")
+        val primaryModel = resolver.resolveGenerateContentModel(apiKey, oauthToken, "gemini-3.8-flash")
         
         try {
             return executeGeminiRequest(resolver, oauthManager, apiKey, oauthToken, prompt, primaryModel)
         } catch (e: Exception) {
             val msg = e.message?.lowercase() ?: ""
             if (msg.contains("429") || msg.contains("resource_exhausted") || msg.contains("quota")) {
-                val fallbackModel = "gemini-3.1-flash"
+                val fallbackModel = "gemini-3.8-flash"
                 return executeGeminiRequest(resolver, oauthManager, apiKey, oauthToken, prompt, fallbackModel)
             }
             throw e

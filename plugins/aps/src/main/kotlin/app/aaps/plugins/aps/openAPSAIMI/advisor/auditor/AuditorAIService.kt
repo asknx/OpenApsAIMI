@@ -44,12 +44,8 @@ class AuditorAIService @Inject constructor(
     
     enum class Provider(val id: String, val displayName: String) {
         OPENAI("openai", "OpenAI (GPT-5.4 / GPT-5.2)"),
-        GEMINI_37_FLASH("gemini-3.7-flash", "Gemini 3.7 Flash (High Speed)"),
-        GEMINI_36_FLASH("gemini-3.6-flash", "Gemini 3.6 Flash (Fast)"),
+        GEMINI_38_FLASH("gemini-3.8-flash", "Gemini 3.8 Flash (High Speed)"),
         GEMINI_31_PRO("gemini-3.1-pro", "Gemini 3.1 Pro (Heavy Lifter)"),
-        GEMINI_35_FLASH("gemini-3.5-flash", "Gemini 3.5 Flash (Balanced)"),
-        GEMINI_35_FLASH_LITE("gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite (Cost Efficient)"),
-        GEMINI_20_FLASH("gemini-2.0-flash", "Gemini 2.0 Flash (Experimental)"),
         DEEPSEEK("deepseek", "DeepSeek (V4 / R2 / Chat)"),
         CLAUDE("claude", "Claude (Sonnet 5 / Opus 5 / 4.5)"),
         GLM("glm", "GLM (Zhipu AI GLM-5.2 / GLM-5)"),
@@ -72,7 +68,7 @@ class AuditorAIService @Inject constructor(
         // Get API key or OAuth Token
         val apiKey = getApiKey(provider)
         val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth)
-        val isGemini = provider in listOf(Provider.GEMINI_37_FLASH, Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH)
+        val isGemini = provider in listOf(Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO)
         val oauthToken = if (isGemini && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
             geminiOAuthManager.getValidAccessToken()
         } else null
@@ -96,7 +92,7 @@ class AuditorAIService @Inject constructor(
                 val responseJson = withTimeoutOrNull(timeoutMs) {
                     when (provider) {
                         Provider.OPENAI -> callOpenAICompatible(apiKey, "https://api.openai.com/v1/chat/completions", getModel(provider, useHighPerf), prompt)
-                        Provider.GEMINI_37_FLASH, Provider.GEMINI_36_FLASH, Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH -> callGemini(apiKey, oauthToken, prompt, useHighPerf, provider)
+                        Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO -> callGemini(apiKey, oauthToken, prompt, useHighPerf, provider)
                         Provider.DEEPSEEK -> callOpenAICompatible(apiKey, "https://api.deepseek.com/v1/chat/completions", getModel(provider, useHighPerf), prompt)
                         Provider.CLAUDE -> callClaude(apiKey, prompt, useHighPerf)
                         Provider.GLM -> callOpenAICompatible(apiKey, "https://open.bigmodel.cn/api/paas/v4/chat/completions", getModel(provider, useHighPerf), prompt)
@@ -159,7 +155,7 @@ class AuditorAIService @Inject constructor(
     ): String? = withContext(Dispatchers.IO) {
         val apiKey = getApiKey(provider)
         val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth)
-        val isGemini = provider in listOf(Provider.GEMINI_37_FLASH, Provider.GEMINI_36_FLASH, Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH)
+        val isGemini = provider in listOf(Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO)
         val oauthToken = if (isGemini && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
             geminiOAuthManager.getValidAccessToken()
         } else null
@@ -167,7 +163,7 @@ class AuditorAIService @Inject constructor(
         try {
             val responseJson = when (provider) {
                 Provider.OPENAI -> callOpenAICompatible(apiKey, "https://api.openai.com/v1/chat/completions", getModel(provider, useHighPerf), prompt)
-                Provider.GEMINI_37_FLASH, Provider.GEMINI_36_FLASH, Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH -> callGemini(apiKey, oauthToken, prompt, useHighPerf, provider)
+                Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO -> callGemini(apiKey, oauthToken, prompt, useHighPerf, provider)
                 Provider.DEEPSEEK -> callOpenAICompatible(apiKey, "https://api.deepseek.com/v1/chat/completions", getModel(provider, useHighPerf), prompt)
                 Provider.CLAUDE -> callClaude(apiKey, prompt, useHighPerf)
                 Provider.GLM -> callOpenAICompatible(apiKey, "https://open.bigmodel.cn/api/paas/v4/chat/completions", getModel(provider, useHighPerf), prompt)
@@ -186,7 +182,7 @@ class AuditorAIService @Inject constructor(
                 Provider.OPENAI, Provider.DEEPSEEK, Provider.GLM, Provider.GROK, Provider.OPENROUTER, Provider.GROQ, Provider.CUSTOM -> {
                     root.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
                 }
-                Provider.GEMINI_37_FLASH, Provider.GEMINI_36_FLASH, Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH -> {
+                Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO -> {
                     root.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
                 }
                 Provider.CLAUDE -> {
@@ -202,7 +198,7 @@ class AuditorAIService @Inject constructor(
     fun getApiKey(provider: Provider): String {
         return when (provider) {
             Provider.OPENAI -> preferences.get(StringKey.AimiAdvisorOpenAIKey)
-            Provider.GEMINI_37_FLASH, Provider.GEMINI_36_FLASH, Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH ->
+            Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO ->
                 preferences.get(StringKey.AimiAdvisorGeminiKey)
             Provider.DEEPSEEK -> preferences.get(StringKey.AimiAdvisorDeepSeekKey)
             Provider.CLAUDE -> preferences.get(StringKey.AimiAdvisorClaudeKey)
@@ -216,17 +212,13 @@ class AuditorAIService @Inject constructor(
     
     private fun getModel(provider: Provider, useHighPerf: Boolean): String {
         val userModel = preferences.get(StringKey.AimiAdvisorModel)
-        val isGemini = provider in listOf(Provider.GEMINI_37_FLASH, Provider.GEMINI_36_FLASH, Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH)
+        val isGemini = provider in listOf(Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO)
         if (userModel.isNotBlank() && !isGemini) return userModel
         
         return when (provider) {
             Provider.OPENAI -> "gpt-5.4" 
-            Provider.GEMINI_37_FLASH -> "gemini-3.7-flash"
-            Provider.GEMINI_36_FLASH -> "gemini-3.6-flash"
+            Provider.GEMINI_38_FLASH -> "gemini-3.8-flash"
             Provider.GEMINI_31_PRO -> "gemini-3.1-pro-preview"
-            Provider.GEMINI_35_FLASH -> "gemini-3.5-flash"
-            Provider.GEMINI_35_FLASH_LITE -> "gemini-3.5-flash-lite"
-            Provider.GEMINI_20_FLASH -> "gemini-2.0-flash"
             Provider.DEEPSEEK -> "deepseek-v4"
             Provider.CLAUDE -> if (useHighPerf) "claude-sonnet-5" else "claude-sonnet-4-5"
             Provider.GLM -> "glm-5.2"
@@ -298,7 +290,7 @@ class AuditorAIService @Inject constructor(
         try {
             return executeGeminiRequest(apiKey, oauthToken, prompt, primaryModel)
         } catch (e: Exception) {
-            val fallbackModel = if (provider == Provider.GEMINI_35_FLASH_LITE) "gemini-3.5-flash-lite" else "gemini-1.5-flash"
+            val fallbackModel = "gemini-1.5-flash"
             return executeGeminiRequest(apiKey, oauthToken, prompt, fallbackModel)
         }
     }
@@ -413,7 +405,7 @@ class AuditorAIService @Inject constructor(
             Provider.OPENAI, Provider.DEEPSEEK, Provider.GLM, Provider.GROK, Provider.OPENROUTER, Provider.GROQ, Provider.CUSTOM -> {
                 root.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
             }
-            Provider.GEMINI_37_FLASH, Provider.GEMINI_36_FLASH, Provider.GEMINI_31_PRO, Provider.GEMINI_35_FLASH, Provider.GEMINI_35_FLASH_LITE, Provider.GEMINI_20_FLASH -> {
+            Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO -> {
                 root.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
             }
             Provider.CLAUDE -> {

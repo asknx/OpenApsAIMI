@@ -87,7 +87,7 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
         return try {
             executeGeminiRequest(apiKey, oauthToken, prompt, primaryModel)
         } catch (e: Exception) {
-            executeGeminiRequest(apiKey, oauthToken, prompt, "gemini-3.1-flash")
+            executeGeminiRequest(apiKey, oauthToken, prompt, "gemini-3.8-flash")
         }
     }
 
