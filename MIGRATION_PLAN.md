@@ -29,7 +29,23 @@
 | 10 | UI-экраны, разметки и стили (подлежат Compose) | 210 | Экраны Activity/Fragment, диалоги, XML-ресурсы для миграции на M3 |
 | 11 | Автоматизированные тесты | 58 | Unit-тесты алгоритмов AIMI, PKPD, WCycle, Autodrive |
 | 12 | Документация и исследования | 168 | Архитектурные описания, диаграммы, симуляции, руководства |
-| 13 | Технические артефакты под очистку | 99 | Случайные bin/, *.bak, *.rej, baselineProfiles, build_output |
+| 13 | Технические артефакты под очистку | 99 | Случайные bin/, *.bak, *.rej, baselineProfiles, build_output (удалены в Этапе 2) |
+
+### Статус выполнения этапов миграции
+
+- [x] **Этап 1: Аудит и создание карты миграции** (Завершено, коммит `9f776dad99`)
+- [x] **Этап 2: Слияние с upstream AndroidAPS 4.0.0 и разрешение конфликтов** (Завершено, коммит `513b6b9f70`)
+  - [x] Очистка 99 мусорных артефактов (Модуль 13) — коммит `d2b04f56c0`
+  - [x] Слияние ветки с `upstream/4.0.0` без отката архитектуры 4.0.0
+  - [x] Разрешение конфигурационных файлов (`libs.versions.toml`, `Versions.kt`, `build.gradle.kts`, `settings.gradle`)
+  - [x] Разрешение конфликтов ядра (`ManufacturerType`, `PumpType`, `PumpCapability`, `InterfaceIDs`, `APSResultExtension`, `RT.kt`, `DetermineBasalSMB.kt`, `AndroidBluetoothDevice.kt`)
+  - [x] Разрешение конфликтов Application & Config (`MainApp.kt`, `ConfigImpl.kt`, `UiInteractionImpl.kt`, `AndroidManifest.xml`)
+  - [x] Разрешение строковых ресурсов и плагинов (`strings.xml`, `LocationService`, `ObjectivesPlugin`, `ExponentialSmoothingPlugin`, `GarminPlugin`, `LoopHubImpl`, `NsIncomingDataProcessor`, `StepCountListener`)
+  - [x] Завершение merge-коммита: `merge: upstream AndroidAPS 4.0.0 base` (`513b6b9f70`)
+- [ ] **Этап 3: Адаптация логики и компиляция ядра (Модули 1, 2, 3, 4, 7, 8, 9)**
+- [ ] **Этап 4: Миграция сервисов и AI-модулей (Модули 5, 6 — AICoachingService, MealAdvisor, Dual Brain)**
+- [ ] **Этап 5: Миграция UI-экранов на Jetpack Compose / Material 3 (Модуль 10)**
+- [ ] **Этап 6: Адаптация и запуск unit-тестов (Модуль 11), верификация и стабилизация**
 
 ---
 
@@ -981,105 +997,105 @@
 - [ ] `[A]` `pump/apex/build.gradle.kts`
 - [ ] `[M]` `wear/build.gradle.kts`
 
-### Модуль 13: Технические артефакты под очистку (99 файлов)
-*Ключевая задача: Исключить из миграции и удалить мусорные/бинарные артефакты, случайно закомиченные в форке.*
+### Модуль 13: Технические артефакты под очистку (99 файлов) — ОЧИЩЕНО В ЭТАПЕ 2
+*Ключевая задача: Исключить из миграции и удалить мусорные/бинарные артефакты, случайно закомиченные в форке (выполнено в коммите `d2b04f56c0`).*
 
-- [ ] `[A]` `app/fulldev/release/baselineProfiles/0/app-fulldev-release.dm`
-- [ ] `[A]` `app/fulldev/release/baselineProfiles/1/app-fulldev-release.dm`
-- [ ] `[A]` `app/fulldev/release/output-metadata.json`
-- [ ] `[A]` `app/userfull/release/baselineProfiles/0/app-userfull-release.dm`
-- [ ] `[A]` `app/userfull/release/baselineProfiles/1/app-userfull-release.dm`
-- [ ] `[A]` `app/userfull/release/output-metadata.json`
-- [ ] `[A]` `build_output.txt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/aps/ApsMode.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/aps/AverageTDD.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/aps/BasalData.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/aps/SMBDefaults.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/configuration/Constants.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/firebase/RemoteConfigKeys.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/iob/CobInfo.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/iob/InMemoryGlucoseValue.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/iob/Iob.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/BCR.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/BS.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/CA.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/DS.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/EB.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/EPS.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/FD.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/GV.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/GlucoseUnit.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/HR.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/HasIDs.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/ICfg.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/IDs.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/NE.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/OE.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/PS.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/RM.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/SC.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/SourceSensor.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/TB.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/TDD.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/TE.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/TT.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/TrendArrow.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/UE.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/data/Block.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/model/data/TargetBlock.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/plugin/PluginType.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/Capability.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/DoseSettings.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/DoseStepSize.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/ManufacturerType.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/PumpCapability.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/PumpDescription.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/PumpTempBasalType.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/PumpType.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/TimeChangeType.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/time/T.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/ue/Action.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/ue/Sources.kt`
-- [ ] `[A]` `core/data/bin/main/app/aaps/core/data/ue/ValueWithUnit.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/BooleanComposedKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/BooleanKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/BooleanKey.kt.rej`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/BooleanNonKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/DoubleKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntComposedKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntKey.kt.rej`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntNonKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntentKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/LongComposedKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/LongNonKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/StringKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/StringNonKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/UnitDoubleKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/BooleanComposedNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/BooleanNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/BooleanPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/ComposedKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/DoubleComposedNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/DoubleNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/DoublePreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/IntComposedNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/IntNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/IntPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/IntentPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/LongComposedNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/LongNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/LongPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/NonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/PreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/Preferences.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/StringComposedNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/StringNonPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/StringPreferenceKey.kt`
-- [ ] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/UnitDoublePreferenceKey.kt`
-- [ ] `[A]` `core/keys/src/main/kotlin/app/aaps/core/keys/BooleanKey.kt.rej`
-- [ ] `[A]` `core/keys/src/main/kotlin/app/aaps/core/keys/IntKey.kt.rej`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/DetermineBasalAIMI2.kt.bak`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/DetermineBasalAIMI2.kt.rej`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/OpenAPSAIMIPlugin.kt.bak`
-- [ ] `[A]` `pump/combov2/comboctl/src/androidMain/kotlin/info/nightscout/comboctl/android/AndroidBluetoothDevice.kt.bak`
+- [x] `[A]` `app/fulldev/release/baselineProfiles/0/app-fulldev-release.dm`
+- [x] `[A]` `app/fulldev/release/baselineProfiles/1/app-fulldev-release.dm`
+- [x] `[A]` `app/fulldev/release/output-metadata.json`
+- [x] `[A]` `app/userfull/release/baselineProfiles/0/app-userfull-release.dm`
+- [x] `[A]` `app/userfull/release/baselineProfiles/1/app-userfull-release.dm`
+- [x] `[A]` `app/userfull/release/output-metadata.json`
+- [x] `[A]` `build_output.txt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/aps/ApsMode.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/aps/AverageTDD.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/aps/BasalData.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/aps/SMBDefaults.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/configuration/Constants.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/firebase/RemoteConfigKeys.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/iob/CobInfo.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/iob/InMemoryGlucoseValue.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/iob/Iob.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/BCR.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/BS.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/CA.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/DS.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/EB.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/EPS.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/FD.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/GV.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/GlucoseUnit.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/HR.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/HasIDs.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/ICfg.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/IDs.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/NE.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/OE.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/PS.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/RM.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/SC.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/SourceSensor.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/TB.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/TDD.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/TE.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/TT.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/TrendArrow.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/UE.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/data/Block.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/model/data/TargetBlock.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/plugin/PluginType.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/Capability.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/DoseSettings.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/DoseStepSize.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/ManufacturerType.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/PumpCapability.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/PumpDescription.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/PumpTempBasalType.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/PumpType.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/pump/defs/TimeChangeType.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/time/T.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/ue/Action.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/ue/Sources.kt`
+- [x] `[A]` `core/data/bin/main/app/aaps/core/data/ue/ValueWithUnit.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/BooleanComposedKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/BooleanKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/BooleanKey.kt.rej`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/BooleanNonKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/DoubleKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntComposedKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntKey.kt.rej`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntNonKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/IntentKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/LongComposedKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/LongNonKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/StringKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/StringNonKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/UnitDoubleKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/BooleanComposedNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/BooleanNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/BooleanPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/ComposedKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/DoubleComposedNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/DoubleNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/DoublePreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/IntComposedNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/IntNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/IntPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/IntentPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/LongComposedNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/LongNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/LongPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/NonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/PreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/Preferences.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/StringComposedNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/StringNonPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/StringPreferenceKey.kt`
+- [x] `[A]` `core/keys/bin/main/app/aaps/core/keys/interfaces/UnitDoublePreferenceKey.kt`
+- [x] `[A]` `core/keys/src/main/kotlin/app/aaps/core/keys/BooleanKey.kt.rej`
+- [x] `[A]` `core/keys/src/main/kotlin/app/aaps/core/keys/IntKey.kt.rej`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/DetermineBasalAIMI2.kt.bak`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/DetermineBasalAIMI2.kt.rej`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/OpenAPSAIMIPlugin.kt.bak`
+- [x] `[A]` `pump/combov2/comboctl/src/androidMain/kotlin/info/nightscout/comboctl/android/AndroidBluetoothDevice.kt.bak`
