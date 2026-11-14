@@ -352,6 +352,112 @@ enum class DoubleKey(
         sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)
     ),
 
+    // AIMI and custom keys
+    EquilMaxBolus("equil_maxbolus", 10.0, 0.1, 25.0, title = TextRef.Literal("Equil max bolus")),
+
+    OApsAIMIMaxSMB("key_openapsaimi_max_smb", 1.0, 0.05, 15.0, title = TextRef.Literal("AIMI Max SMB")),
+    OApsAIMIHighBGMaxSMB("key_openapsaimi_high_bg_max_smb", 1.0, 0.05, 15.0, title = TextRef.Literal("AIMI High BG Max SMB")),
+
+    OApsAIMIweight("key_aimiweight", 50.0, 1.0, 200.0, title = TextRef.Literal("AIMI Weight")),
+    OApsAIMIMpcInsulinUPerKgPerStep("aimi_mpc_insulin_u_per_kg_per_5min", 0.065, 0.03, 0.12, title = TextRef.Literal("AIMI MPC Insulin U per kg per 5min")),
+    OApsAIMICHO("key_cho", 50.0, 1.0, 150.0, title = TextRef.Literal("AIMI CHO")),
+    OApsAIMITDD7("key_tdd7", 40.0, 1.0, 150.0, title = TextRef.Literal("AIMI TDD7")),
+
+    OApsAIMIPkpdInitialDiaH("aimi_pkpd_initial_dia_h", 20.0, 6.0, 24.0, title = TextRef.Literal("AIMI PKPD Initial DIA (h)")),
+    OApsAIMIPkpdInitialPeakMin("aimi_pkpd_initial_peak_min", 40.0, 35.0, 300.0, title = TextRef.Literal("AIMI PKPD Initial Peak (min)")),
+    OApsAIMIPkpdBoundsDiaMinH("aimi_pkpd_bounds_dia_min_h", 4.0, 4.0, 24.0, title = TextRef.Literal("AIMI PKPD Bounds DIA Min (h)")),
+    OApsAIMIPkpdBoundsDiaMaxH("aimi_pkpd_bounds_dia_max_h", 24.0, 6.0, 36.0, title = TextRef.Literal("AIMI PKPD Bounds DIA Max (h)")),
+    OApsAIMIPkpdBoundsPeakMinMin("aimi_pkpd_bounds_peak_min_min", 30.0, 20.0, 240.0, title = TextRef.Literal("AIMI PKPD Bounds Peak Min (min)")),
+    OApsAIMIPkpdBoundsPeakMinMax("aimi_pkpd_bounds_peak_min_max", 240.0, 60.0, 480.0, title = TextRef.Literal("AIMI PKPD Bounds Peak Max (min)")),
+    OApsAIMIPkpdMaxDiaChangePerDayH("aimi_pkpd_max_dia_change_per_day_h", 3.0, 0.1, 6.0, title = TextRef.Literal("AIMI PKPD Max DIA Change/Day (h)")),
+    OApsAIMIPkpdMaxPeakChangePerDayMin("aimi_pkpd_max_peak_change_per_day_min", 20.0, 1.0, 60.0, title = TextRef.Literal("AIMI PKPD Max Peak Change/Day (min)")),
+    OApsAIMIPkpdStateDiaH("aimi_pkpd_state_dia_h", 20.0, 6.0, 24.0, title = TextRef.Literal("AIMI PKPD State DIA (h)")),
+    OApsAIMIPkpdStatePeakMin("aimi_pkpd_state_peak_min", 180.0, 40.0, 300.0, title = TextRef.Literal("AIMI PKPD State Peak (min)")),
+    OApsAIMIIsfFusionMinFactor("aimi_isf_fusion_min_factor", 0.75, 0.3, 1.0, title = TextRef.Literal("AIMI ISF Fusion Min Factor")),
+    OApsAIMIIsfFusionMaxFactor("aimi_isf_fusion_max_factor", 2.0, 1.0, 2.0, title = TextRef.Literal("AIMI ISF Fusion Max Factor")),
+    OApsAIMIIsfFusionMaxChangePerTick("aimi_isf_fusion_max_change_per_tick", 0.4, 0.0, 0.5, title = TextRef.Literal("AIMI ISF Fusion Max Change/Tick")),
+    OApsAIMISmbTailThreshold("aimi_smb_tail_threshold", 0.25, 0.0, 1.0, title = TextRef.Literal("AIMI SMB Tail Threshold")),
+    OApsAIMISmbTailDamping("aimi_smb_tail_damping", 0.5, 0.0, 1.0, title = TextRef.Literal("AIMI SMB Tail Damping")),
+    OApsAIMISmbExerciseDamping("aimi_smb_exercise_damping", 0.6, 0.0, 1.0, title = TextRef.Literal("AIMI SMB Exercise Damping")),
+    OApsAIMISmbLateFatDamping("aimi_smb_late_fat_damping", 0.7, 0.0, 1.0, title = TextRef.Literal("AIMI SMB Late Fat Damping")),
+    OApsAIMIPkpdPragmaticReliefMinFactor("aimi_pkpd_pragmatic_relief_min_factor", 0.75, 0.50, 1.0, title = TextRef.Literal("AIMI PKPD Pragmatic Relief Min Factor")),
+    OApsAIMIRedCarpetRestoreThreshold("aimi_red_carpet_restore_threshold", 0.75, 0.50, 0.95, title = TextRef.Literal("AIMI Red Carpet Restore Threshold")),
+    OApsAIMIPriorityMaxIobFactor("aimi_priority_max_iob_factor", 1.20, 1.0, 1.6, title = TextRef.Literal("AIMI Priority Max IOB Factor")),
+    OApsAIMIPriorityMaxIobExtraU("aimi_priority_max_iob_extra_u", 2.0, 0.0, 5.0, title = TextRef.Literal("AIMI Priority Max IOB Extra U")),
+
+    OApsAIMIMealFactor("key_oaps_aimi_meal_factor", 50.0, 1.0, 150.0, title = TextRef.Literal("AIMI Meal Factor")),
+    OApsAIMIFCLFactor("key_oaps_aimi_FCL_factor", 50.0, 1.0, 150.0, title = TextRef.Literal("AIMI FCL Factor")),
+    OApsAIMIBFFactor("key_oaps_aimi_BF_factor", 50.0, 1.0, 150.0, title = TextRef.Literal("AIMI BF Factor")),
+
+    OApsAIMIBFPrebolus("key_prebolus_BF_mode", 2.5, 0.1, 10.0, title = TextRef.Literal("AIMI BF Prebolus")),
+    OApsAIMIBFPrebolus2("key_prebolus2_BF_mode", 2.0, 0.1, 10.0, title = TextRef.Literal("AIMI BF Prebolus 2")),
+
+    OApsAIMILunchFactor("key_oaps_aimi_lunch_factor", 50.0, 1.0, 150.0, title = TextRef.Literal("AIMI Lunch Factor")),
+    OApsAIMIDinnerFactor("key_oaps_aimi_dinner_factor", 50.0, 1.0, 150.0, title = TextRef.Literal("AIMI Dinner Factor")),
+    OApsAIMIHCFactor("key_oaps_aimi_HC_factor", 50.0, 1.0, 150.0, title = TextRef.Literal("AIMI HC Factor")),
+    OApsAIMISnackFactor("key_oaps_aimi_snack_factor", 50.0, 1.0, 150.0, title = TextRef.Literal("AIMI Snack Factor")),
+
+    OApsAIMIsleepFactor("key_oaps_aimi_sleep_factor", 60.0, 1.0, 150.0, title = TextRef.Literal("AIMI Sleep Factor")),
+
+    OApsAIMIMealPrebolus("key_prebolus_meal_mode", 2.0, 0.1, 10.0, title = TextRef.Literal("AIMI Meal Prebolus")),
+    OApsAIMIautodrivePrebolus("key_prebolus_autodrive_mode", 1.0, 0.1, 10.0, title = TextRef.Literal("AIMI Autodrive Prebolus")),
+    OApsAIMIautodrivesmallPrebolus("key_prebolussmall_autodrive_mode", 0.1, 0.05, 2.0, title = TextRef.Literal("AIMI Autodrive Small Prebolus")),
+
+    OApsAIMIcombinedDelta("key_combinedDelta_autodrive_mode", 1.0, 0.1, 20.0, title = TextRef.Literal("AIMI Combined Delta")),
+    OApsAIMIAutodriveDeviation("key_mindeviation_autodrive_mode", 1.0, 0.1, 5.0, title = TextRef.Literal("AIMI Autodrive Deviation")),
+    OApsAIMIAutodriveAcceleration("key_Acceleration_autodrive_mode", 1.0, 0.1, 5.0, title = TextRef.Literal("AIMI Autodrive Acceleration")),
+
+    autodriveMaxBasal("autodrive_max_basal", 1.0, 0.05, 25.0, title = TextRef.Literal("Autodrive Max Basal")),
+    meal_modes_MaxBasal("meal_modes_max_basal", 1.0, 0.05, 25.0, title = TextRef.Literal("Meal Modes Max Basal")),
+
+    OApsAIMILunchPrebolus("key_prebolus_lunch_mode", 2.5, 0.1, 10.0, title = TextRef.Literal("AIMI Lunch Prebolus")),
+    OApsAIMILunchPrebolus2("key_prebolus2_lunch_mode", 2.0, 0.1, 10.0, title = TextRef.Literal("AIMI Lunch Prebolus 2")),
+    OApsAIMIDinnerPrebolus("key_prebolus_dinner_mode", 2.5, 0.1, 10.0, title = TextRef.Literal("AIMI Dinner Prebolus")),
+    OApsAIMIDinnerPrebolus2("key_prebolus2_dinner_mode", 2.0, 0.1, 10.0, title = TextRef.Literal("AIMI Dinner Prebolus 2")),
+    OApsAIMISnackPrebolus("key_prebolus_snack_mode", 1.0, 0.1, 10.0, title = TextRef.Literal("AIMI Snack Prebolus")),
+    OApsAIMIHighCarbPrebolus("key_prebolus_highcarb_mode", 5.0, 0.1, 10.0, title = TextRef.Literal("AIMI High Carb Prebolus")),
+    OApsAIMIHighCarbPrebolus2("key_prebolus_highcarb_mode2", 5.0, 0.1, 10.0, title = TextRef.Literal("AIMI High Carb Prebolus 2")),
+
+    OApsAIMIwcycledateday("key_wcycledateday", 1.0, 1.0, 31.0, title = TextRef.Literal("AIMI WCycle Date Day")),
+    OApsAIMIWCycleClampMin("key_wcycle_clamp_min", 0.8, 0.5, 1.0, title = TextRef.Literal("AIMI WCycle Clamp Min")),
+    OApsAIMIWCycleClampMax("key_wcycle_clamp_max", 1.25, 1.0, 2.0, title = TextRef.Literal("AIMI WCycle Clamp Max")),
+
+    OApsAIMINightGrowthMinRiseSlope("key_oaps_aimi_ngr_min_rise_slope", 5.0, 0.5, 30.0, title = TextRef.Literal("AIMI Night Growth Min Rise Slope")),
+    OApsAIMINightGrowthSmbMultiplier("key_oaps_aimi_ngr_smb_multiplier", 1.2, 1.0, 1.5, title = TextRef.Literal("AIMI Night Growth SMB Multiplier")),
+    OApsAIMINightGrowthBasalMultiplier("key_oaps_aimi_ngr_basal_multiplier", 1.1, 1.0, 1.5, title = TextRef.Literal("AIMI Night Growth Basal Multiplier")),
+    OApsAIMINightGrowthMaxSmbClamp("key_oaps_aimi_ngr_max_smb_clamp", 1.2, 0.1, 5.0, title = TextRef.Literal("AIMI Night Growth Max SMB Clamp")),
+    OApsAIMINightGrowthMaxIobExtra("key_oaps_aimi_ngr_max_iob_extra", 0.5, 0.0, 3.0, title = TextRef.Literal("AIMI Night Growth Max IOB Extra")),
+
+    // --- AIMI Adaptive Basal ---
+    OApsAIMIHighBg(key = "OApsAIMIHighBg", defaultValue = 180.0, min = 140.0, max = 250.0, title = TextRef.Literal("AIMI High BG")),
+    OApsAIMIPlateauBandAbs(key = "OApsAIMIPlateauBandAbs", defaultValue = 2.5, min = 0.5, max = 6.0, title = TextRef.Literal("AIMI Plateau Band Abs")),
+    OApsAIMIR2Confident(key = "OApsAIMIR2Confident", defaultValue = 0.7, min = 0.3, max = 0.95, title = TextRef.Literal("AIMI R2 Confident")),
+    OApsAIMIMaxMultiplier(key = "OApsAIMIMaxMultiplier", defaultValue = 1.6, min = 1.0, max = 2.5, title = TextRef.Literal("AIMI Max Multiplier")),
+    OApsAIMIKickerStep(key = "OApsAIMIKickerStep", defaultValue = 0.15, min = 0.05, max = 0.5, title = TextRef.Literal("AIMI Kicker Step")),
+    OApsAIMIKickerMinUph(key = "OApsAIMIKickerMinUph", defaultValue = 0.2, min = 0.05, max = 1.0, title = TextRef.Literal("AIMI Kicker Min U/h")),
+    OApsAIMIZeroResumeFrac(key = "OApsAIMIZeroResumeFrac", defaultValue = 0.25, min = 0.05, max = 0.8, title = TextRef.Literal("AIMI Zero Resume Frac")),
+    OApsAIMIAntiStallBias(key = "OApsAIMIAntiStallBias", defaultValue = 0.10, min = 0.0, max = 0.5, title = TextRef.Literal("AIMI Anti Stall Bias")),
+    OApsAIMIDeltaPosRelease(key = "OApsAIMIDeltaPosRelease", defaultValue = 1.0, min = 0.5, max = 3.0, title = TextRef.Literal("AIMI Delta Pos Release")),
+    AimiUamConfidence(key = "AIMI_UAM_CONFIDENCE", defaultValue = 0.5, min = 0.0, max = 1.0, title = TextRef.Literal("AIMI UAM Confidence")),
+    OApsAIMILastEstimatedCarbs(key = "OApsAIMILastEstimatedCarbs", defaultValue = 0.0, min = 0.0, max = 300.0, title = TextRef.Literal("AIMI Last Estimated Carbs")),
+
+    OApsAIMILastEstimatedCarbTime(key = "OApsAIMILastEstimatedCarbTime", defaultValue = 0.0, min = 0.0, max = 20000000000000.0, title = TextRef.Literal("AIMI Last Estimated Carb Time")),
+
+    // Endometriosis & Cycle Management (MTR)
+    AimiEndometriosisBasalMult("aimi_endo_basal_mult", 1.3, 1.0, 2.0, title = TextRef.Literal("AIMI Endo Basal Mult")),
+    AimiEndometriosisSmbDampen("aimi_endo_smb_dampen", 0.7, 0.0, 1.0, title = TextRef.Literal("AIMI Endo SMB Dampen")),
+
+    // Adaptive Kernel Bank (Cosine Gate)
+    AimiCosineGateAlpha("aimi_cosine_gate_alpha", 2.0, 0.1, 10.0, title = TextRef.Literal("AIMI Cosine Gate Alpha")),
+    AimiCosineGateMinDataQuality("aimi_cosine_gate_min_dq", 0.3, 0.0, 1.0, title = TextRef.Literal("AIMI Cosine Gate Min DQ")),
+    AimiCosineGateMinSensitivity("aimi_cosine_gate_min_sens", 0.7, 0.5, 1.0, title = TextRef.Literal("AIMI Cosine Gate Min Sens")),
+    AimiCosineGateMaxSensitivity("aimi_cosine_gate_max_sens", 1.3, 1.0, 2.0, title = TextRef.Literal("AIMI Cosine Gate Max Sens")),
+
+    // --- T3C Enhancements ---
+    OApsAIMIT3cActivationThreshold("key_aimi_t3c_activation_threshold", 130.0, 100.0, 250.0, title = TextRef.Literal("AIMI T3c Activation Threshold")),
+    OApsAIMIT3cAggressiveness("key_aimi_t3c_aggressiveness", 1.0, 0.5, 3.0, title = TextRef.Literal("AIMI T3c Aggressiveness")),
+    OApsAIMIAdaptiveBasalMaxScaling("key_aimi_adaptive_basal_max_scaling", 1.0, 0.5, 2.0, title = TextRef.Literal("AIMI Adaptive Basal Max Scaling")),
+
     ;
 
 }

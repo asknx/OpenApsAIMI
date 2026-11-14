@@ -34,4 +34,15 @@
     <color name="high">#FFFF00</color>
     <color name="low">#FF0000</color>
 
+    <!-- Modern Glucose Circle Colors (Dynamic based on BG range) -->
+    <color name="red">#FF0000</color>
+    <color name="glucose_in_range">#FFD700</color>       <!-- Gold for in-range -->
+    <color name="critical_low">#FF0000</color>            <!-- Red for <54 mg/dL -->
+    <color name="critical_high">#FF4500</color>           <!-- Orange-red for >250 mg/dL -->
+
+    <!--    Comparator-->
+    <color name="aimi_color">#4CAF50</color>
+    <color name="smb_color">#2196F3</color>
+    <color name="recommendation_bg">#1A2196F3</color>
+
 </resources>

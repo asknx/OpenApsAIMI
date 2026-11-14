@@ -226,6 +226,58 @@ enum class StringKey(
         validator = StringValidator.minLength(17)
     ),
 
+    // AIMI and custom keys
+    GarminRequestKey(key = "garmin_aaps_key", defaultValue = "", title = TextRef.Literal("Garmin AAPS Key")),
+    OApsAIMIWCycleTrackingMode("key_oaps_aimi_wcycle_tracking_mode", "FIXED_28", title = TextRef.Literal("AIMI WCycle Tracking Mode")),
+    OApsAIMIWCycleContraceptive("key_oaps_aimi_wcycle_contraceptive", "NONE", title = TextRef.Literal("AIMI WCycle Contraceptive")),
+    OApsAIMIWCycleThyroid("key_oaps_aimi_wcycle_thyroid", "EUTHYROID", title = TextRef.Literal("AIMI WCycle Thyroid")),
+    OApsAIMIWCycleVerneuil("key_oaps_aimi_wcycle_verneuil", "NONE", title = TextRef.Literal("AIMI WCycle Verneuil")),
+    OApsAIMINightGrowthStart("key_oaps_aimi_ngr_night_start", "22:00", title = TextRef.Literal("AIMI Night Growth Start")),
+    OApsAIMINightGrowthEnd("key_oaps_aimi_ngr_night_end", "06:00", title = TextRef.Literal("AIMI Night Growth End")),
+    AimiAdvisorOpenAIKey("aimi_advisor_openai_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor OpenAI Key")),
+    AimiAdvisorGeminiKey("aimi_advisor_gemini_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Gemini Key")),
+    AimiAdvisorDeepSeekKey("aimi_advisor_deepseek_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor DeepSeek Key")),
+    AimiAdvisorClaudeKey("aimi_advisor_claude_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Claude Key")),
+    AimiAdvisorGlmKey("aimi_advisor_glm_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor GLM Key")),
+    AimiAdvisorGrokKey("aimi_advisor_grok_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Grok Key")),
+    AimiAdvisorOpenRouterKey("aimi_advisor_openrouter_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor OpenRouter Key")),
+    AimiAdvisorGroqKey("aimi_advisor_groq_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Groq Key")),
+    AimiAdvisorCustomUrl("aimi_advisor_custom_url", "", title = TextRef.Literal("AIMI Advisor Custom URL")),
+    AimiAdvisorCustomKey("aimi_advisor_custom_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Custom Key")),
+    AimiAdvisorModel("aimi_advisor_model", "", title = TextRef.Literal("AIMI Advisor Model")),
+    AimiAdvisorProvider("aimi_advisor_provider", "OPENAI", title = TextRef.Literal("AIMI Advisor Provider")),
+    AimiAuditorMode("aimi_auditor_mode", "AUDIT_ONLY", title = TextRef.Literal("AIMI Auditor Mode")),
+
+    // Context Module
+    ContextLLMProvider("aimi_context_llm_provider", "OPENAI", title = TextRef.Literal("AIMI Context LLM Provider")),
+    ContextLLMOpenAIKey("aimi_context_llm_openai_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM OpenAI Key")),
+    ContextLLMGeminiKey("aimi_context_llm_gemini_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM Gemini Key")),
+    ContextLLMDeepSeekKey("aimi_context_llm_deepseek_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM DeepSeek Key")),
+    ContextLLMClaudeKey("aimi_context_llm_claude_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM Claude Key")),
+    ContextMode("aimi_context_mode", "BALANCED", title = TextRef.Literal("AIMI Context Mode")),
+
+    OApsAIMIUnstableModeState("key_oaps_aimi_mode_state", "", title = TextRef.Literal("AIMI Unstable Mode State")),
+    OApsAIMIContextStorage("aimi_context_storage", "", title = TextRef.Literal("AIMI Context Storage")),
+
+    // AIMI Physiological Assistant (MTR)
+    AimiPhysioLLMProvider("aimi_physio_llm_provider", "gpt4", title = TextRef.Literal("AIMI Physio LLM Provider")),
+
+    // Thyroid / Basedow Module (MTR)
+    OApsAIMIThyroidMode("key_aimi_thyroid_mode", "MANUAL", title = TextRef.Literal("AIMI Thyroid Mode")),
+    OApsAIMIThyroidManualStatus("key_aimi_thyroid_manual_status", "EUTHYROID", title = TextRef.Literal("AIMI Thyroid Manual Status")),
+    OApsAIMIThyroidTreatmentPhase("key_aimi_thyroid_treatment_phase", "NONE", title = TextRef.Literal("AIMI Thyroid Treatment Phase")),
+    OApsAIMIThyroidGuardLevel("key_aimi_thyroid_guard_level", "HIGH", title = TextRef.Literal("AIMI Thyroid Guard Level")),
+
+    // Emergency SOS (Hypo)
+    AimiEmergencySosPhone("aimi_emergency_sos_phone", "", title = TextRef.Literal("AIMI Emergency SOS Phone")),
+
+    // Gemini OAuth Customization
+    AimiGeminiOAuthClientId("aimi_gemini_oauth_client_id", "", title = TextRef.Literal("AIMI Gemini OAuth Client ID")),
+    AimiGeminiOAuthClientSecret("aimi_gemini_oauth_client_secret", "", title = TextRef.Literal("AIMI Gemini OAuth Client Secret")),
+    AimiGeminiOAuthProjectId("aimi_gemini_oauth_project_id", "", title = TextRef.Literal("AIMI Gemini OAuth Project ID")),
+    AimiGeminiOAuthLoginButton("aimi_gemini_oauth_login_button", "", title = TextRef.Literal("AIMI Gemini OAuth Login Button")),
+    AimiGeminiOAuthLogoutButton("aimi_gemini_oauth_logout_button", "", title = TextRef.Literal("AIMI Gemini OAuth Logout Button")),
+
     ;
 
     override val entries: Map<String, TextRef> =

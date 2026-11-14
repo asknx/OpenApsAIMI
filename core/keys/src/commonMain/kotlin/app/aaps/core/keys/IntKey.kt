@@ -448,6 +448,46 @@ enum class IntKey(
         ),
         sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)
     ),
+
+    // AIMI and custom keys
+    GarminLocalHttpPort("communication_http_port", 28891, 1001, 65535, title = TextRef.Literal("Garmin local HTTP port"), defaultedBySM = true),
+    OApsAIMIHighBGinterval("key_oaps_aimi_highBG_interval", 3, 1, 20, title = TextRef.Literal("AIMI High BG Interval"), defaultedBySM = true),
+    OApsAIMImealinterval("key_oaps_aimi_meal_interval", 3, 1, 20, title = TextRef.Literal("AIMI Meal Interval"), defaultedBySM = true),
+    OApsAIMILunchinterval("key_oaps_aimi_lunch_interval", 3, 1, 20, title = TextRef.Literal("AIMI Lunch Interval"), defaultedBySM = true),
+    OApsAIMIDinnerinterval("key_oaps_aimi_dinner_interval", 3, 1, 20, title = TextRef.Literal("AIMI Dinner Interval"), defaultedBySM = true),
+    OApsAIMIHCinterval("key_oaps_aimi_HC_interval", 3, 1, 20, title = TextRef.Literal("AIMI HC Interval"), defaultedBySM = true),
+    OApsAIMISnackinterval("key_oaps_aimi_snack_interval", 3, 1, 20, title = TextRef.Literal("AIMI Snack Interval"), defaultedBySM = true),
+    OApsAIMIBFinterval("key_oaps_aimi_BF_interval", 3, 1, 20, title = TextRef.Literal("AIMI BF Interval"), defaultedBySM = true),
+    OApsAIMISleepinterval("key_oaps_aimi_sleep_interval", 3, 1, 20, title = TextRef.Literal("AIMI Sleep Interval"), defaultedBySM = true),
+    OApsAIMIAutodriveTarget("key_oaps_aimi_autodriveTarget", 70, 1, 160, title = TextRef.Literal("AIMI Autodrive Target")),
+    OApsAIMIAutodriveBG("key_oaps_aimi_autodriveBG", 90, 1, 160, title = TextRef.Literal("AIMI Autodrive BG")),
+    OApsAIMIWCycleAvgLength("key_wcycle_avg_length", 28, 20, 90, title = TextRef.Literal("AIMI WCycle Avg Length")),
+    OApsAIMINightGrowthAgeYears("key_oaps_aimi_ngr_age_years", 14, 1, 25, title = TextRef.Literal("AIMI Night Growth Age (Years)")),
+    OApsAIMINightGrowthMinDurationMin("key_oaps_aimi_ngr_min_duration", 30, 5, 240, title = TextRef.Literal("AIMI Night Growth Min Duration")),
+    OApsAIMINightGrowthMinEventualOverTarget("key_oaps_aimi_ngr_min_eventual_over_target", 15, 0, 120, title = TextRef.Literal("AIMI Night Growth Min Eventual Over Target")),
+    OApsAIMINightGrowthDecayMinutes("key_oaps_aimi_ngr_decay_minutes", 20, 0, 120, title = TextRef.Literal("AIMI Night Growth Decay Minutes")),
+    OApsAIMIlogsize("key_oaps_aimi_logsize", 25, 1, 50, title = TextRef.Literal("AIMI Log Size")),
+
+    // --- AIMI Adaptive Basal ---
+    OApsAIMIKickerStartMin(key = "OApsAIMIKickerStartMin", defaultValue = 10, min = 5, max = 30, title = TextRef.Literal("AIMI Kicker Start Min")),
+    OApsAIMIKickerMaxMin(key = "OApsAIMIKickerMaxMin", defaultValue = 30, min = 10, max = 60, title = TextRef.Literal("AIMI Kicker Max Min")),
+    OApsAIMIZeroResumeMin(key = "OApsAIMIZeroResumeMin", defaultValue = 10, min = 5, max = 30, title = TextRef.Literal("AIMI Zero Resume Min")),
+    OApsAIMIZeroResumeMax(key = "OApsAIMIZeroResumeMax", defaultValue = 30, min = 10, max = 60, title = TextRef.Literal("AIMI Zero Resume Max")),
+
+    // --- AI Decision Auditor ---
+    AimiAuditorMaxPerHour("aimi_auditor_max_per_hour", 12, 1, 30, title = TextRef.Literal("AIMI Auditor Max Per Hour")),
+    AimiAuditorTimeoutSeconds("aimi_auditor_timeout_seconds", 120, 30, 300, title = TextRef.Literal("AIMI Auditor Timeout Seconds")),
+    AimiAuditorMinConfidence("aimi_auditor_min_confidence", 65, 50, 95, title = TextRef.Literal("AIMI Auditor Min Confidence")),
+
+    // Endometriosis & Cycle Management (MTR)
+    AimiEndometriosisFlareDuration("aimi_endo_flare_duration", 4, 1, 24, title = TextRef.Literal("AIMI Endo Flare Duration")),
+
+    // Adaptive Kernel Bank (Cosine Gate)
+    AimiCosineGateMaxPeakShift("aimi_cosine_gate_max_shift", 15, 0, 60, title = TextRef.Literal("AIMI Cosine Gate Max Shift")),
+
+    // Emergency SOS (Hypo)
+    AimiEmergencySosThreshold("aimi_emergency_sos_threshold", 55, 40, 100, title = TextRef.Literal("AIMI Emergency SOS Threshold")),
+
     ;
 
     override val entries: Map<Int, TextRef> = entriesRefs

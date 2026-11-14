@@ -45,4 +45,6 @@ enum class BooleanNonKey(
     // with a key on each connection, which is also how a phone paired from a QR code says hello at all. Belongs to the
     // pairing.
     NsClientControlSecretReplaced("nsclient_control_secret_replaced", false, exportable = false),
+
+    AutoStorageCleanupV1Done("auto_storage_cleanup_v1_done", false),
 }

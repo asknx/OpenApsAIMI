@@ -285,6 +285,64 @@ enum class BooleanKey(
     SiteRotationManagePump("site_rotation_manage_pump", defaultValue = false, title = KeysStrings.pref_title_site_rotation_manage_pump, sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)),
     SiteRotationManageCgm("site_rotation_manage_cgm", defaultValue = false, title = KeysStrings.pref_title_site_rotation_manage_cgm, sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)),
 
+    // AIMI and custom keys
+    GeneralCompactMode("compact_mode", false, title = TextRef.Literal("Compact mode")),
+    OverviewUseDashboardLayout("overview_use_dashboard", true, title = TextRef.Literal("Use dashboard layout")),
+
+    OApsAIMIMLtraining("key_enable_ML_training", false, title = TextRef.Literal("AIMI ML training")),
+    OApsAIMIEnableBasal("key_enable_basal", false, title = TextRef.Literal("AIMI Enable basal")),
+    OApsAIMIEnableStepsFromWatch("count_steps_watch", false, title = TextRef.Literal("Count steps from watch")),
+    OApsAIMIpregnancy("key_use_AimiPregnancy", false, title = TextRef.Literal("AIMI Pregnancy mode")),
+    OApsAIMIforcelimits("key_use_AimiForceLimits", false, title = TextRef.Literal("AIMI Force limits")),
+    OApsAIMInight("OApsAIMI_Enable_night", false, title = TextRef.Literal("AIMI Night mode")),
+    OApsAIMIhoneymoon("key_use_Aimi_honeymoon", false, title = TextRef.Literal("AIMI Honeymoon mode")),
+    OApsxdriponeminute(key = "key_use_Aimi_xdripOM", defaultValue = false, title = TextRef.Literal("xDrip 1-minute")),
+    OApsAIMIautoDrive(key = "key_use_Aimi_autoDrive", defaultValue = false, title = TextRef.Literal("AIMI Autodrive")),
+    OApsAIMIT3cAdaptiveBasalEnabled("key_use_aimi_t3c_adaptive_basal", false, title = TextRef.Literal("AIMI T3c Adaptive Basal")),
+    OApsAIMIAutodriveV3EnhancedGater("key_use_aimi_autodrive_v3_enhanced_gater", false, title = TextRef.Literal("AIMI Autodrive v3 Enhanced Gater")),
+    OApsAIMIautoDriveActive(key = "key_use_aimi_autodrive_active", defaultValue = false, title = TextRef.Literal("AIMI Autodrive Active")),
+    OApsAIMIwcycle(key = "key_use_Aimi_wcycle", defaultValue = false, title = TextRef.Literal("AIMI WCycle")),
+    OApsAIMIWCycleShadow("key_use_Aimi_wcycle_shadow", false, title = TextRef.Literal("AIMI WCycle Shadow")),
+    OApsAIMIWCycleRequireConfirm("key_use_Aimi_wcycle_require_confirm", false, title = TextRef.Literal("AIMI WCycle Require Confirm")),
+    OApsAIMINightGrowthEnabled("key_oaps_aimi_ngr_enabled", true, title = TextRef.Literal("AIMI Night Growth Enabled")),
+    OApsAIMIPkpdEnabled("key_aimi_pkpd_enabled", false, title = TextRef.Literal("AIMI PKPD Enabled")),
+    OApsAIMIPkpdPragmaticReliefEnabled("key_aimi_pkpd_pragmatic_relief_enabled", true, title = TextRef.Literal("AIMI PKPD Pragmatic Relief")),
+    OApsAIMIUnifiedReactivityEnabled("key_use_unified_reactivity", true, title = TextRef.Literal("AIMI Unified Reactivity")),
+    AimiAuditorEnabled("aimi_auditor_enabled", false, title = TextRef.Literal("AIMI Decision Auditor")),
+    OApsAIMITrajectoryGuardEnabled("key_aimi_trajectory_guard_enabled", false, title = TextRef.Literal("AIMI Trajectory Guard")),
+    OApsAIMIContextEnabled("key_aimi_context_enabled", false, title = TextRef.Literal("AIMI Context Enabled")),
+    OApsAIMIContextLLMEnabled("key_aimi_context_llm_enabled", false, title = TextRef.Literal("AIMI Context LLM Enabled")),
+    OApsAIMIT3cBrittleMode("key_aimi_t3c_brittle_mode", false, title = TextRef.Literal("AIMI T3c Brittle Mode")),
+
+    // Thyroid / Basedow Module (MTR)
+    OApsAIMIThyroidEnabled("key_aimi_thyroid_enabled", false, title = TextRef.Literal("AIMI Thyroid Enabled")),
+    OApsAIMIThyroidLogVerbosity("key_aimi_thyroid_debug", false, title = TextRef.Literal("AIMI Thyroid Debug")),
+
+    // AIMI Physiological Assistant (MTR)
+    AimiPhysioAssistantEnable("aimi_physio_assistant_enable", false, title = TextRef.Literal("AIMI Physio Assistant")),
+    AimiPhysioSleepDataEnable("aimi_physio_sleep_enable", true, title = TextRef.Literal("AIMI Physio Sleep Data")),
+    AimiPhysioHRVDataEnable("aimi_physio_hrv_enable", true, title = TextRef.Literal("AIMI Physio HRV Data")),
+    AimiPhysioLLMAnalysisEnable("aimi_physio_llm_enable", false, title = TextRef.Literal("AIMI Physio LLM Analysis")),
+    AimiPhysioDebugLogs("aimi_physio_debug_logs", false, title = TextRef.Literal("AIMI Physio Debug Logs")),
+
+    // Endometriosis & Cycle Management (MTR)
+    AimiEndometriosisEnable("aimi_endo_enable", false, title = TextRef.Literal("AIMI Endometriosis Enable")),
+    AimiEndometriosisHormonalSuppression("aimi_endo_suppression", false, title = TextRef.Literal("AIMI Endo Suppression")),
+    AimiEndometriosisPainFlare("aimi_endo_flare", false, title = TextRef.Literal("AIMI Endo Pain Flare")),
+    OApsAIMIMealAdvisorTrigger("aimi_meal_advisor_trigger", false, title = TextRef.Literal("AIMI Meal Advisor Trigger")),
+
+    // Adaptive Kernel Bank (Cosine Gate)
+    AimiCosineGateEnabled("aimi_cosine_gate_enabled", true, title = TextRef.Literal("AIMI Cosine Gate Enabled")),
+
+    // Emergency SOS (Hypo)
+    AimiEmergencySosEnable("aimi_emergency_sos_enable", false, title = TextRef.Literal("AIMI Emergency SOS")),
+
+    // Gemini Auth Switch
+    OApsAIMIGeminiUseOAuth("aimi_gemini_use_oauth", false, title = TextRef.Literal("AIMI Gemini Use OAuth")),
+
+    // Barcode Provider
+    OApsAIMIUseOpenFoodFacts("aimi_use_openfoodfacts", false, title = TextRef.Literal("AIMI Use OpenFoodFacts")),
+
     ;
 
 }

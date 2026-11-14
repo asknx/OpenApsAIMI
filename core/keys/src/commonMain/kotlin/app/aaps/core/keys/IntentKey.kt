@@ -24,8 +24,10 @@ enum class IntentKey(
     override val exportable: Boolean = false
 ) : IntentPreferenceKey {
 
-    // This enum has no constants (see the note above), but the interface still requires the
-    // properties. The `;` is what separates the - empty - constant list from the members.
+    InsulinConcentrationRequest("InsulinConcentrationRequest", title = TextRef.Literal("InsulinConcentrationRequest")),
+    OApsAIMIProfileAdvisor("OApsAIMIProfileAdvisor", title = TextRef.Literal("OApsAIMIProfileAdvisor")),
+    OApsAIMIMealAdvisor("OApsAIMIMealAdvisor", title = TextRef.Literal("OApsAIMIMealAdvisor")),
+    OApsAIMIContext("OApsAIMIContext", title = TextRef.Literal("OApsAIMIContext")),
     ;
 
 }
