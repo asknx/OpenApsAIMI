@@ -59,7 +59,7 @@ import io.reactivex.rxjava3.kotlin.plusAssign
 import org.json.JSONException
 
 import org.json.JSONObject
-import javax.inject.Inject
+import dev.zacsweers.metro.Inject
 import kotlin.math.abs
 import kotlin.math.roundToLong
 

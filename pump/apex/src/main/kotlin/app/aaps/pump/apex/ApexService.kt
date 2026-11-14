@@ -64,14 +64,14 @@ import app.aaps.pump.apex.interfaces.ApexDeviceInfo
 import app.aaps.pump.apex.utils.keys.ApexBooleanKey
 import app.aaps.pump.apex.utils.keys.ApexDoubleKey
 import app.aaps.pump.apex.utils.keys.ApexStringKey
-import dagger.android.DaggerService
+import app.aaps.core.objects.workflow.MetroService
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import kotlinx.coroutines.sync.Mutex
 import org.joda.time.DateTime
 import java.util.Timer
 import java.util.TimerTask
-import javax.inject.Inject
+import dev.zacsweers.metro.Inject
 import kotlin.concurrent.schedule
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -79,7 +79,7 @@ import kotlin.math.roundToInt
 /**
  * @author Roman Rikhter (teledurak@gmail.com)
  */
-class ApexService: DaggerService(), ApexBluetoothCallback {
+class ApexService : MetroService(), ApexBluetoothCallback {
     @Inject lateinit var aapsLogger: AAPSLogger
     @Inject lateinit var aapsSchedulers: AapsSchedulers
     @Inject lateinit var preferences: Preferences

@@ -5,10 +5,11 @@ import app.aaps.pump.apex.ApexPump
 import app.aaps.pump.apex.connectivity.commands.pump.Version
 import app.aaps.pump.apex.interfaces.ApexDeviceInfo
 import app.aaps.pump.apex.utils.keys.ApexStringKey
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.AppScope
 
-@Singleton
+@SingleIn(AppScope::class)
 class ApexDeviceInfoImpl @Inject constructor(
     private val preferences: Preferences,
     private val apexPump: ApexPump,

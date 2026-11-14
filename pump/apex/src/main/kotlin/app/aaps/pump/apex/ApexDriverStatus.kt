@@ -5,10 +5,11 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.pump.apex.events.EventApexPumpDataChanged
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.AppScope
 
-@Singleton
+@SingleIn(AppScope::class)
 class ApexDriverStatus @Inject constructor(
     val rh: ResourceHelper,
     val rxBus: RxBus,

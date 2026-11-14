@@ -33,12 +33,13 @@ import app.aaps.pump.apex.R
 import app.aaps.pump.apex.databinding.ApexFragmentBinding
 import app.aaps.pump.apex.events.EventApexPumpDataChanged
 import app.aaps.pump.apex.utils.keys.ApexBooleanKey
-import dagger.android.support.DaggerFragment
+import app.aaps.core.interfaces.di.injectMetroMembers
+import androidx.fragment.app.Fragment
+import dev.zacsweers.metro.Inject
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
-import javax.inject.Inject
 
-class ApexFragment : DaggerFragment() {
+class ApexFragment : Fragment() {
     @Inject lateinit var activePlugin: ActivePlugin
     @Inject lateinit var pump: ApexPump
     @Inject lateinit var status: ApexDriverStatus
@@ -51,6 +52,11 @@ class ApexFragment : DaggerFragment() {
     @Inject lateinit var commandQueue: CommandQueue
     @Inject lateinit var uel: UserEntryLogger
     @Inject lateinit var preferences: Preferences
+
+    override fun onAttach(context: android.content.Context) {
+        super.onAttach(context)
+        context.injectMetroMembers(this)
+    }
 
     private val disposable = CompositeDisposable()
     private val handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)

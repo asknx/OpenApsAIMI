@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
-    id("kotlin-android")
-    id("kotlin-kapt")
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.metro)
     id("android-module-dependencies")
     id("test-module-dependencies")
     id("jacoco-module-dependencies")
@@ -25,7 +25,4 @@ dependencies {
     implementation(project(":core:validators"))
     implementation(project(":pump:common"))
     testImplementation(project(":shared:tests"))
-
-    kapt(libs.com.google.dagger.compiler)
-    kapt(libs.com.google.dagger.android.processor)
 }

@@ -14,14 +14,15 @@ import app.aaps.pump.apex.utils.keys.ApexBooleanKey
 import app.aaps.pump.apex.utils.keys.ApexDoubleKey
 import app.aaps.pump.apex.utils.keys.ApexStringKey
 import org.joda.time.DateTime
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.AppScope
 import kotlin.math.roundToInt
 
 /**
  * @author Roman Rikhter (teledurak@gmail.com)
  */
-@Singleton
+@SingleIn(AppScope::class)
 class ApexPump @Inject constructor(
     val preferences: Preferences,
 ) {
