@@ -48,12 +48,11 @@ internal class NsHttpResponse<T>(
     /** Stand-in for Retrofit's `Response.message()`, used only as a fallback when there is no body. */
     fun message(): String = "HTTP $code"
 
+    /** Headers accessor for compatibility */
+    fun headers(): Map<String, String?> = mapOf("ETag" to eTagHeader)
+
     /**
-     * `lastServerModified`, parsed from the weak ETag Nightscout sends (`W/"<millis>"`).
-     *
-     * The arithmetic is copied exactly from the Retrofit version, including the fact that it is
-     * positional rather than a pattern match, so a header in any other shape still throws. Real
-     * Nightscout always sends the weak form; `NsSdkResponseContractTest` pins both cases.
+     * `lastServerModified`, safely parsed from the ETag Nightscout sends (`W/"<millis>"` or `"<millis>"`).
      */
-    fun eTagAsLong(): Long? = eTagHeader?.substring(3, eTagHeader.length - 1)?.toLong()
+    fun eTagAsLong(): Long? = eTagHeader?.removePrefix("W/")?.trim('"')?.toLongOrNull()
 }

@@ -28,6 +28,8 @@ import app.aaps.core.interfaces.pump.PumpProfile
 import app.aaps.core.interfaces.pump.PumpRate
 import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.VirtualPump
+import app.aaps.core.interfaces.pump.actions.CustomAction
+import app.aaps.core.interfaces.pump.actions.CustomActionType
 import app.aaps.core.interfaces.pump.defs.fillFor
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.TextResolver
@@ -41,6 +43,7 @@ import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.keys.interfaces.withEntries
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.core.ui.compose.icons.IcPluginVirtualPump
+import app.aaps.core.ui.compose.icons.IcPumpCartridge
 import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
 import app.aaps.pump.virtual.extensions.toText
 import app.aaps.pump.virtual.keys.VirtualBooleanNonPreferenceKey
@@ -64,6 +67,11 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Clock
+
+enum class VirtualCustomActionType : CustomActionType {
+    Refill;
+    override fun getKey() = name
+}
 
 /*
  * Built AND registered by the graph, from common code.
@@ -140,7 +148,7 @@ open class VirtualPumpPlugin(
     private val _batteryPercentFlow = MutableStateFlow(50)
     val batteryPercentFlow: StateFlow<Int> = _batteryPercentFlow.asStateFlow()
 
-    private val _reservoirInUnitsFlow = MutableStateFlow(50)
+    private val _reservoirInUnitsFlow = MutableStateFlow(300)
     val reservoirInUnitsFlow: StateFlow<Int> = _reservoirInUnitsFlow.asStateFlow()
 
     private val _pumpTypeFlow = MutableStateFlow<PumpType?>(null)
@@ -417,6 +425,23 @@ open class VirtualPumpPlugin(
 
     override fun serialNumber(): String = serial
     override fun canHandleDST(): Boolean = true
+
+    override fun getCustomActions(): List<CustomAction> {
+        return listOf(
+            CustomAction(
+                name = CoreUiStrings.prime_fill,
+                customActionType = VirtualCustomActionType.Refill,
+                icon = IcPumpCartridge,
+                isEnabled = true
+            )
+        )
+    }
+
+    override fun executeCustomAction(customActionType: CustomActionType) {
+        if (customActionType == VirtualCustomActionType.Refill) {
+            _reservoirInUnitsFlow.value = 300
+        }
+    }
 
     fun refreshConfiguration() {
         val pumpType = preferences.get(StringKey.VirtualPumpType)

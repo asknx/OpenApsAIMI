@@ -54,6 +54,9 @@ internal interface TherapyEventDao : TraceableDao<TherapyEvent> {
     @Query("SELECT * FROM $TABLE_THERAPY_EVENTS WHERE id = :referenceId")
     suspend fun getCurrentFromHistoric(referenceId: Long): TherapyEvent?
 
+    @Query("DELETE FROM $TABLE_THERAPY_EVENTS WHERE id IN (SELECT id FROM $TABLE_THERAPY_EVENTS WHERE note LIKE '%' || :noteKeyword || '%' ORDER BY timestamp DESC LIMIT 1)")
+    suspend fun deleteLastEventMatchingKeyword(noteKeyword: String)
+
     @Query("SELECT * FROM $TABLE_THERAPY_EVENTS WHERE dateCreated > :since AND dateCreated <= :until LIMIT :limit OFFSET :offset")
     suspend fun getNewEntriesSince(since: Long, until: Long, limit: Int, offset: Int): List<TherapyEvent>
 }

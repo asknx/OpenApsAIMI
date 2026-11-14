@@ -52,10 +52,15 @@ class LoadTreatmentsRunner(
                         response = nsAndroidClient.getTreatmentsNewerThan(lastLoadedIso, NSClientV3Plugin.RECORDS_TO_LOAD)
                     } else {
                         response = nsAndroidClient.getTreatmentsModifiedSince(lastLoaded, NSClientV3Plugin.RECORDS_TO_LOAD)
-                        aapsLogger.debug(LTag.NSCLIENT, "lastLoadedSrvModified: ${response.lastServerModified}")
                         cursorStalled = response.lastServerModified?.let { it <= lastLoaded } == true
-                        response.lastServerModified?.let { nsClientV3Plugin.lastLoadedSrvModified.collections.treatments = it }
-                        nsClientV3Plugin.storeLastLoadedSrvModified()
+                    }
+                    aapsLogger.debug(LTag.NSCLIENT, "lastLoadedSrvModified: ${response.lastServerModified}")
+                    val nextSrvModified = response.lastServerModified ?: response.values.mapNotNull { it.srvModified }.maxOrNull()
+                    nextSrvModified?.let {
+                        if (it > nsClientV3Plugin.lastLoadedSrvModified.collections.treatments) {
+                            nsClientV3Plugin.lastLoadedSrvModified.collections.treatments = it
+                            nsClientV3Plugin.storeLastLoadedSrvModified()
+                        }
                     }
                     treatments = response.values
                     aapsLogger.debug(LTag.NSCLIENT, "TREATMENTS: $treatments")
@@ -88,7 +93,7 @@ class LoadTreatmentsRunner(
             aapsLogger.error("Error: ", error)
             nsClientRepository.addLog("◄ ERROR", error.message)
             nsClientV3Plugin.lastOperationError = error.message
-            return WorkOutcome.Failure(error.message ?: "error")
+            return WorkOutcome.Success // Continue chain even on error
         }
 
         storeDataForDb.storeTreatmentsToDb(fullSync = nsClientV3Plugin.doingFullSync)

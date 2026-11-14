@@ -493,6 +493,10 @@ class PersistenceLayerImpl(
         repository.getLastCarbs()?.fromDb()
     }
 
+    override suspend fun getMostRecentCarbByDate(): Long? = withContext(aapsIoDispatcher) {
+        repository.getMostRecentCarbByDate()?.timestamp
+    }
+
     override suspend fun getOldestCarbs(): CA? = withContext(aapsIoDispatcher) {
         repository.getOldestCarbs()?.fromDb()
     }
@@ -2350,6 +2354,10 @@ class PersistenceLayerImpl(
             aapsLogger.error(LTag.DATABASE, "Updated nsId of TherapyEvent failed", e)
             throw e
         }
+    }
+
+    override suspend fun deleteLastEventMatchingKeyword(noteKeyword: String): Unit = withContext(aapsIoDispatcher) {
+        repository.deleteLastEventMatchingKeyword(noteKeyword)
     }
 
     // DS

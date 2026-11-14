@@ -111,417 +111,417 @@
 ### Модуль 1: Сборка, Gradle, Manifest, DI-модули (33 файлов)
 *Ключевая задача: Обновление конфигурации Gradle под KMP/Compose, обновление Manifest и миграция модулей Dagger на синтаксис Metro DI (`@ContributesIntoMap`, `@Inject`).*
 
-- [ ] `[M]` `.github/workflows/aaps-ci.yml`
-- [ ] `[A]` `.github/workflows/android-build.yml`
-- [ ] `[M]` `.github/workflows/cherry-pick-ci.yml`
-- [ ] `[M]` `.github/workflows/pr-ci.yml`
-- [ ] `[M]` `.gitignore`
-- [ ] `[A]` `.vscode/settings.json`
-- [ ] `[M]` `app/src/androidTest/kotlin/app/aaps/di/AlgModule.kt`
-- [ ] `[M]` `app/src/main/AndroidManifest.xml`
-- [ ] `[M]` `app/src/main/kotlin/app/aaps/di/ActivitiesModule.kt`
-- [ ] `[M]` `app/src/main/kotlin/app/aaps/di/AppComponent.kt`
-- [ ] `[M]` `app/src/main/kotlin/app/aaps/di/PluginsListModule.kt`
-- [ ] `[M]` `buildSrc/src/main/kotlin/Versions.kt`
-- [ ] `[M]` `gradle.properties`
-- [ ] `[M]` `gradle/libs.versions.toml`
-- [ ] `[M]` `plugins/aps/src/main/AndroidManifest.xml`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/di/AIMIPhysioModuleMTR.kt`
-- [ ] `[M]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/di/ApsModule.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/di/AIMIStepsProviderModuleMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/di/WCycleModule.kt`
-- [ ] `[M]` `plugins/automation/src/main/AndroidManifest.xml`
-- [ ] `[M]` `plugins/main/src/main/AndroidManifest.xml`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/di/OverviewModule.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/di/SkinsModule.kt`
-- [ ] `[M]` `plugins/source/src/main/kotlin/app/aaps/plugins/source/di/SourceModule.kt`
-- [ ] `[M]` `plugins/sync/src/main/AndroidManifest.xml`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/di/SyncModule.kt`
-- [ ] `[A]` `pump/apex/proguard-rules.pro`
-- [ ] `[A]` `pump/apex/src/main/AndroidManifest.xml`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/di/ApexModule.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/di/ApexServicesModule.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/di/ApexUiModule.kt`
-- [ ] `[M]` `settings.gradle`
-- [ ] `[M]` `ui/src/main/AndroidManifest.xml`
+- [x] `[M]` `.github/workflows/aaps-ci.yml`
+- [x] `[A]` `.github/workflows/android-build.yml`
+- [x] `[M]` `.github/workflows/cherry-pick-ci.yml`
+- [x] `[M]` `.github/workflows/pr-ci.yml`
+- [x] `[M]` `.gitignore`
+- [x] `[A]` `.vscode/settings.json`
+- [x] `[M]` `app/src/androidTest/kotlin/app/aaps/di/AlgModule.kt`
+- [x] `[M]` `app/src/main/AndroidManifest.xml`
+- [x] `[M]` `app/src/main/kotlin/app/aaps/di/ActivitiesModule.kt`
+- [x] `[M]` `app/src/main/kotlin/app/aaps/di/AppComponent.kt`
+- [x] `[M]` `app/src/main/kotlin/app/aaps/di/PluginsListModule.kt`
+- [x] `[M]` `buildSrc/src/main/kotlin/Versions.kt`
+- [x] `[M]` `gradle.properties`
+- [x] `[M]` `gradle/libs.versions.toml`
+- [x] `[M]` `plugins/aps/src/main/AndroidManifest.xml`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/di/AIMIPhysioModuleMTR.kt`
+- [x] `[M]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/di/ApsModule.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/di/AIMIStepsProviderModuleMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/di/WCycleModule.kt`
+- [x] `[M]` `plugins/automation/src/main/AndroidManifest.xml`
+- [x] `[M]` `plugins/main/src/main/AndroidManifest.xml`
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/di/OverviewModule.kt`
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/di/SkinsModule.kt`
+- [x] `[M]` `plugins/source/src/main/kotlin/app/aaps/plugins/source/di/SourceModule.kt`
+- [x] `[M]` `plugins/sync/src/main/AndroidManifest.xml`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/di/SyncModule.kt`
+- [x] `[A]` `pump/apex/proguard-rules.pro`
+- [x] `[A]` `pump/apex/src/main/AndroidManifest.xml`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/di/ApexModule.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/di/ApexServicesModule.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/di/ApexUiModule.kt`
+- [x] `[M]` `settings.gradle`
+- [x] `[M]` `ui/src/main/AndroidManifest.xml`
 
 ### Модуль 2: Ядро AIMI и алгоритмы управления (89 файлов)
 *Ключевая задача: Полное сохранение математического ядра AIMI, включая нейросеть, адаптивный базал, Autodrive MPC, фильтр Калмана, расчет ночной резистентности и интеграцию TFLite моделей.*
 
-- [ ] `[A]` `app/src/main/assets/model.tflite`
-- [ ] `[A]` `app/src/main/assets/modelUAM.tflite`
-- [ ] `[M]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/loop/LoopPlugin.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/AIMIAdaptiveBasal.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/AimiModelHandler.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/DetermineBasalAIMI2.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/DetermineBasalCoordinator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/GlucoseStatusCalculatorAimi.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ISF/IsfAdjustmentEngine.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ISF/IsfBlender.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/KalmanFilter.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/NightGrowthResistanceLearner.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/NightGrowthResistanceMonitor.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/OpenAPSAIMIPlugin.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/StepService.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/TrainingConfig.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/activity/ActivityContext.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/activity/ActivityManager.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/aimiNeuralNetwork.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/AutodriveEngine.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/controller/MpcController.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/estimator/ContinuousStateEstimator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveAuditor.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveBackfillWorker.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveDataBackfiller.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveDataLake.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveNeuralTrainer.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveNeuralTrainerWorker.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/MechanismAttentionGate.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/OnlineLearner.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/models/AutoDriveModels.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/safety/AutoDriveGater.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/safety/ControlBarrierShield.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/BasalDecisionEngine.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/BasalHistoryUtils.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/BasalPlanner.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/DynamicBasalController.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/T3cTrajectoryContext.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/carbs/CarbsAdvisor.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/AimiSmbComparator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/AimiSmbSimulator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/ComparisonCsvParser.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/ComparisonData.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/KpiCalculator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/PerformanceScorer.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/VirtualGlucoseEngine.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/VirtualSmbState.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextInfluenceEngine.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextIntent.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextIntentDeserializer.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextLLMClient.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextManager.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextParser.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/decision/DecisionPolicy.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/decision/DecisionPolicyFactory.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/extensions/GlucoseStatusExtensionAIMI.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/inflammatory/InflammationAdjuster.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/keys/AimiLongKey.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/keys/AimiStringKey.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/BasalAdaptiveTrainerWorker.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/BasalLearner.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/BasalNeuralLearner.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/T3cNeuralTrainerWorker.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/UnifiedReactivityLearner.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/llm/gemini/GeminiModelResolver.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/llm/gemini/GeminiOAuthManager.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ml/AimiSmbModelStore.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ml/AimiSmbTrainer.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/AdvisorSeverity.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/Constants.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/ContextIntent.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/DecisionModels.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/Models.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/plugins/AimiPluginSystem.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/plugins/impl/SafetyAggressionPlugin.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/plugins/impl/StableControlPlugin.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/plugins/impl/TherapyAdvisorPlugin.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ports/Ports.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/therapy.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/AimiBackupManager.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/AimiLogger.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/AimiStorageHelper.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/ContextExtensions.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/JsonSafeLogger.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/LogcatExporter.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/RtInstrumentationHelpers.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/ValidationUtils.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/validation/PumpCapabilityValidator.kt`
-- [ ] `[M]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSSMB/DetermineBasalSMB.kt`
+- [x] `[A]` `app/src/main/assets/model.tflite`
+- [x] `[A]` `app/src/main/assets/modelUAM.tflite`
+- [x] `[M]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/loop/LoopPlugin.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/AIMIAdaptiveBasal.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/AimiModelHandler.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/DetermineBasalAIMI2.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/DetermineBasalCoordinator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/GlucoseStatusCalculatorAimi.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ISF/IsfAdjustmentEngine.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ISF/IsfBlender.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/KalmanFilter.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/NightGrowthResistanceLearner.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/NightGrowthResistanceMonitor.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/OpenAPSAIMIPlugin.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/StepService.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/TrainingConfig.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/activity/ActivityContext.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/activity/ActivityManager.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/aimiNeuralNetwork.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/AutodriveEngine.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/controller/MpcController.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/estimator/ContinuousStateEstimator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveAuditor.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveBackfillWorker.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveDataBackfiller.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveDataLake.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveNeuralTrainer.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/AutodriveNeuralTrainerWorker.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/MechanismAttentionGate.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/learning/OnlineLearner.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/models/AutoDriveModels.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/safety/AutoDriveGater.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/autodrive/safety/ControlBarrierShield.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/BasalDecisionEngine.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/BasalHistoryUtils.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/BasalPlanner.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/DynamicBasalController.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/basal/T3cTrajectoryContext.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/carbs/CarbsAdvisor.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/AimiSmbComparator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/AimiSmbSimulator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/ComparisonCsvParser.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/ComparisonData.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/KpiCalculator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/PerformanceScorer.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/VirtualGlucoseEngine.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/comparison/VirtualSmbState.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextInfluenceEngine.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextIntent.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextIntentDeserializer.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextLLMClient.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextManager.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ContextParser.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/decision/DecisionPolicy.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/decision/DecisionPolicyFactory.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/extensions/GlucoseStatusExtensionAIMI.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/inflammatory/InflammationAdjuster.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/keys/AimiLongKey.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/keys/AimiStringKey.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/BasalAdaptiveTrainerWorker.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/BasalLearner.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/BasalNeuralLearner.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/T3cNeuralTrainerWorker.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/learning/UnifiedReactivityLearner.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/llm/gemini/GeminiModelResolver.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/llm/gemini/GeminiOAuthManager.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ml/AimiSmbModelStore.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ml/AimiSmbTrainer.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/AdvisorSeverity.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/Constants.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/ContextIntent.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/DecisionModels.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/model/Models.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/plugins/AimiPluginSystem.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/plugins/impl/SafetyAggressionPlugin.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/plugins/impl/StableControlPlugin.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/plugins/impl/TherapyAdvisorPlugin.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/ports/Ports.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/therapy.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/AimiBackupManager.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/AimiLogger.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/AimiStorageHelper.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/ContextExtensions.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/JsonSafeLogger.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/LogcatExporter.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/RtInstrumentationHelpers.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/utils/ValidationUtils.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/validation/PumpCapabilityValidator.kt`
+- [x] `[M]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSSMB/DetermineBasalSMB.kt`
 
 ### Модуль 3: PKPD, Trajectory Guard & Системы безопасности (26 файлов)
 *Ключевая задача: Сохранение контуров безопасности, демпфирования SMB, контроля поглощения углеводов/инсулина в реальном времени и фазового анализа траекторий глюкозы.*
 
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/AdaptivePkPdEstimator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/AdvancedPredictionEngine.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/InsulinActionProfiler.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/InsulinActionState.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/IsfFusion.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/PkPdCore.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/PkPdCsvLogger.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/PkPdIntegration.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/PkpdAbsorptionGuard.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/RealTimeInsulinObserver.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/SmbDamping.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/SmbTbrThrottleLogic.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/safety/HighBgOverride.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/safety/HypoTools.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/safety/SafetyDecision.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/safety/SafetyNet.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/BypassHeuristics.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/MealHighIobPolicy.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/SmbDampingUsecase.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/SmbEngine.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/SmbInstructionExecutor.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/SmbQuantizer.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/trajectory/PhaseSpaceModels.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/trajectory/TrajectoryGuard.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/trajectory/TrajectoryHistoryProvider.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/trajectory/TrajectoryMetricsCalculator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/AdaptivePkPdEstimator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/AdvancedPredictionEngine.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/InsulinActionProfiler.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/InsulinActionState.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/IsfFusion.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/PkPdCore.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/PkPdCsvLogger.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/PkPdIntegration.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/PkpdAbsorptionGuard.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/RealTimeInsulinObserver.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/SmbDamping.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/pkpd/SmbTbrThrottleLogic.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/safety/HighBgOverride.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/safety/HypoTools.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/safety/SafetyDecision.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/safety/SafetyNet.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/BypassHeuristics.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/MealHighIobPolicy.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/SmbDampingUsecase.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/SmbEngine.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/SmbInstructionExecutor.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/smb/SmbQuantizer.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/trajectory/PhaseSpaceModels.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/trajectory/TrajectoryGuard.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/trajectory/TrajectoryHistoryProvider.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/trajectory/TrajectoryMetricsCalculator.kt`
 
 ### Модуль 4: Физиология, Health Connect, Steps, Thyroid & SOS (39 файлов)
 *Ключевая задача: Сохранение физиологического контекста (шагомеры, сон, вариабельность ритма, щитовидный эстиматор, гестационный автопилот, экстренные SMS-оповещения).*
 
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIHealthConnectPermissionActivityMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIHealthConnectPermissions.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIHealthConnectPermissionsHandlerMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIInsulinDecisionAdapterMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMILLMPhysioAnalyzerMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioBaselineModelMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioContextEngineMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioContextStoreMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioDataModelsMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioDataRepositoryMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioFeatureExtractorMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioManagerMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioOutcomes.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioPipelineWatchdogMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioWorkersMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIVectorModels.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/HealthContextRepository.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/HealthContextSnapshot.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/PhysioAggregator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/gate/CosineTrajectoryGate.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidDiagnosticsLogger.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidEffectModel.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidModels.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidPreferences.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidSafetyGates.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidStateEstimator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/sos/AIMIEmergencySosPermissionActivityMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/sos/EmergencySosManager.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMICompositeStepsProviderMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIDatabaseStepsProviderMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIHealthConnectStepsProviderMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIHealthConnectSyncServiceMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIHealthConnectWorkerMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIPhoneStepsProviderMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIPhoneStepsSyncServiceMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIStepsManagerMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIStepsProviderMTR.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/ActivityVitalsProvider.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/UnifiedActivityProviderMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIHealthConnectPermissionActivityMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIHealthConnectPermissions.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIHealthConnectPermissionsHandlerMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIInsulinDecisionAdapterMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMILLMPhysioAnalyzerMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioBaselineModelMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioContextEngineMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioContextStoreMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioDataModelsMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioDataRepositoryMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioFeatureExtractorMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioManagerMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioOutcomes.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioPipelineWatchdogMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIPhysioWorkersMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/AIMIVectorModels.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/HealthContextRepository.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/HealthContextSnapshot.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/PhysioAggregator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/gate/CosineTrajectoryGate.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidDiagnosticsLogger.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidEffectModel.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidModels.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidPreferences.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidSafetyGates.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/physio/thyroid/ThyroidStateEstimator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/sos/AIMIEmergencySosPermissionActivityMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/sos/EmergencySosManager.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMICompositeStepsProviderMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIDatabaseStepsProviderMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIHealthConnectStepsProviderMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIHealthConnectSyncServiceMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIHealthConnectWorkerMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIPhoneStepsProviderMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIPhoneStepsSyncServiceMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIStepsManagerMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/AIMIStepsProviderMTR.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/ActivityVitalsProvider.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/steps/UnifiedActivityProviderMTR.kt`
 
 ### Модуль 5: AI Coaching, Советники и AI-Аудитор (Dual Brain) (22 файлов)
 *Ключевая задача: Сохранение автономного ИИ-аудитора решений (LocalSentinel, DualBrain), сервиса генерации клинических отчетов и сервиса коучинга AICoachingService.*
 
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AdvisorModels.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AiCoachingService.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AimiAdvisorService.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AimiClinicalReportEngine.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/PkpdAdvisor.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AimiStateTransitionManager.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorAIService.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorDataCollector.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorDataStructures.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorOrchestrator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorPromptBuilder.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorStatusTracker.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorVerdictCache.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/DecisionModulator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/DualBrainHelpers.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/LocalSentinel.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/TherapyPromptBuilder.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/model/AuditorUIState.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/model/StateTransitionManager.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/data/AdvisorHistoryRepository.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/diag/AimiDiagnosticsManager.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/gestation/GestationalAutopilot.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AdvisorModels.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AiCoachingService.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AimiAdvisorService.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AimiClinicalReportEngine.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/PkpdAdvisor.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AimiStateTransitionManager.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorAIService.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorDataCollector.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorDataStructures.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorOrchestrator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorPromptBuilder.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorStatusTracker.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/AuditorVerdictCache.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/DecisionModulator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/DualBrainHelpers.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/LocalSentinel.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/TherapyPromptBuilder.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/model/AuditorUIState.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/auditor/model/StateTransitionManager.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/data/AdvisorHistoryRepository.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/diag/AimiDiagnosticsManager.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/gestation/GestationalAutopilot.kt`
 
 ### Модуль 6: Meal Advisor & AI Vision Providers (10 файлов)
 *Ключевая задача: Сохранение логики распознавания еды, интеграций с LLM Vision (Gemini, Claude, GPT, GLM, DeepSeek) и внешними базами (FatSecret, OpenFoodFacts).*
 
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/AIVisionProvider.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/BarcodeScanner.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/ClaudeVisionProvider.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/DeepSeekVisionProvider.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/FatSecretService.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/FoodRecognitionService.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/GeminiVisionProvider.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/GlmVisionProvider.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/OpenAIVisionProvider.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/OpenFoodFactsService.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/AIVisionProvider.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/BarcodeScanner.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/ClaudeVisionProvider.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/DeepSeekVisionProvider.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/FatSecretService.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/FoodRecognitionService.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/GeminiVisionProvider.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/GlmVisionProvider.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/OpenAIVisionProvider.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/OpenFoodFactsService.kt`
 
 ### Модуль 7: Женский цикл и эндометриоз (WCycle) (8 файлов)
 *Ключевая задача: Сохранение фасадного модуля WCycle, эстиматора фаз цикла, корректора резистентности и модуля эндометриоза.*
 
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/EndometriosisAdjuster.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleAdjuster.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleCsvLogger.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleEstimator.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleFacade.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleLearner.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCyclePreferences.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleTypes.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/EndometriosisAdjuster.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleAdjuster.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleCsvLogger.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleEstimator.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleFacade.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleLearner.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCyclePreferences.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/wcycle/WCycleTypes.kt`
 
 ### Модуль 8: Базовые модели данных, БД, интерфейсы и ключи (54 файлов)
 *Ключевая задача: Синхронизация сущностей Room, DAOs, интерфейсов PersistenceLayer, Preference Keys с 4.0.0 KMP-моделями.*
 
-- [ ] `[M]` `app/src/main/assets/logback.xml`
-- [ ] `[M]` `app/src/main/kotlin/app/aaps/MainApp.kt`
-- [ ] `[M]` `app/src/main/kotlin/app/aaps/implementations/ConfigImpl.kt`
-- [ ] `[M]` `app/src/main/kotlin/app/aaps/implementations/UiInteractionImpl.kt`
-- [ ] `[M]` `app/src/main/kotlin/app/aaps/receivers/ChargingStateReceiver.kt`
-- [ ] `[M]` `app/src/main/kotlin/app/aaps/receivers/KeepAliveWorker.kt`
-- [ ] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/configuration/Constants.kt`
-- [ ] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/pump/defs/DoseStepSize.kt`
-- [ ] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/pump/defs/ManufacturerType.kt`
-- [ ] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/pump/defs/PumpCapability.kt`
-- [ ] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/pump/defs/PumpType.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/APSResult.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/AutosensResult.kt`
-- [ ] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/GlucoseStatusAIMI.kt`
-- [ ] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/OapsProfileAimi.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/RT.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/db/PersistenceLayer.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/iob/IobCobCalculator.kt`
-- [ ] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/maintenance/CloudBackupConstants.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/maintenance/ImportExportPrefs.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/notifications/Notification.kt`
-- [ ] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/rx/events/EventAdaptiveSmoothingQuality.kt`
-- [ ] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/rx/events/EventAimiCloudBackupResult.kt`
-- [ ] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/rx/events/EventAimiCloudBackupTrigger.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/smoothing/Smoothing.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/stats/TIR.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/stats/TirCalculator.kt`
-- [ ] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/utils/HardLimits.kt`
-- [ ] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/BooleanKey.kt`
-- [ ] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/BooleanNonKey.kt`
-- [ ] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/DoubleKey.kt`
-- [ ] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/IntKey.kt`
-- [ ] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/IntentKey.kt`
-- [ ] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/StringKey.kt`
-- [ ] `[M]` `core/nssdk/src/main/kotlin/app/aaps/core/nssdk/NSAndroidClientImpl.kt`
-- [ ] `[M]` `core/objects/src/main/kotlin/app/aaps/core/objects/profile/ProfileSealed.kt`
-- [ ] `[M]` `core/utils/src/main/kotlin/app/aaps/core/utils/extensions/BluetoothAdapterExtension.kt`
-- [ ] `[M]` `database/impl/src/main/kotlin/app/aaps/database/AppRepository.kt`
-- [ ] `[M]` `database/impl/src/main/kotlin/app/aaps/database/daos/CarbsDao.kt`
-- [ ] `[M]` `database/impl/src/main/kotlin/app/aaps/database/daos/TherapyEventDao.kt`
-- [ ] `[M]` `database/impl/src/main/kotlin/app/aaps/database/daos/UserEntryDao.kt`
-- [ ] `[M]` `database/impl/src/main/kotlin/app/aaps/database/entities/APSResult.kt`
-- [ ] `[M]` `database/impl/src/main/kotlin/app/aaps/database/entities/embedments/InterfaceIDs.kt`
-- [ ] `[M]` `database/persistence/src/main/kotlin/app/aaps/database/persistence/PersistenceLayerImpl.kt`
-- [ ] `[M]` `database/persistence/src/main/kotlin/app/aaps/database/persistence/converters/APSResultExtension.kt`
-- [ ] `[M]` `database/persistence/src/main/kotlin/app/aaps/database/persistence/converters/PumpTypeExtension.kt`
-- [ ] `[M]` `implementation/src/main/kotlin/app/aaps/implementation/aps/DetermineBasalResult.kt`
-- [ ] `[M]` `implementation/src/main/kotlin/app/aaps/implementation/stats/TirCalculatorImpl.kt`
-- [ ] `[M]` `implementation/src/main/kotlin/app/aaps/implementation/stats/TirImpl.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/persistentNotification/DummyService.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/smsCommunicator/SmsCommunicatorPlugin.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/smsCommunicator/otp/OneTimePassword.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/iob/iobCobCalculator/IobCobCalculatorPlugin.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/iob/iobCobCalculator/data/AutosensDataStoreObject.kt`
+- [x] `[M]` `app/src/main/assets/logback.xml`
+- [x] `[M]` `app/src/main/kotlin/app/aaps/MainApp.kt`
+- [x] `[M]` `app/src/main/kotlin/app/aaps/implementations/ConfigImpl.kt`
+- [x] `[M]` `app/src/main/kotlin/app/aaps/implementations/UiInteractionImpl.kt`
+- [x] `[M]` `app/src/main/kotlin/app/aaps/receivers/ChargingStateReceiver.kt`
+- [x] `[M]` `app/src/main/kotlin/app/aaps/receivers/KeepAliveWorker.kt`
+- [x] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/configuration/Constants.kt`
+- [x] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/pump/defs/DoseStepSize.kt`
+- [x] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/pump/defs/ManufacturerType.kt`
+- [x] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/pump/defs/PumpCapability.kt`
+- [x] `[M]` `core/data/src/main/kotlin/app/aaps/core/data/pump/defs/PumpType.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/APSResult.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/AutosensResult.kt`
+- [x] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/GlucoseStatusAIMI.kt`
+- [x] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/OapsProfileAimi.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/aps/RT.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/db/PersistenceLayer.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/iob/IobCobCalculator.kt`
+- [x] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/maintenance/CloudBackupConstants.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/maintenance/ImportExportPrefs.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/notifications/Notification.kt`
+- [x] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/rx/events/EventAdaptiveSmoothingQuality.kt`
+- [x] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/rx/events/EventAimiCloudBackupResult.kt`
+- [x] `[A]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/rx/events/EventAimiCloudBackupTrigger.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/smoothing/Smoothing.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/stats/TIR.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/stats/TirCalculator.kt`
+- [x] `[M]` `core/interfaces/src/main/kotlin/app/aaps/core/interfaces/utils/HardLimits.kt`
+- [x] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/BooleanKey.kt`
+- [x] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/BooleanNonKey.kt`
+- [x] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/DoubleKey.kt`
+- [x] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/IntKey.kt`
+- [x] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/IntentKey.kt`
+- [x] `[M]` `core/keys/src/main/kotlin/app/aaps/core/keys/StringKey.kt`
+- [x] `[M]` `core/nssdk/src/main/kotlin/app/aaps/core/nssdk/NSAndroidClientImpl.kt`
+- [x] `[M]` `core/objects/src/main/kotlin/app/aaps/core/objects/profile/ProfileSealed.kt`
+- [x] `[M]` `core/utils/src/main/kotlin/app/aaps/core/utils/extensions/BluetoothAdapterExtension.kt`
+- [x] `[M]` `database/impl/src/main/kotlin/app/aaps/database/AppRepository.kt`
+- [x] `[M]` `database/impl/src/main/kotlin/app/aaps/database/daos/CarbsDao.kt`
+- [x] `[M]` `database/impl/src/main/kotlin/app/aaps/database/daos/TherapyEventDao.kt`
+- [x] `[M]` `database/impl/src/main/kotlin/app/aaps/database/daos/UserEntryDao.kt`
+- [x] `[M]` `database/impl/src/main/kotlin/app/aaps/database/entities/APSResult.kt`
+- [x] `[M]` `database/impl/src/main/kotlin/app/aaps/database/entities/embedments/InterfaceIDs.kt`
+- [x] `[M]` `database/persistence/src/main/kotlin/app/aaps/database/persistence/PersistenceLayerImpl.kt`
+- [x] `[M]` `database/persistence/src/main/kotlin/app/aaps/database/persistence/converters/APSResultExtension.kt`
+- [x] `[M]` `database/persistence/src/main/kotlin/app/aaps/database/persistence/converters/PumpTypeExtension.kt`
+- [x] `[M]` `implementation/src/main/kotlin/app/aaps/implementation/aps/DetermineBasalResult.kt`
+- [x] `[M]` `implementation/src/main/kotlin/app/aaps/implementation/stats/TirCalculatorImpl.kt`
+- [x] `[M]` `implementation/src/main/kotlin/app/aaps/implementation/stats/TirImpl.kt`
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/persistentNotification/DummyService.kt`
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/smsCommunicator/SmsCommunicatorPlugin.kt`
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/smsCommunicator/otp/OneTimePassword.kt`
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/iob/iobCobCalculator/IobCobCalculatorPlugin.kt`
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/iob/iobCobCalculator/data/AutosensDataStoreObject.kt`
 
 ### Модуль 9: Драйверы помп и плагины синхронизации (98 файлов)
 *Ключевая задача: Перенос драйвера помпы Apex, улучшений стабильности Bluetooth Combo v2 (DozeMonitor, WakeLock), адаптивного сглаживания и плагина удалённого контроля.*
 
-- [ ] `[M]` `plugins/automation/src/main/kotlin/app/aaps/plugins/automation/elements/InputPercent.kt`
-- [ ] `[M]` `plugins/automation/src/main/kotlin/app/aaps/plugins/automation/services/LocationService.kt`
-- [ ] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/AndroidPermissionImpl.kt`
-- [ ] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/maintenance/ImportExportPrefsImpl.kt`
-- [ ] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/maintenance/MaintenancePlugin.kt`
-- [ ] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/maintenance/cloud/CloudConstants.kt`
-- [ ] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/maintenance/cloud/providers/googledrive/GoogleDriveManager.kt`
-- [ ] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/setupwizard/SWDefinition.kt`
-- [ ] `[M]` `plugins/constraints/src/main/kotlin/app/aaps/plugins/constraints/bgQualityCheck/BgQualityCheckPlugin.kt`
-- [ ] `[M]` `plugins/constraints/src/main/kotlin/app/aaps/plugins/constraints/objectives/ObjectivesPlugin.kt`
-- [ ] `[M]` `plugins/constraints/src/main/kotlin/app/aaps/plugins/constraints/safety/SafetyPlugin.kt`
-- [ ] `[A]` `plugins/smoothing/src/main/kotlin/app/aaps/plugins/smoothing/AdaptiveSmoothingPlugin.kt`
-- [ ] `[M]` `plugins/smoothing/src/main/kotlin/app/aaps/plugins/smoothing/ExponentialSmoothingPlugin.kt`
-- [ ] `[A]` `plugins/source/src/main/kotlin/app/aaps/plugins/source/OttaiPlugin.kt`
-- [ ] `[M]` `plugins/source/src/main/kotlin/app/aaps/plugins/source/XdripSourcePlugin.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/garmin/GarminHealthSync.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/garmin/GarminPlugin.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/garmin/LoopHub.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/garmin/LoopHubImpl.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/ActiveModeItem.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/LicenseKeyValidator.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/ModePreset.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/NSClientPinManager.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/NsIncomingDataProcessor.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteAccessAuthManager.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteControlPlugin.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclient/workers/NSClientAddUpdateWorker.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/NSClientV3Plugin.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/workers/LoadBgWorker.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/workers/LoadLastModificationWorker.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/workers/LoadStatusWorker.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/workers/LoadTreatmentsWorker.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/openhumans/OpenHumansUploaderPlugin.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/wear/wearintegration/DataHandlerMobile.kt`
-- [ ] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/wear/wearintegration/DataLayerListenerServiceMobile.kt`
-- [ ] `[A]` `pump/apex/.gitignore`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ApexDriverStatus.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ApexPump.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ApexPumpPlugin.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ApexService.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/ApexBluetooth.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/FirmwareVersion.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/ProtocolVersion.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/CommandId.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/BaseValueCommand.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/Bolus.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/CancelBolus.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/CancelTemporaryBasal.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/DeviceCommand.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/DualBolus.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/ExtendedBolus.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/GetValue.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/RequestHeartbeat.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/SetConnectionProfile.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/SyncDateTime.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/TemporaryBasal.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/UpdateBasalProfileRates.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/UpdateSettingsV1.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/UpdateSystemState.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/UpdateUsedBasalProfile.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/AlarmObject.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/BasalProfile.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/BolusEntry.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/CommandResponse.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/Heartbeat.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/PumpCommand.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/PumpObjects.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/StatusV1.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/StatusV2.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/TDDEntry.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/Version.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/events/EventApexPumpDataChanged.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/interfaces/ApexBluetoothCallback.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/interfaces/ApexDeviceInfo.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/misc/ApexDeviceInfoImpl.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/misc/ApexSettingsEnums.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/ApexCrypto.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/DataUtils.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/keys/ApexBooleanKey.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/keys/ApexDoubleKey.kt`
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/keys/ApexStringKey.kt`
-- [ ] `[M]` `pump/combov2/comboctl/src/androidMain/kotlin/info/nightscout/comboctl/android/AndroidBluetoothDevice.kt`
-- [ ] `[A]` `pump/combov2/comboctl/src/androidMain/kotlin/info/nightscout/comboctl/android/BluetoothWakeLock.kt`
-- [ ] `[A]` `pump/combov2/comboctl/src/androidMain/kotlin/info/nightscout/comboctl/android/DozeMonitor.kt`
-- [ ] `[M]` `pump/combov2/comboctl/src/commonMain/kotlin/info/nightscout/comboctl/main/Pump.kt`
-- [ ] `[M]` `pump/medtrum/src/main/kotlin/app/aaps/pump/medtrum/MedtrumPlugin.kt`
-- [ ] `[M]` `pump/medtrum/src/main/kotlin/app/aaps/pump/medtrum/MedtrumPump.kt`
-- [ ] `[M]` `pump/medtrum/src/main/kotlin/app/aaps/pump/medtrum/services/BLEComm.kt`
-- [ ] `[M]` `pump/omnipod/common/src/main/kotlin/app/aaps/pump/omnipod/common/bledriver/comm/legacy/io/BleIO.kt`
-- [ ] `[M]` `pump/rileylink/src/main/kotlin/app/aaps/pump/common/hw/rileylink/ble/operations/CharacteristicReadOperation.kt`
-- [ ] `[M]` `pump/virtual/src/main/kotlin/app/aaps/pump/virtual/VirtualPumpPlugin.kt`
-- [ ] `[M]` `wear/src/main/assets/logback.xml`
-- [ ] `[M]` `wear/src/main/kotlin/app/aaps/wear/heartrate/HeartRateListener.kt`
-- [ ] `[M]` `wear/src/main/kotlin/app/aaps/wear/interaction/utils/Constants.kt`
-- [ ] `[M]` `wear/src/main/kotlin/app/aaps/wear/wearStepCount/StepCountListener.kt`
-- [ ] `[M]` `workflow/src/main/kotlin/app/aaps/workflow/InvokeLoopWorker.kt`
-- [ ] `[M]` `workflow/src/main/kotlin/app/aaps/workflow/iob/IobCobOref1Worker.kt`
-- [ ] `[M]` `workflow/src/main/kotlin/app/aaps/workflow/iob/IobCobOrefWorker.kt`
+- [x] `[M]` `plugins/automation/src/main/kotlin/app/aaps/plugins/automation/elements/InputPercent.kt`
+- [x] `[M]` `plugins/automation/src/main/kotlin/app/aaps/plugins/automation/services/LocationService.kt`
+- [x] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/AndroidPermissionImpl.kt`
+- [x] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/maintenance/ImportExportPrefsImpl.kt`
+- [x] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/maintenance/MaintenancePlugin.kt`
+- [x] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/maintenance/cloud/CloudConstants.kt`
+- [x] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/maintenance/cloud/providers/googledrive/GoogleDriveManager.kt`
+- [x] `[M]` `plugins/configuration/src/main/kotlin/app/aaps/plugins/configuration/setupwizard/SWDefinition.kt`
+- [x] `[M]` `plugins/constraints/src/main/kotlin/app/aaps/plugins/constraints/bgQualityCheck/BgQualityCheckPlugin.kt`
+- [x] `[x]` `plugins/constraints/src/main/kotlin/app/aaps/plugins/constraints/objectives/ObjectivesPlugin.kt`
+- [x] `[M]` `plugins/constraints/src/main/kotlin/app/aaps/plugins/constraints/safety/SafetyPlugin.kt`
+- [x] `[A]` `plugins/smoothing/src/main/kotlin/app/aaps/plugins/smoothing/AdaptiveSmoothingPlugin.kt`
+- [x] `[M]` `plugins/smoothing/src/main/kotlin/app/aaps/plugins/smoothing/ExponentialSmoothingPlugin.kt`
+- [x] `[A]` `plugins/source/src/main/kotlin/app/aaps/plugins/source/OttaiPlugin.kt`
+- [x] `[M]` `plugins/source/src/main/kotlin/app/aaps/plugins/source/XdripSourcePlugin.kt`
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/garmin/GarminHealthSync.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/garmin/GarminPlugin.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/garmin/LoopHub.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/garmin/LoopHubImpl.kt`
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/ActiveModeItem.kt`
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/LicenseKeyValidator.kt`
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/ModePreset.kt`
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/NSClientPinManager.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/NsIncomingDataProcessor.kt`
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteAccessAuthManager.kt`
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteControlPlugin.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclient/workers/NSClientAddUpdateWorker.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/NSClientV3Plugin.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/workers/LoadBgWorker.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/workers/LoadLastModificationWorker.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/workers/LoadStatusWorker.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsclientV3/workers/LoadTreatmentsWorker.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/openhumans/OpenHumansUploaderPlugin.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/wear/wearintegration/DataHandlerMobile.kt`
+- [x] `[M]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/wear/wearintegration/DataLayerListenerServiceMobile.kt`
+- [x] `[A]` `pump/apex/.gitignore`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ApexDriverStatus.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ApexPump.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ApexPumpPlugin.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ApexService.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/ApexBluetooth.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/FirmwareVersion.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/ProtocolVersion.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/CommandId.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/BaseValueCommand.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/Bolus.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/CancelBolus.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/CancelTemporaryBasal.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/DeviceCommand.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/DualBolus.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/ExtendedBolus.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/GetValue.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/RequestHeartbeat.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/SetConnectionProfile.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/SyncDateTime.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/TemporaryBasal.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/UpdateBasalProfileRates.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/UpdateSettingsV1.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/UpdateSystemState.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/device/UpdateUsedBasalProfile.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/AlarmObject.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/BasalProfile.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/BolusEntry.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/CommandResponse.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/Heartbeat.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/PumpCommand.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/PumpObjects.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/StatusV1.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/StatusV2.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/TDDEntry.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/connectivity/commands/pump/Version.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/events/EventApexPumpDataChanged.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/interfaces/ApexBluetoothCallback.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/interfaces/ApexDeviceInfo.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/misc/ApexDeviceInfoImpl.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/misc/ApexSettingsEnums.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/ApexCrypto.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/DataUtils.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/keys/ApexBooleanKey.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/keys/ApexDoubleKey.kt`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/utils/keys/ApexStringKey.kt`
+- [x] `[M]` `pump/combov2/comboctl/src/androidMain/kotlin/info/nightscout/comboctl/android/AndroidBluetoothDevice.kt`
+- [x] `[A]` `pump/combov2/comboctl/src/androidMain/kotlin/info/nightscout/comboctl/android/BluetoothWakeLock.kt`
+- [x] `[A]` `pump/combov2/comboctl/src/androidMain/kotlin/info/nightscout/comboctl/android/DozeMonitor.kt`
+- [x] `[M]` `pump/combov2/comboctl/src/commonMain/kotlin/info/nightscout/comboctl/main/Pump.kt`
+- [x] `[M]` `pump/medtrum/src/main/kotlin/app/aaps/pump/medtrum/MedtrumPlugin.kt`
+- [x] `[M]` `pump/medtrum/src/main/kotlin/app/aaps/pump/medtrum/MedtrumPump.kt`
+- [x] `[M]` `pump/medtrum/src/main/kotlin/app/aaps/pump/medtrum/services/BLEComm.kt`
+- [x] `[M]` `pump/omnipod/common/src/main/kotlin/app/aaps/pump/omnipod/common/bledriver/comm/legacy/io/BleIO.kt`
+- [x] `[M]` `pump/rileylink/src/main/kotlin/app/aaps/pump/common/hw/rileylink/ble/operations/CharacteristicReadOperation.kt`
+- [x] `[M]` `pump/virtual/src/main/kotlin/app/aaps/pump/virtual/VirtualPumpPlugin.kt`
+- [x] `[M]` `wear/src/main/assets/logback.xml`
+- [x] `[M]` `wear/src/main/kotlin/app/aaps/wear/heartrate/HeartRateListener.kt`
+- [x] `[M]` `wear/src/main/kotlin/app/aaps/wear/interaction/utils/Constants.kt`
+- [x] `[M]` `wear/src/main/kotlin/app/aaps/wear/wearStepCount/StepCountListener.kt`
+- [x] `[M]` `workflow/src/main/kotlin/app/aaps/workflow/InvokeLoopWorker.kt`
+- [x] `[M]` `workflow/src/main/kotlin/app/aaps/workflow/iob/IobCobOref1Worker.kt`
+- [x] `[M]` `workflow/src/main/kotlin/app/aaps/workflow/iob/IobCobOrefWorker.kt`
 
 ### Модуль 10: UI-экраны, разметки и ресурсы (Миграция на Jetpack Compose / M3) (210 файлов)
 *Ключевая задача: Полный рефакторинг UI с устаревшего XML / Fragment / Activity на Jetpack Compose / Material 3 в соответствии со стандартами AndroidAPS 4.0.0.*

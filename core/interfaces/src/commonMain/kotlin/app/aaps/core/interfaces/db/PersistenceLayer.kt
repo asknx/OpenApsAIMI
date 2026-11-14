@@ -1505,6 +1505,8 @@ interface PersistenceLayer {
      */
     suspend fun updateTherapyEventsNsIds(therapyEvents: List<TE>): TransactionResult<TE>
 
+    suspend fun deleteLastEventMatchingKeyword(noteKeyword: String)
+
     // DS
     /**
      * Get next changed record after id

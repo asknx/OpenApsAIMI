@@ -179,7 +179,9 @@ class NSAndroidClientImpl(
 
         val response = api.getSgvsModifiedSince(from, limit)
         if (response.isSuccessful) {
-            val eTag = response.eTagAsLong()
+            val eTag = response.headers()["ETag"]?.let {
+                it.removePrefix("W/").trim('"').toLongOrNull()
+            }
             return@callWrapper NSAndroidClient.ReadResponse(
                 code = response.code,
                 lastServerModified = eTag,
@@ -356,7 +358,9 @@ class NSAndroidClientImpl(
 
         val response = api.getTreatmentsModifiedSince(from, limit)
         if (response.isSuccessful) {
-            val eTag = response.eTagAsLong()
+            val eTag = response.headers()["ETag"]?.let {
+                it.removePrefix("W/").trim('"').toLongOrNull()
+            }
             return@callWrapper NSAndroidClient.ReadResponse(
                 code = response.code, lastServerModified = eTag, values = response.body()?.result?.map
                     (RemoteTreatment::toTreatment).toNotNull()
@@ -479,18 +483,22 @@ class NSAndroidClientImpl(
             throw UnsuccessfulNightscoutException("Unsuccessful")
     }
 
-    /*
-        override suspend fun getFoodsModifiedSince(from: Long, limit: Int): NSAndroidClient.ReadResponse<List<NSFood>> = callWrapper(dispatcher) {
+    override suspend fun getFoodsModifiedSince(from: Long, limit: Int): NSAndroidClient.ReadResponse<List<NSFood>> = callWrapper(dispatcher) {
 
-            val response = api.getFoodsModifiedSince(from, limit)
-            val eTag = response.eTagAsLong() ?: throw UnsuccessfulNightscoutException()
-            if (response.isSuccessful) {
-                return@callWrapper NSAndroidClient.ReadResponse(eTag, response.body()?.result?.map(RemoteFood::toNSFood).toNotNull())
-            } else {
-                throw UnsuccessfulNightscoutException()
-            }
+        val response = api.getFoodsModifiedSince(from, limit)
+        val eTag = response.headers()["ETag"]?.let {
+            it.removePrefix("W/").trim('"').toLongOrNull()
+        } ?: throw UnsuccessfulNightscoutException("Missing or invalid ETag header")
+        if (response.isSuccessful) {
+            return@callWrapper NSAndroidClient.ReadResponse(
+                code = response.code,
+                lastServerModified = eTag,
+                values = response.body()?.result?.map(RemoteFood::toNSFood).toNotNull()
+            )
+        } else {
+            throw UnsuccessfulNightscoutException(response.errorBody() ?: response.message())
         }
-    */
+    }
     override suspend fun createFood(nsFood: NSFood): CreateUpdateResponse = callWrapper(dispatcher) {
 
         val remoteFood = nsFood.toRemoteFood()
@@ -570,7 +578,9 @@ class NSAndroidClientImpl(
 
         val response = api.getLastProfile()
         if (response.isSuccessful) {
-            val eTag = response.eTagAsLong()
+            val eTag = response.headers()["ETag"]?.let {
+                it.removePrefix("W/").trim('"').toLongOrNull()
+            }
             return@callWrapper NSAndroidClient.ReadResponse(code = response.code, lastServerModified = eTag, values = response.body()?.result.toNotNull())
         } else if (response.code in 400..499)
             throw InvalidParameterNightscoutException(response.errorBody() ?: response.message())
@@ -582,7 +592,9 @@ class NSAndroidClientImpl(
 
         val response = api.getProfileModifiedSince(from)
         if (response.isSuccessful) {
-            val eTag = response.eTagAsLong()
+            val eTag = response.headers()["ETag"]?.let {
+                it.removePrefix("W/").trim('"').toLongOrNull()
+            }
             return@callWrapper NSAndroidClient.ReadResponse(code = response.code, lastServerModified = eTag, values = response.body()?.result.toNotNull())
         } else if (response.code in 400..499)
             throw InvalidParameterNightscoutException(response.errorBody() ?: response.message())

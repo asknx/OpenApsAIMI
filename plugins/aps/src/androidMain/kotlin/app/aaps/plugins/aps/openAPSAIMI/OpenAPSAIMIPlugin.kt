@@ -66,6 +66,7 @@ import app.aaps.core.keys.IntentKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.keys.UnitDoubleKey
 import app.aaps.core.keys.StringKey
+import app.aaps.plugins.aps.openAPSAIMI.keys.AimiLongKey
 import app.aaps.plugins.aps.openAPSAIMI.keys.AimiStringKey
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.objects.extensions.convertedToAbsolute
@@ -1154,7 +1155,12 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             StringKey.ContextLLMGeminiKey,
                             StringKey.ContextLLMDeepSeekKey,
                             StringKey.ContextLLMClaudeKey,
-                            StringKey.ContextMode
+                            StringKey.ContextMode,
+                            StringKey.AimiGeminiOAuthLoginButton,
+                            StringKey.AimiGeminiOAuthLogoutButton,
+                            IntentKey.OApsAIMIProfileAdvisor,
+                            IntentKey.OApsAIMIMealAdvisor,
+                            IntentKey.OApsAIMIContext
                         )
                     ),
                     PreferenceSubScreenDef(
@@ -1202,7 +1208,21 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             DoubleKey.OApsAIMIPriorityMaxIobFactor,
                             DoubleKey.OApsAIMIPriorityMaxIobExtraU,
                             DoubleKey.OApsAIMISmbExerciseDamping,
-                            DoubleKey.OApsAIMISmbLateFatDamping
+                            DoubleKey.OApsAIMISmbLateFatDamping,
+                            DoubleKey.OApsAIMIPkpdStateDiaH,
+                            DoubleKey.OApsAIMIPkpdStatePeakMin,
+                            DoubleKey.OApsAIMIPlateauBandAbs,
+                            DoubleKey.OApsAIMIR2Confident,
+                            DoubleKey.OApsAIMIMaxMultiplier,
+                            DoubleKey.OApsAIMIKickerStep,
+                            DoubleKey.OApsAIMIKickerMinUph,
+                            IntKey.OApsAIMIKickerStartMin,
+                            IntKey.OApsAIMIKickerMaxMin,
+                            DoubleKey.OApsAIMIZeroResumeFrac,
+                            IntKey.OApsAIMIZeroResumeMin,
+                            IntKey.OApsAIMIZeroResumeMax,
+                            DoubleKey.OApsAIMIAntiStallBias,
+                            DoubleKey.OApsAIMIDeltaPosRelease
                         )
                     ),
                     PreferenceSubScreenDef(
@@ -1257,6 +1277,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                         title = TextRef.Literal("Endometriosis Management"),
                         items = listOf(
                             BooleanKey.AimiEndometriosisEnable,
+                            BooleanKey.AimiEndometriosisHormonalSuppression,
                             BooleanKey.AimiEndometriosisPainFlare,
                             IntKey.AimiEndometriosisFlareDuration,
                             DoubleKey.AimiEndometriosisBasalMult,
@@ -1282,7 +1303,14 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             IntKey.OApsAIMINightGrowthAgeYears,
                             StringKey.OApsAIMINightGrowthStart,
                             StringKey.OApsAIMINightGrowthEnd,
-                            DoubleKey.OApsAIMINightGrowthMaxIobExtra
+                            DoubleKey.OApsAIMINightGrowthMaxIobExtra,
+                            DoubleKey.OApsAIMINightGrowthMinRiseSlope,
+                            DoubleKey.OApsAIMINightGrowthSmbMultiplier,
+                            DoubleKey.OApsAIMINightGrowthBasalMultiplier,
+                            DoubleKey.OApsAIMINightGrowthMaxSmbClamp,
+                            IntKey.OApsAIMINightGrowthMinDurationMin,
+                            IntKey.OApsAIMINightGrowthMinEventualOverTarget,
+                            IntKey.OApsAIMINightGrowthDecayMinutes
                         )
                     ),
                     PreferenceSubScreenDef(
@@ -1290,13 +1318,22 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                         title = TextRef.Literal("Gestational Autopilot"),
                         items = listOf(
                             BooleanKey.OApsAIMIpregnancy,
+                            AimiLongKey.PregnancyDueDate,
                             AimiStringKey.PregnancyDueDateString
                         )
                     ),
                     BooleanKey.OApsAIMIhoneymoon,
                     BooleanKey.OApsAIMInight,
                     BooleanKey.OApsAIMIUnifiedReactivityEnabled,
-                    BooleanKey.OApsxdriponeminute
+                    BooleanKey.OApsxdriponeminute,
+                    BooleanKey.OApsAIMIEnableBasal,
+                    BooleanKey.OApsAIMIEnableStepsFromWatch,
+                    BooleanKey.OApsAIMIforcelimits,
+                    IntKey.OApsAIMIlogsize,
+                    DoubleKey.OApsAIMIFCLFactor,
+                    DoubleKey.OApsAIMIHighBg,
+                    IntKey.OApsAIMIHighBGinterval,
+                    AimiStringKey.RemoteControlPin
                 )
             ),
             BooleanKey.OApsAIMIMLtraining,
@@ -1388,6 +1425,15 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     DoubleKey.OApsAIMIMpcInsulinUPerKgPerStep,
                     DoubleKey.OApsAIMIautodrivesmallPrebolus,
                     DoubleKey.OApsAIMIautodrivePrebolus,
+                    BooleanKey.OApsAIMIAutodriveV3EnhancedGater,
+                    DoubleKey.OApsAIMIAutodriveAcceleration,
+                    IntKey.OApsAIMIAutodriveTarget,
+                    BooleanKey.AimiCosineGateEnabled,
+                    DoubleKey.AimiCosineGateAlpha,
+                    DoubleKey.AimiCosineGateMinDataQuality,
+                    DoubleKey.AimiCosineGateMinSensitivity,
+                    DoubleKey.AimiCosineGateMaxSensitivity,
+                    IntKey.AimiCosineGateMaxPeakShift,
                     PreferenceSubScreenDef(
                         key = "Autodrive prebolus variables",
                         title = TextRef.Literal("Autodrive Prebolus Variables"),

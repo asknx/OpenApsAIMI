@@ -153,11 +153,22 @@ class XdripSourcePlugin(
             return if (hadFailure) Result.failure(workDataOf("Error" to "one or more bundles failed")) else Result.success()
         }
 
+        companion object {
+            var lastDataTimestamp: Long = 0L
+        }
+
         private suspend fun processBundle(bundle: Bundle) {
+            val currentTimestamp = bundle.getLong(Intents.EXTRA_TIMESTAMP, 0)
+            if (!preferences.get(BooleanKey.OApsxdriponeminute) && currentTimestamp - lastDataTimestamp < 240000) {
+                aapsLogger.debug(LTag.BGSOURCE, "Ignoring data, not enough time passed since last processing")
+                return
+            }
+            lastDataTimestamp = currentTimestamp
+
             aapsLogger.debug(LTag.BGSOURCE, "Received xDrip data: $bundle")
             val glucoseValues = mutableListOf<GV>()
             glucoseValues += GV(
-                timestamp = bundle.getLong(Intents.EXTRA_TIMESTAMP, 0),
+                timestamp = currentTimestamp,
                 value = round(bundle.getDouble(Intents.EXTRA_BG_ESTIMATE, 0.0)),
                 raw = round(bundle.getDouble(Intents.EXTRA_RAW, 0.0)),
                 noise = null,

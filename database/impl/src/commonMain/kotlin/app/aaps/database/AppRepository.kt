@@ -643,6 +643,10 @@ class AppRepository internal constructor(
     suspend fun getLastTherapyEventId(): Long? =
         database.therapyEventDao.getLastId()
 
+    suspend fun deleteLastEventMatchingKeyword(noteKeyword: String) {
+        database.therapyEventDao.deleteLastEventMatchingKeyword(noteKeyword)
+    }
+
     // FOOD
     /*
        * returns a Pair of the next entity to sync and the ID of the "update".
@@ -762,6 +766,9 @@ class AppRepository internal constructor(
 
     suspend fun getLastCarbs(): Carbs? =
         database.carbsDao.getLastCarbsRecord()
+
+    suspend fun getMostRecentCarbByDate(): Carbs? =
+        database.carbsDao.getMostRecentCarbByDate()
 
     suspend fun getOldestCarbs(): Carbs? =
         database.carbsDao.getOldestCarbsRecord()

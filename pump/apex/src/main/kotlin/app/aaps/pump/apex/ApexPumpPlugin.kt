@@ -371,6 +371,7 @@ class ApexPumpPlugin @Inject constructor(
         key = "apex_settings",
         titleResId = R.string.apex_settings,
         items = listOf(
+            ApexStringKey.SerialNumber,
             ApexStringKey.FirmwareVer.withEntries(
                 FirmwareVersion.entries.associate { it.name to app.aaps.core.keys.interfaces.TextRef.Literal(it.name) }
             ),
@@ -395,7 +396,9 @@ class ApexPumpPlugin @Inject constructor(
                 )
             ),
             ApexDoubleKey.BatteryLowVoltage,
-            ApexDoubleKey.BatteryHighVoltage
+            ApexDoubleKey.BatteryHighVoltage,
+            ApexDoubleKey.MaxBasal,
+            ApexDoubleKey.MaxBolus
         ),
         icon = pluginDescription.icon
     )

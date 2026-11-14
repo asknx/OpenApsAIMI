@@ -3,6 +3,7 @@ package app.aaps.implementation.maintenance
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
 import androidx.documentfile.provider.DocumentFile
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.logging.AAPSLogger
@@ -83,36 +84,57 @@ class MaintenanceImpl(
     }
 
     override fun deleteLogs(keep: Int) {
+        val keepIndex = (keep - 1).coerceAtLeast(0)
+        val maxAgeMs = keep * 24 * 3600 * 1000L
+        val now = System.currentTimeMillis()
+
+        // 1. Clean primary log directory
         val logDir = File(loggerUtils.logDirectory)
-        val files = logDir.listFiles { _: File?, name: String ->
-            (name.startsWith("AndroidAPS") && name.endsWith(".zip"))
-        }
-        val autotuneFiles = logDir.listFiles { _: File?, name: String ->
-            (name.startsWith("autotune") && name.endsWith(".zip"))
-        }
-        val keepIndex = keep - 1
-        if (autotuneFiles != null && autotuneFiles.isNotEmpty()) {
-            Arrays.sort(autotuneFiles) { f1: File, f2: File -> f2.name.compareTo(f1.name) }
-            var delAutotuneFiles = listOf(*autotuneFiles)
-            if (keepIndex < delAutotuneFiles.size) {
-                delAutotuneFiles = delAutotuneFiles.subList(keepIndex, delAutotuneFiles.size)
-                for (file in delAutotuneFiles) {
-                    file.delete()
+        if (logDir.exists() && logDir.isDirectory) {
+            val files = logDir.listFiles { _: File?, name: String ->
+                name != "AndroidAPS.log" && (
+                    name.startsWith("AndroidAPS") ||
+                    name.startsWith("autotune") ||
+                    name.endsWith(".zip") ||
+                    name.endsWith(".log") ||
+                    name.contains(".log.")
+                )
+            } ?: emptyArray()
+
+            files.sortByDescending { it.name }
+            val fileList = files.toList()
+            for (i in fileList.indices) {
+                val f = fileList[i]
+                val isOld = (now - f.lastModified()) > maxAgeMs
+                if (i >= keepIndex || isOld) {
+                    runCatching { f.delete() }
                 }
             }
         }
-        if (files == null || files.isEmpty()) return
-        Arrays.sort(files) { f1: File, f2: File -> f2.name.compareTo(f1.name) }
-        var delFiles = listOf(*files)
-        if (keepIndex < delFiles.size) {
-            delFiles = delFiles.subList(keepIndex, delFiles.size)
-            for (file in delFiles) {
-                file.delete()
+
+        // 2. Clean secondary log directories (e.g. Documents/AAPS/logs, AAPS/logs)
+        val secLogDirs = listOf<File>(
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "AAPS/logs"),
+            File(Environment.getExternalStorageDirectory(), "AAPS/logs")
+        )
+        for (dir in secLogDirs) {
+            if (dir.exists() && dir.isDirectory) {
+                val secFiles = dir.listFiles() ?: continue
+                secFiles.sortByDescending { it.name }
+                for (i in secFiles.indices) {
+                    val f = secFiles[i]
+                    val isOld = (now - f.lastModified()) > maxAgeMs
+                    if (i >= keepIndex || isOld) {
+                        runCatching { f.delete() }
+                    }
+                }
             }
         }
+
+        // 3. Clean temporary export files
         val exportDir = fileListProvider.ensureTempDirExists()
         exportDir?.listFiles()?.let { expFiles ->
-            for (file in expFiles) file.delete()
+            for (file in expFiles) runCatching { file.delete() }
         }
     }
 

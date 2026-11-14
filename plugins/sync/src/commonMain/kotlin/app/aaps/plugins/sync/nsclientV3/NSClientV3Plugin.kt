@@ -374,17 +374,17 @@ class NSClientV3Plugin(
         // just ran, and the last glucose value is now read with a plain suspend call instead of
         // runBlocking on that thread. Cancelled with the scope in onStop.
         scope.launch {
-            delay(T.mins(2).msecs())
+            delay(T.secs(10).msecs())
             while (isActive) {
-                var refreshInterval = T.mins(5).msecs()
+                var refreshInterval = T.mins(3).msecs()
                 if (nsClientSource.isEnabled())
                     persistenceLayer.getLastGlucoseValue()?.let {
-                        // if last value is older than 5 min or there is no bg
-                        if (it.timestamp < dateUtil.now() - T.mins(5).plus(T.secs(20)).msecs()) {
+                        // if last value is older than 3 min or there is no bg
+                        if (it.timestamp < dateUtil.now() - T.mins(3).plus(T.secs(10)).msecs()) {
                             refreshInterval = T.mins(1).msecs()
                         }
                     }
-                if (needsPolling())
+                if (needsPolling() || nsClientSource.isEnabled() || preferences.get(BooleanKey.NsClientAcceptCgmData))
                     executeLoop("MAIN_LOOP")
                 else
                     nsClientRepository.addLog("● TICK", "")
@@ -477,22 +477,18 @@ class NSClientV3Plugin(
             return
         }
         if (config.AAPSCLIENT || nsClientSource.isEnabled()) {
-            var origin = "5_MIN_AFTER_BG"
-            var toTime = lastLoadedSrvModified.collections.entries + T.mins(5).plus(T.secs(10)).msecs()
-            if (toTime < dateUtil.now()) {
-                toTime = dateUtil.now() + T.mins(1).plus(T.secs(0)).msecs()
-                origin = "1_MIN_OLD_DATA"
-            }
-            // A delayed one-shot. Successive calls stack up, exactly as the Handler posts did, and
-            // the scope cancels them all on stop. Note that executeLoop's isRunning check is NOT
-            // atomic with the enqueue after it, so two calls arriving together can both start a
-            // round. That costs a redundant REPLACE and a repeated fetch, nothing worse: rows
-            // already read stay staged in StoreDataForDb until they reach the database.
             scope.launch {
-                delay(toTime - dateUtil.now())
+                var origin = "3_MIN_AFTER_BG"
+                val lastGlucoseTimestamp = persistenceLayer.getLastGlucoseValue()?.timestamp ?: 0L
+                var toTime = lastGlucoseTimestamp + T.mins(3).plus(T.secs(15)).msecs()
+                if (toTime < dateUtil.now()) {
+                    toTime = dateUtil.now() + T.mins(1).plus(T.secs(0)).msecs()
+                    origin = "1_MIN_OLD_DATA"
+                }
+                delay(maxOf(0L, toTime - dateUtil.now()))
                 executeLoop(origin)
+                nsClientRepository.addLog("● NEXT", dateUtil.dateAndTimeAndSecondsString(toTime))
             }
-            nsClientRepository.addLog("● NEXT", dateUtil.dateAndTimeAndSecondsString(toTime))
         }
     }
 
@@ -1190,7 +1186,7 @@ class NSClientV3Plugin(
 
     internal fun executeLoop(origin: String) {
         // After the first load, data comes over the websocket while it is up; the loop is needed only without it.
-        if (initialLoadFinished && !needsPolling()) return
+        if (initialLoadFinished && !needsPolling() && !nsClientSource.isEnabled() && !preferences.get(BooleanKey.NsClientAcceptCgmData)) return
         if (preferences.get(NsclientBooleanKey.NsPaused)) {
             nsClientRepository.addLog("● RUN", "paused  $origin")
             return

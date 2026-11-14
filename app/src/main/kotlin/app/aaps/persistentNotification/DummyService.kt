@@ -76,11 +76,29 @@ class DummyService : MetroService() {
     private fun goForeground() {
         try {
             aapsLogger.debug("Starting DummyService with ID ${notificationHolder.notificationID} notification ${notificationHolder.notification}")
-            startForeground(notificationHolder.notificationID, notificationHolder.notification)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                // Android 14+: Use DATA_SYNC
+                startForeground(
+                    notificationHolder.notificationID,
+                    notificationHolder.notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
+            } else {
+                startForeground(notificationHolder.notificationID, notificationHolder.notification)
+            }
+        } catch (se: SecurityException) {
+            aapsLogger.error(LTag.CORE, "CRITICAL: Failed to start Foreground Service due to missing permissions (Android 14+). Service will stop.", se)
+            stopSelf()
         } catch (e: ForegroundServiceStartNotAllowedException) {
             aapsLogger.warn(LTag.CORE, "Android does not allow DummyService into the foreground now: ${e.message}")
         } catch (e: Exception) {
-            startForeground(4711, Notification())
+            aapsLogger.error(LTag.CORE, "Error starting FGS, retrying with fallback", e)
+            try {
+                startForeground(4711, Notification())
+            } catch (e2: Exception) {
+                aapsLogger.error(LTag.CORE, "Fallback FGS failed too. Giving up.", e2)
+                stopSelf()
+            }
         }
     }
 }

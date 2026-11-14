@@ -195,6 +195,13 @@ internal class NightscoutApi(
             nsUrl("v3", "food") { encodedParameters.append("limit", limit.toString()) }
         }
 
+    suspend fun getFoodsModifiedSince(from: Long, limit: Int) =
+        call(HttpMethod.Get, NSResponse.serializer(ListSerializer(RemoteFood.serializer()))) {
+            nsUrl("v3", "food", "history", from.toString()) {
+                encodedParameters.append("limit", limit.toString())
+            }
+        }
+
     suspend fun createFood(remoteFood: RemoteFood) =
         call(HttpMethod.Post, RemoteCreateUpdateResponse.serializer()) {
             nsUrl("v3", "food"); jsonBody(remoteFood)

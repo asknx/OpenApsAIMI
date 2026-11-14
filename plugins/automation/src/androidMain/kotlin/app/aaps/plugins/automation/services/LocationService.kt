@@ -96,8 +96,22 @@ class LocationService : MetroService() {
         // delivery and ACCESS_BACKGROUND_LOCATION was revoked in the meantime. Catch the
         // SecurityException so a permission/state race doesn't crash the process.
         try {
-            startForeground(notificationHolder.notificationID, notificationHolder.notification)
-        } catch (e: SecurityException) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    startForeground(
+                        notificationHolder.notificationID,
+                        notificationHolder.notification,
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                    )
+                } else {
+                    aapsLogger.warn(LTag.LOCATION, "Starting without LOCATION type (permissions missing)")
+                    startForeground(notificationHolder.notificationID, notificationHolder.notification)
+                }
+            } else {
+                startForeground(notificationHolder.notificationID, notificationHolder.notification)
+            }
+        } catch (e: Exception) {
             aapsLogger.error(LTag.LOCATION, "FGS-location start denied by system, stopping", e)
             stopSelf()
             return START_NOT_STICKY
