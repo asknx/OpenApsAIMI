@@ -1,23 +1,28 @@
 package app.aaps.plugins.aps.openAPSSMB
 
-import app.aaps.core.interfaces.aps.VariableSensitivityResult
+import app.aaps.core.interfaces.aps.Predictions
+import app.aaps.core.interfaces.di.MetroMemberInjector
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.utils.DateUtil
-import app.aaps.core.objects.aps.APSResultObject
-import dagger.android.HasAndroidInjector
+import app.aaps.plugins.aps.openAPS.APSResultObject
+import dev.zacsweers.metro.Inject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import org.json.JSONException
 import org.json.JSONObject
-import javax.inject.Inject
 
-open class DetermineBasalResultSMB internal constructor(injector: HasAndroidInjector) : APSResultObject(injector), VariableSensitivityResult {
+class DetermineBasalResultSMBFromJS private constructor(injector: MetroMemberInjector) : APSResultObject(injector) {
 
     @Inject lateinit var dateUtil: DateUtil
+
+    private var json: JSONObject? = null
 
     private var eventualBG = 0.0
     private var snoozeBG = 0.0
     override var variableSens: Double? = null
 
-    internal constructor(injector: HasAndroidInjector, result: JSONObject) : this(injector) {
+    internal constructor(injector: MetroMemberInjector, result: JSONObject) : this(injector) {
         date = dateUtil.now()
         json = result
         try {
@@ -62,21 +67,58 @@ open class DetermineBasalResultSMB internal constructor(injector: HasAndroidInje
         }
     }
 
-    override fun newAndClone(): DetermineBasalResultSMB {
-        val newResult = DetermineBasalResultSMB(injector)
+    override fun newAndClone(): DetermineBasalResultSMBFromJS {
+        val newResult = DetermineBasalResultSMBFromJS(injector)
         doClone(newResult)
         newResult.eventualBG = eventualBG
         newResult.snoozeBG = snoozeBG
+        newResult.json = json
         return newResult
     }
 
-    override fun json(): JSONObject? {
-        try {
-            return JSONObject(json.toString())
-        } catch (e: JSONException) {
-            aapsLogger.error(LTag.APS, "Error converting determine-basal result to JSON", e)
+    // The JS bridge hands over an org.json document and predictions() reads predBGs out of it, so the
+    // field stays as it is and only the contract is converted. androidTest, so a reparse costs nothing.
+    override fun json(): JsonObject? = json?.let { Json.parseToJsonElement(it.toString()).jsonObject }
+
+    override fun predictions(): Predictions {
+        val predictions = Predictions()
+
+        json?.let { json ->
+            if (json.has("predBGs")) {
+                val predBGs = json.getJSONObject("predBGs")
+                if (predBGs.has("IOB")) {
+                    val iob = predBGs.getJSONArray("IOB")
+                    val list = mutableListOf<Int>()
+                    for (i in 1 until iob.length()) list.add(iob.getInt(i))
+                    predictions.IOB = list
+                }
+                if (predBGs.has("aCOB")) {
+                    val iob = predBGs.getJSONArray("aCOB")
+                    val list = mutableListOf<Int>()
+                    for (i in 1 until iob.length()) list.add(iob.getInt(i))
+                    predictions.aCOB = list
+                }
+                if (predBGs.has("COB")) {
+                    val iob = predBGs.getJSONArray("COB")
+                    val list = mutableListOf<Int>()
+                    for (i in 1 until iob.length()) list.add(iob.getInt(i))
+                    predictions.COB = list
+                }
+                if (predBGs.has("UAM")) {
+                    val iob = predBGs.getJSONArray("UAM")
+                    val list = mutableListOf<Int>()
+                    for (i in 1 until iob.length()) list.add(iob.getInt(i))
+                    predictions.UAM = list
+                }
+                if (predBGs.has("ZT")) {
+                    val iob = predBGs.getJSONArray("ZT")
+                    val list = mutableListOf<Int>()
+                    for (i in 1 until iob.length()) list.add(iob.getInt(i))
+                    predictions.ZT = list
+                }
+            }
         }
-        return null
+        return predictions
     }
 
     init {

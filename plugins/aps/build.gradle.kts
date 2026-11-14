@@ -1,64 +1,104 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.ksp)
-    id("kotlin-android")
-    id("android-module-dependencies")
-    id("test-module-dependencies")
-    id("jacoco-module-dependencies")
-    alias(libs.plugins.dokka)
+    id("kmp-android-library")
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.compose.multiplatform)
+    // Metro, so this module can wire its own Android entry points.
+    alias(libs.plugins.metro)
 }
 
-android {
-    namespace = "app.aaps.plugins.aps"
-    buildFeatures {
-        viewBinding = true
+registerKeyStrings("aps")
+
+kotlin {
+    android {
+        namespace = "app.aaps.plugins.aps"
+        androidResources { enable = true }
+        // isIncludeAndroidResources is what makes Robolectric work - see :core:ui for the detail.
+        withHostTest {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
     }
-}
 
-dependencies {
-    implementation(project(":core:data"))
-    implementation(project(":core:interfaces"))
-    implementation(project(":core:keys"))
-    implementation(project(":core:nssdk"))
-    implementation(project(":core:objects"))
-    implementation(project(":core:utils"))
-    implementation(project(":core:ui"))
-    implementation(project(":core:validators"))
-    implementation("org.tensorflow:tensorflow-lite-support:0.1.0")
-    implementation ("org.tensorflow:tensorflow-lite-metadata:0.1.0")
-    implementation ("org.tensorflow:tensorflow-lite-gpu:2.3.0")
-    implementation("androidx.core:core-i18n:1.0.0-alpha01")
-    implementation(libs.com.google.mlkit.barcode.scanning)
-    
-    val camera_version = "1.6.0"
-    implementation("androidx.camera:camera-core:$camera_version")
-    implementation("androidx.camera:camera-camera2:$camera_version")
-    implementation("androidx.camera:camera-lifecycle:$camera_version")
-    implementation("androidx.camera:camera-view:$camera_version")
-    
-    // 🏥 Health Connect - MTR Steps Integration (Android 14+)
-    implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(project(":core:data"))
+                implementation(project(":core:interfaces"))
+                implementation(project(":core:keys"))
+                implementation(project(":core:nssdk"))
+                implementation(project(":core:objects"))
+                implementation(project(":core:utils"))
+                implementation(project(":core:ui"))
+                implementation(project(":core:validators"))
 
-    testImplementation(project(":pump:virtual"))
-    testImplementation(project(":shared:tests"))
+                implementation(libs.androidx.collection)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.jetbrains.compose.runtime)
+                api(kotlin("reflect"))
+            }
+        }
 
-    api(libs.androidx.appcompat)
-    api(libs.androidx.swiperefreshlayout)
-    api(libs.androidx.gridlayout)
-    api(kotlin("reflect"))
+        androidMain {
+            dependencies {
+                implementation(project(":core:graph"))
+                implementation(libs.androidx.compose.ui.tooling.preview)
+                implementation(libs.androidx.work.runtime)
+                implementation(libs.org.slf4j.api)
+                // APS (it should be androidTestImplementation but it doesn't work)
+                runtimeOnly(libs.org.mozilla.rhino)
 
-    // APS (it should be androidTestImplementation but it doesn't work)
-    api(libs.org.mozilla.rhino)
+                // AIMI custom dependencies
+                implementation("org.tensorflow:tensorflow-lite-support:0.1.0")
+                implementation("org.tensorflow:tensorflow-lite-metadata:0.1.0")
+                implementation("org.tensorflow:tensorflow-lite-gpu:2.3.0")
+                implementation("androidx.core:core-i18n:1.0.0-alpha01")
+                implementation(libs.com.google.mlkit.barcode.scanning)
 
-    //Logger
-    api(libs.org.slf4j.api)
+                val cameraVersion = "1.4.1"
+                implementation("androidx.camera:camera-core:$cameraVersion")
+                implementation("androidx.camera:camera-camera2:$cameraVersion")
+                implementation("androidx.camera:camera-lifecycle:$cameraVersion")
+                implementation("androidx.camera:camera-view:$cameraVersion")
 
-    testImplementation("io.mockk:mockk:1.13.8")
-    ksp(libs.com.google.dagger.android.processor)
-    
-    // Quality & Performance (Truth & JMH)
-    testImplementation(libs.com.google.truth)
-    
-    // 📺 Jitsi Screen Share: no SDK needed — handled via Android Intent deep-link
-    // The app opens meet.jit.si room via browser or the Jitsi Meet app if installed.
+                implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
+            }
+        }
+
+        // Hand written rather than taken from test-module-dependencies, which applies
+        // com.android.library and so cannot be used here. Same approach as :plugins:main.
+        // Tests of commonMain classes belong here, not in androidHostTest: that source set runs on the
+        // JVM only, so code that ships to iOS would be verified on Android alone. Mockito is JVM
+        // only, so anything moved here uses hand written fakes instead.
+        getByName("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
+
+        getByName("androidHostTest") {
+            dependencies {
+                implementation(project(":shared:tests"))
+                implementation(project(":pump:virtual"))
+                implementation(libs.org.junit.jupiter)
+                implementation(libs.org.junit.jupiter.api)
+                implementation(libs.org.mockito.junit.jupiter)
+                implementation(libs.org.mockito.kotlin)
+                implementation(libs.com.google.truth)
+                implementation(libs.kotlinx.coroutines.test)
+                // Compose UI tests (AutotuneScreenTest). Restated from compose-test-module-dependencies,
+                // which applies com.android.library and so cannot be used here.
+                implementation(project.dependencies.platform(libs.androidx.compose.bom))
+                implementation(libs.androidx.compose.ui.test.junit4)
+                implementation(libs.androidx.compose.ui.test.manifest)
+                implementation(libs.org.robolectric)
+                // The real org.json: isReturnDefaultValues makes the platform stub answer null rather
+                // than throwing, which NPEs the shared profile fixtures.
+                implementation(libs.org.json.android)
+                runtimeOnly(libs.org.mozilla.rhino)
+                runtimeOnly(libs.org.junit.vintage.engine)
+                runtimeOnly(libs.org.junit.platform.launcher)
+            }
+        }
+    }
 }

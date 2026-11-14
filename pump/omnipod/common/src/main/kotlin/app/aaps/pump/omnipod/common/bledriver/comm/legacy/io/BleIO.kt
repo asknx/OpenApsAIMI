@@ -2,7 +2,13 @@
 
 package app.aaps.pump.omnipod.common.bledriver.comm.legacy.io
 
-import android.annotation.SuppressLint
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.utils.toHex
+import app.aaps.pump.omnipod.common.bledriver.comm.command.BleCommandRTS
 import app.aaps.pump.omnipod.common.bledriver.comm.exceptions.ConnectException
 import app.aaps.pump.omnipod.common.bledriver.comm.interfaces.io.BleCharacteristicIO
 import app.aaps.pump.omnipod.common.bledriver.comm.interfaces.io.BleSendErrorConfirming
@@ -13,13 +19,6 @@ import app.aaps.pump.omnipod.common.bledriver.comm.interfaces.io.CharacteristicT
 import app.aaps.pump.omnipod.common.bledriver.comm.legacy.callbacks.BleCommCallbacks
 import app.aaps.pump.omnipod.common.bledriver.comm.legacy.callbacks.WriteConfirmationError
 import app.aaps.pump.omnipod.common.bledriver.comm.legacy.callbacks.WriteConfirmationSuccess
-import app.aaps.core.interfaces.logging.AAPSLogger
-import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.utils.toHex
-import app.aaps.pump.omnipod.common.bledriver.comm.command.BleCommandRTS
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattDescriptor
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 
@@ -51,7 +50,6 @@ open class BleIO(
     /**
      * @param payload the data to send
      */
-    @SuppressLint("MissingPermission")
     @Suppress("ReturnCount", "DEPRECATION")
     override fun sendAndConfirmPacket(payload: ByteArray): BleSendResult {
         aapsLogger.debug(LTag.PUMPBTCOMM, "BleIO: Sending on $type: ${payload.toHex()}")
