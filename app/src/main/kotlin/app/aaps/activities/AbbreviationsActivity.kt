@@ -6,9 +6,9 @@ import android.widget.TextView
 import android.widget.ScrollView
 import android.view.Gravity
 import android.graphics.Color
-import app.aaps.core.ui.activities.TranslatedDaggerAppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 
-class AbbreviationsActivity : TranslatedDaggerAppCompatActivity() {
+class AbbreviationsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -522,6 +522,20 @@ class ImportExportPrefsImpl(
         ZipWatchfaceFormat.saveCustomWatchface(context.contentResolver, newFile, customWatchface)
     }
 
+    override fun uploadFileToCloud(fileName: String, fileContent: ByteArray, mimeType: String, remotePath: String): Boolean {
+        val provider = cloudStorageManager.getActiveProvider() ?: return false
+        appScope.launch(Dispatchers.IO) {
+            try {
+                if (provider.testConnection()) {
+                    provider.uploadFileToPath(fileName, fileContent, mimeType, remotePath)
+                }
+            } catch (e: Exception) {
+                aapsLogger.error(LTag.CORE, "Failed to upload file to cloud from bridge: $fileName", e)
+            }
+        }
+        return true
+    }
+
     private fun checkIfImportIsOk(prefs: Prefs): Boolean {
         var importOk = true
 

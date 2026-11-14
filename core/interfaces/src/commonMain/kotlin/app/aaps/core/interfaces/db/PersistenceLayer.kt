@@ -276,6 +276,13 @@ interface PersistenceLayer {
      */
     suspend fun getNewestCarbs(): CA?
 
+    suspend fun getMostRecentCarbByDate(): Long? = getNewestCarbs()?.timestamp
+    suspend fun getMostRecentCarbAmount(): Double? = getNewestCarbs()?.amount
+    suspend fun getFutureCob(): Double {
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        return getCarbsFromTime(now, true).filter { it.timestamp > now }.sumOf { it.amount }
+    }
+
     /**
      *  Get carbs record with lowest timestamp
      *  @return carbs
@@ -1552,6 +1559,7 @@ interface PersistenceLayer {
      * @return List of inserted/updated records
      */
     suspend fun insertOrUpdateHeartRates(heartRates: List<HR>): TransactionResult<HR>
+    suspend fun insertOrUpdateHeartRate(heartRate: HR): TransactionResult<HR> = insertOrUpdateHeartRates(listOf(heartRate))
 
     // FD
     /**
@@ -1693,6 +1701,7 @@ interface PersistenceLayer {
      * @return List of inserted/updated records
      */
     suspend fun insertOrUpdateStepsCounts(stepsCounts: List<SC>): TransactionResult<SC>
+    suspend fun insertOrUpdateStepsCount(stepsCount: SC): TransactionResult<SC> = insertOrUpdateStepsCounts(listOf(stepsCount))
 
     // VersionChange
 

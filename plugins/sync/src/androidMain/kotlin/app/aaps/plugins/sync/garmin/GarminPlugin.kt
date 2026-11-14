@@ -23,6 +23,8 @@ import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
 import app.aaps.plugins.sync.SyncStrings
 import app.aaps.plugins.sync.garmin.keys.GarminBooleanKey
 import app.aaps.plugins.sync.garmin.keys.GarminIntKey
+import app.aaps.plugins.sync.garmin.keys.GarminIntNonKey
+import app.aaps.plugins.sync.garmin.keys.GarminLongNonKey
 import app.aaps.plugins.sync.garmin.keys.GarminStringKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -51,17 +53,6 @@ import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.roundToInt
-import app.aaps.core.interfaces.sharedPreferences.SP
-
-/** Support communication with Garmin devices.
- *
- * This plugin supports sending glucose values to Garmin devices and receiving
- * carbs, heart rate and pump disconnect events from the device. It communicates
- * via HTTP on localhost or Garmin's native CIQ library.
- *
- * On a client it only shows values: carbs and pump connect or disconnect from the
- * watch are refused there, see [refuseOnClient].
- */
 @ContributesIntoMap(AppScope::class, binding = binding<PluginBase>())
 @IntKey(370)
 @SingleIn(AppScope::class)
@@ -70,7 +61,6 @@ class GarminPlugin(
     aapsLogger: AAPSLogger,
     rh: TextResolver,
     preferences: Preferences,
-    private val sp: SP,
     private val context: Context,
     private val loopHub: LoopHub,
     private val persistenceLayer: PersistenceLayer,
@@ -82,7 +72,7 @@ class GarminPlugin(
         .icon(IcPluginGarmin)
         .pluginName(SyncStrings.garmin)
         .description(SyncStrings.garmin_description),
-    ownPreferences = GarminStringKey.entries + GarminBooleanKey.entries + GarminIntKey.entries,
+    ownPreferences = GarminStringKey.entries + GarminBooleanKey.entries + GarminIntKey.entries + GarminIntNonKey.entries + GarminLongNonKey.entries,
     aapsLogger, rh, preferences, notificationManager
 ) {
 
@@ -589,12 +579,12 @@ class GarminPlugin(
         val none = 0
 
         val now = System.currentTimeMillis()
-        val lastTotal = sp.getInt(PREF_GARMIN_LAST_STEPS, -1)
+        val lastTotal = preferences.get(GarminIntNonKey.LastSteps)
 
         // First ever value → store baseline only
         if (lastTotal < 0) {
-            sp.putInt(PREF_GARMIN_LAST_STEPS, totalSteps)
-            sp.putLong(PREF_GARMIN_LAST_TS, now)
+            preferences.put(GarminIntNonKey.LastSteps, totalSteps)
+            preferences.put(GarminLongNonKey.LastTimestamp, now)
             aapsLogger.info(LTag.GARMIN, "[GarminHTTP] baseline steps=$totalSteps")
             return
         }
@@ -613,8 +603,8 @@ class GarminPlugin(
                 "[GarminHTTP] negative / 0 step delta=$delta (total=$totalSteps last=$lastTotal)"
             )
             if (totalSteps > 0 && delta == 0) {
-                sp.putInt(PREF_GARMIN_LAST_STEPS, totalSteps)
-                sp.putLong(PREF_GARMIN_LAST_TS, now)
+                preferences.put(GarminIntNonKey.LastSteps, totalSteps)
+                preferences.put(GarminLongNonKey.LastTimestamp, now)
             }
             else
             {
@@ -622,8 +612,8 @@ class GarminPlugin(
                     LTag.GARMIN,
                     "[GarminHTTP] takeover initial total=$totalSteps "
                 )
-                sp.putInt(PREF_GARMIN_LAST_STEPS, totalSteps)
-                sp.putLong(PREF_GARMIN_LAST_TS, now)
+                preferences.put(GarminIntNonKey.LastSteps, totalSteps)
+                preferences.put(GarminLongNonKey.LastTimestamp, now)
                 loopHub.storeStepsCount(
                     Instant.ofEpochSecond(samplingStart),
                     Instant.ofEpochSecond(samplingEnd),
@@ -644,8 +634,8 @@ class GarminPlugin(
             "[GarminHTTP] steps delta=$delta (${Instant.ofEpochSecond(samplingStart)} → ${Instant.ofEpochSecond(samplingEnd)}) Total: $totalSteps"
         )
 
-        sp.putInt(PREF_GARMIN_LAST_STEPS, totalSteps)
-        sp.putLong(PREF_GARMIN_LAST_TS, now)
+        preferences.put(GarminIntNonKey.LastSteps, totalSteps)
+        preferences.put(GarminLongNonKey.LastTimestamp, now)
         loopHub.storeStepsCount(
             Instant.ofEpochSecond(samplingStart),
             Instant.ofEpochSecond(samplingEnd),

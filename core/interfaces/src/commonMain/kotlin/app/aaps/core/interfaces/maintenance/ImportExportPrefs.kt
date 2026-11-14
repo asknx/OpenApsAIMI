@@ -59,6 +59,8 @@ interface ImportExportPrefs {
      */
     fun exportApsResult(algorithm: String?, input: String, output: String?)
 
+    fun uploadFileToCloud(fileName: String, fileContent: ByteArray, mimeType: String, remotePath: String): Boolean = false
+
     // Compose export support — discrete steps, no UI
 
     /** Check if master password has been configured */

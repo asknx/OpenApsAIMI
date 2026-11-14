@@ -85,6 +85,7 @@ import app.aaps.core.interfaces.scenes.SceneIconResolver
 import app.aaps.core.interfaces.scenes.SceneStore
 import app.aaps.core.interfaces.scenes.Scenes
 import app.aaps.core.interfaces.sharedPreferences.KeyValueStore
+import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.core.interfaces.source.NSClientSource
 import app.aaps.core.interfaces.stats.DexcomTirCalculator
 import app.aaps.core.interfaces.stats.TddCalculator
@@ -325,6 +326,7 @@ interface AppRootGraph : MetroViewModelMultibindings {
     val l: L
     val aapsSchedulers: AapsSchedulers
     val keyValueStore: KeyValueStore
+    val sp: SP
     val widgetUpdater: WidgetUpdater
     val sceneIconResolver: SceneIconResolver
     val processedDeviceStatusData: ProcessedDeviceStatusData

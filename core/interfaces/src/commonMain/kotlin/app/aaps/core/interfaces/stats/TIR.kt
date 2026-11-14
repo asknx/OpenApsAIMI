@@ -14,4 +14,8 @@ interface TIR {
     fun below()
     fun inRange()
     fun above()
+
+    fun belowPct(): Double = if (count > 0) below.toDouble() / count * 100.0 else 0.0
+    fun abovePct(): Double = if (count > 0) above.toDouble() / count * 100.0 else 0.0
+    fun inRangePct(): Double = if (count > 0) 100.0 - belowPct() - abovePct() else 0.0
 }

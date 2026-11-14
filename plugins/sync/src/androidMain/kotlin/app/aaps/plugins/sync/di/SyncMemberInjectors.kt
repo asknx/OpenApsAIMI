@@ -1,6 +1,9 @@
 package app.aaps.plugins.sync.di
 
 import app.aaps.core.interfaces.di.FeatureMemberInjectors
+import app.aaps.plugins.sync.nsclientV3.LicenseKeyDialog
+import app.aaps.plugins.sync.nsclientV3.RemoteAccessLoginDialog
+import app.aaps.plugins.sync.nsclientV3.RemoteControlFragment
 import app.aaps.plugins.sync.nsclientV3.services.NSClientV3Service
 import app.aaps.plugins.sync.tidepool.auth.AuthFlowIn
 import app.aaps.plugins.sync.wear.receivers.WearDataReceiver
@@ -48,4 +51,22 @@ object SyncMemberInjectors {
     @IntoMap
     @ClassKey(NSClientV3Service::class)
     fun bindNSClientV3Service(injector: MembersInjector<NSClientV3Service>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(RemoteControlFragment::class)
+    fun bindRemoteControlFragment(injector: MembersInjector<RemoteControlFragment>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(LicenseKeyDialog::class)
+    fun bindLicenseKeyDialog(injector: MembersInjector<LicenseKeyDialog>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(RemoteAccessLoginDialog::class)
+    fun bindRemoteAccessLoginDialog(injector: MembersInjector<RemoteAccessLoginDialog>): MembersInjector<*> = injector
 }

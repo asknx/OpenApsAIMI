@@ -125,7 +125,7 @@ class LoopHubImpl(
                     durationInMinutes = 0,
                     profile = p,
                     newRM = RM.Mode.CLOSED_LOOP,
-                    action = Action.CONNECT,
+                    action = Action.RECONNECT,
                     source = Sources.Garmin,
                     listValues = listOf()
                 )

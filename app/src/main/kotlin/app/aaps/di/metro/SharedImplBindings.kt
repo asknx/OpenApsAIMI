@@ -20,6 +20,10 @@ import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 
+import app.aaps.core.interfaces.sharedPreferences.SP
+import app.aaps.shared.impl.sharedPreferences.SPImpl
+import app.aaps.shared.impl.sharedPreferences.defaultPreferences
+
 /**
  * The phone's half of `:shared:impl`.
  * Keep this in step with `SharedImplModule` and `LoggerModule`. A binding that only exists on one side
@@ -38,6 +42,10 @@ object SharedImplBindings {
     @Provides
     @SingleIn(AppScope::class)
     fun keyValueStore(context: Context): KeyValueStore = AndroidStorage.open(context).store
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun sp(context: Context): SP = SPImpl(defaultPreferences(context), context)
 
     /** Deferred: [L] reads its log settings back out of [Preferences]. */
     @Provides

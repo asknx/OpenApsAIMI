@@ -9,56 +9,85 @@ import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.model.TrendArrow
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.data.ue.Sources
+import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.notifications.NotificationManager
+import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.source.BgSource
+import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
+import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.objects.workflow.LoggingWorker
-import dagger.android.HasAndroidInjector
+import app.aaps.core.objects.workflow.MetroWorkerCreator
+import app.aaps.core.ui.compose.icons.IcGenericCgm
+import app.aaps.plugins.source.compose.BgSourceComposeContent
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.IntKey
+import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.binding
 import kotlinx.coroutines.Dispatchers
 import org.json.JSONArray
 import org.json.JSONException
-import app.aaps.core.keys.interfaces.Preferences
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class OttaiPlugin @Inject constructor(
+@ContributesIntoMap(AppScope::class, binding = binding<PluginBase>())
+@IntKey(560)
+@SingleIn(AppScope::class)
+@Inject
+class OttaiPlugin(
     rh: ResourceHelper,
     aapsLogger: AAPSLogger,
-    preferences: Preferences
+    preferences: Preferences,
+    config: Config,
+    notificationManager: NotificationManager
 ) : AbstractBgSourcePlugin(
     PluginDescription()
         .mainType(PluginType.BGSOURCE)
-        .fragmentClass(BGSourceFragment::class.java.name)
-        .pluginIcon(app.aaps.core.objects.R.drawable.ic_ottai)
-        .preferencesId(PluginDescription.PREFERENCE_SCREEN)
-        .pluginName(R.string.ottai_app)
+        .composeContent { plugin ->
+            BgSourceComposeContent(
+                title = rh.gs(R.string.ottai_app)
+            )
+        }
+        .icon(IcGenericCgm)
+        .pluginName(TextRef.AndroidRes(R.string.ottai_app))
         .preferencesVisibleInSimpleMode(false)
-        .description(R.string.description_source_patched_ottai_app),
-    emptyList(),
-    aapsLogger, rh, preferences
+        .description(TextRef.AndroidRes(R.string.description_source_patched_ottai_app)),
+    ownPreferences = emptyList(),
+    aapsLogger, rh, preferences, config, notificationManager
 ), BgSource {
-    class OttaiWorker(
-        context: Context,
-        params: WorkerParameters
-    ) : LoggingWorker(context, params, Dispatchers.IO) {
 
-        @Inject lateinit var injector: HasAndroidInjector
-        @Inject lateinit var ottaiPlugin: OttaiPlugin
-        @Inject lateinit var persistenceLayer: PersistenceLayer
+    @AssistedInject
+    class OttaiWorker(
+        @Assisted context: Context,
+        @Assisted params: WorkerParameters,
+        aapsLogger: AAPSLogger,
+        fabricPrivacy: FabricPrivacy,
+        private val ottaiPlugin: OttaiPlugin,
+        private val persistenceLayer: PersistenceLayer
+    ) : LoggingWorker(context, params, Dispatchers.IO, aapsLogger, fabricPrivacy) {
+
+        @AssistedFactory
+        fun interface Factory : MetroWorkerCreator {
+            override fun create(context: Context, params: WorkerParameters): OttaiWorker
+        }
 
         @SuppressLint("CheckResult")
         override suspend fun doWorkAndLog(): Result {
             var ret = Result.success()
             if (!ottaiPlugin.isEnabled()) return Result.success(workDataOf("Result" to "Plugin not enabled"))
             val collection = inputData.getString("collection") ?: return Result.failure(workDataOf("Error" to "missing collection"))
-            if (collection == "entries"){
+            if (collection == "entries") {
                 val data = inputData.getString("data")
                 aapsLogger.debug(LTag.BGSOURCE, "Received Ottai Data $data")
-                if (!data.isNullOrEmpty()){
+                if (!data.isNullOrEmpty()) {
                     try {
                         val glucoseValues = mutableListOf<GV>()
                         val jsonArray = JSONArray(data)
@@ -72,19 +101,24 @@ class OttaiPlugin @Inject constructor(
                                         raw = jsonObject.getDouble("sgv"),
                                         noise = null,
                                         trendArrow = TrendArrow.fromString(jsonObject.getString("direction")),
-                                        sourceSensor = SourceSensor.OTTAI
+                                        sourceSensor = SourceSensor.SYAI_TAG
                                     )
+
                                 else  -> aapsLogger.debug(LTag.BGSOURCE, "Unknown entries type: $type")
                             }
                         }
-                        persistenceLayer.insertCgmSourceData(Sources.Ottai, glucoseValues, emptyList(), null)
-                            .doOnError { ret = Result.failure(workDataOf("Error" to it.toString())) }
-                            .blockingGet()
+                        try {
+                            persistenceLayer.insertCgmSourceData(Sources.Ottai, glucoseValues, emptyList(), null)
+                        } catch (e: Exception) {
+                            ret = Result.failure(workDataOf("Error" to e.toString()))
+                        }
                     } catch (e: JSONException) {
                         aapsLogger.error("Exception: ", e)
                         ret = Result.failure(workDataOf("Error" to e.toString()))
                     }
                 }
+            } else {
+                ret = Result.failure(workDataOf("Error" to "missing input data"))
             }
             return ret
         }

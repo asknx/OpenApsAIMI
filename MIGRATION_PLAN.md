@@ -42,7 +42,12 @@
   - [x] Разрешение конфликтов Application & Config (`MainApp.kt`, `ConfigImpl.kt`, `UiInteractionImpl.kt`, `AndroidManifest.xml`)
   - [x] Разрешение строковых ресурсов и плагинов (`strings.xml`, `LocationService`, `ObjectivesPlugin`, `ExponentialSmoothingPlugin`, `GarminPlugin`, `LoopHubImpl`, `NsIncomingDataProcessor`, `StepCountListener`)
   - [x] Завершение merge-коммита: `merge: upstream AndroidAPS 4.0.0 base` (`513b6b9f70`)
-- [ ] **Этап 3: Адаптация логики и компиляция ядра (Модули 1, 2, 3, 4, 7, 8, 9)**
+- [x] **Этап 3: Адаптация логики и компиляция ядра (Модули 1, 2, 3, 4, 7, 8, 9)** (Завершено, сборка `:app:assembleFullDebug` успешна)
+  - [x] Перевод всех DI-модулей на Metro DI (`dev.zacsweers.metro`): `SharedImplBindings`, `AppRootGraph`, `ApsAndroidPluginRegistrations`, `WCycleBindings`, `SourceMetroGraph`, `SyncMemberInjectors`, `ApexBindings`, `ApexMemberInjectors`
+  - [x] Модуль 1: Адаптация Gradle build-скриптов к KMP (commonMain/androidMain), обновление TFLite до 2.14.0, CameraX, Health Connect, Metro plugin
+  - [x] Модули 8 и 9: PersistenceLayer, базовые модели данных, TIR, DstHelper, CloudBackup, Apex Pump (`:pump:apex`), Ottai CGM plugin (`@IntKey(560)`), Adaptive Smoothing (`@IntKey(650)`), Garmin Sync, Remote Control
+  - [x] Модули 2, 3, 4, 7: Сохранение 100% математической логики AIMI (Adaptive Basal, Autodrive, Neural Net, ISF blender, Kalman, TFLite, PKPD, Trajectory Guard, SafetyNet, SMB Damping, Physio, Steps, SOS, WCycle)
+  - [x] Полная компиляция и упаковка APK: `:app:compileFullDebugKotlin` и `:app:assembleFullDebug` **BUILD SUCCESSFUL**
 - [ ] **Этап 4: Миграция сервисов и AI-модулей (Модули 5, 6 — AICoachingService, MealAdvisor, Dual Brain)**
 - [ ] **Этап 5: Миграция UI-экранов на Jetpack Compose / Material 3 (Модуль 10)**
 - [ ] **Этап 6: Адаптация и запуск unit-тестов (Модуль 11), верификация и стабилизация**

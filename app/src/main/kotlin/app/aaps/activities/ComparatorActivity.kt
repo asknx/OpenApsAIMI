@@ -7,9 +7,9 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.graphics.Color
+import androidx.appcompat.app.AppCompatActivity
 import app.aaps.R
 import app.aaps.databinding.ActivityComparatorBinding
-import app.aaps.plugins.configuration.activities.DaggerAppCompatActivityWithResult
 import app.aaps.plugins.aps.openAPSAIMI.comparison.*
 import android.content.Intent
 import android.net.Uri
@@ -23,7 +23,7 @@ import com.github.mikephil.charting.data.LineDataSet
 import java.io.File
 import java.util.Locale
 
-class ComparatorActivity : DaggerAppCompatActivityWithResult() {
+class ComparatorActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityComparatorBinding
     private val parser = ComparisonCsvParser()

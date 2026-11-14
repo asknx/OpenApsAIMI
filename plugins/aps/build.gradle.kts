@@ -42,14 +42,13 @@ kotlin {
                 implementation(project(":core:graph"))
                 implementation(libs.androidx.compose.ui.tooling.preview)
                 implementation(libs.androidx.work.runtime)
+                implementation(libs.androidx.preference)
                 implementation(libs.org.slf4j.api)
                 // APS (it should be androidTestImplementation but it doesn't work)
                 runtimeOnly(libs.org.mozilla.rhino)
 
                 // AIMI custom dependencies
-                implementation("org.tensorflow:tensorflow-lite-support:0.1.0")
-                implementation("org.tensorflow:tensorflow-lite-metadata:0.1.0")
-                implementation("org.tensorflow:tensorflow-lite-gpu:2.3.0")
+                implementation("org.tensorflow:tensorflow-lite:2.14.0")
                 implementation("androidx.core:core-i18n:1.0.0-alpha01")
                 implementation(libs.com.google.mlkit.barcode.scanning)
 

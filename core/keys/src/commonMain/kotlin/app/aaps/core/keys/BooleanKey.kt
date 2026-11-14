@@ -330,6 +330,7 @@ enum class BooleanKey(
     AimiEndometriosisHormonalSuppression("aimi_endo_suppression", false, title = TextRef.Literal("AIMI Endo Suppression")),
     AimiEndometriosisPainFlare("aimi_endo_flare", false, title = TextRef.Literal("AIMI Endo Pain Flare")),
     OApsAIMIMealAdvisorTrigger("aimi_meal_advisor_trigger", false, title = TextRef.Literal("AIMI Meal Advisor Trigger")),
+    AimiMealAdvisorEnable("aimi_meal_advisor_enable", false, title = TextRef.Literal("AIMI Meal Advisor Enable")),
 
     // Adaptive Kernel Bank (Cosine Gate)
     AimiCosineGateEnabled("aimi_cosine_gate_enabled", true, title = TextRef.Literal("AIMI Cosine Gate Enabled")),

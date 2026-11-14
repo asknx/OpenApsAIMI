@@ -73,8 +73,7 @@ class NsIncomingDataProcessor(
     private val config: Config,
     private val profileStoreProvider: () -> ProfileStore,
     private val notificationManager: NotificationManager,
-    private val nsClientRepository: NSClientRepository,
-    private val contextManager: app.aaps.plugins.aps.openAPSAIMI.context.ContextManager
+    private val nsClientRepository: NSClientRepository
 ) {
 
     /**
@@ -102,7 +101,7 @@ class NsIncomingDataProcessor(
 
     /**
      * Preprocess list of SGVs
-     *
+     */
     fun processSgvs(sgvs: Any, doFullSync: Boolean, advanceInitialLoadCursor: Boolean = false): Boolean {
         // Objective0
         preferences.put(BooleanNonKey.ObjectivesBgIsAvailableInNs, true)
@@ -222,38 +221,6 @@ class NsIncomingDataProcessor(
                     is NSTherapyEvent           ->
                         if (preferences.get(BooleanKey.NsClientAcceptTherapyEvent) || config.AAPSCLIENT || doFullSync)
                             treatment.toTherapyEvent().let { therapyEvent ->
-                                
-                                // Check for AIMI Context sync
-                                val note = therapyEvent.note ?: ""
-                                if (note.startsWith("AIMI_CONTEXT:")) {
-                                    aapsLogger.info(LTag.NSCLIENT, "[NS] ✅ AIMI_CONTEXT detected: ${note.take(60)}...")
-                                    try {
-                                        // Parse: "AIMI_CONTEXT:ctx_123:{json}"
-                                        val parts = note.split(":", limit = 3)
-                                        if (parts.size == 3) {
-                                            val intentId = parts[1]
-                                            val intentJson = parts[2]
-                                            
-                                            aapsLogger.debug(LTag.NSCLIENT, "[NS] Parsing AIMI context: $intentId")
-                                            
-                                            val intent = app.aaps.plugins.aps.openAPSAIMI.context.ContextIntentDeserializer
-                                                .deserialize(intentJson, aapsLogger)
-                                                
-                                            if (intent != null) {
-                                                contextManager.injectContextFromNS(intentId, intent)
-                                                aapsLogger.info(LTag.NSCLIENT, "[NS] ✅ Injected AIMI context: $intentId")
-                                            } else {
-                                                aapsLogger.warn(LTag.NSCLIENT, "[NS] Failed to deserialize AIMI context")
-                                            }
-                                        } else {
-                                            aapsLogger.warn(LTag.NSCLIENT, "[NS] AIMI note wrong format (parts=${parts.size})")
-                                        }
-                                    } catch (e: Exception) {
-                                        aapsLogger.error(LTag.NSCLIENT, "[NS] Exception parsing AIMI context: ${e.message}", e)
-                                    }
-                                }
-                                
-                                // Always store TherapyEvent for history
                                 storeDataForDb.addToTherapyEvents(therapyEvent)
                                 if (therapyEvent.type == TE.Type.ANNOUNCEMENT &&
                                     preferences.get(BooleanKey.NsClientNotificationsFromAnnouncements) &&

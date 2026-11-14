@@ -7,6 +7,7 @@ import app.aaps.plugins.source.AidexPlugin
 import app.aaps.plugins.source.DexcomPlugin
 import app.aaps.plugins.source.GlimpPlugin
 import app.aaps.plugins.source.MM640gPlugin
+import app.aaps.plugins.source.OttaiPlugin
 import app.aaps.plugins.source.PatchedSiAppPlugin
 import app.aaps.plugins.source.PatchedSinoAppPlugin
 import app.aaps.plugins.source.PoctechPlugin
@@ -67,6 +68,9 @@ interface SourceMetroGraph {
 
     @Provides @IntoMap @WorkerKey(MM640gPlugin.MM640gWorker::class)
     fun bindMM640gWorker(f: MM640gPlugin.MM640gWorker.Factory): MetroWorkerCreator = f
+
+    @Provides @IntoMap @WorkerKey(OttaiPlugin.OttaiWorker::class)
+    fun bindOttaiWorker(f: OttaiPlugin.OttaiWorker.Factory): MetroWorkerCreator = f
 
     @Provides @IntoMap @WorkerKey(PatchedSiAppPlugin.PatchedSiAppWorker::class)
     fun bindPatchedSiAppWorker(f: PatchedSiAppPlugin.PatchedSiAppWorker.Factory): MetroWorkerCreator = f

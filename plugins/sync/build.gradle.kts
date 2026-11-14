@@ -124,6 +124,9 @@ kotlin {
                 implementation(libs.androidx.camera.lifecycle)
                 implementation(libs.androidx.camera.view)
 
+                // AIMI Context integration for Remote Control
+                implementation(project(":plugins:aps"))
+
                 // Garmin
             }
         }

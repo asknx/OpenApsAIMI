@@ -1,18 +1,22 @@
 package app.aaps.plugins.sync.garmin
 
 import android.content.Context
+import app.aaps.core.data.model.SC
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.data.model.SC
-import io.reactivex.rxjava3.disposables.CompositeDisposable
-import io.reactivex.rxjava3.schedulers.Schedulers
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.Instant
 import java.util.Timer
 import java.util.TimerTask
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 🔄 Garmin Health Sync Service
@@ -31,7 +35,7 @@ import javax.inject.Singleton
  * 
  * @author Lyra (AI Assistant) - Garmin Integration Expert
  */
-@Singleton
+@SingleIn(AppScope::class)
 class GarminHealthSync @Inject constructor(
     private val aapsLogger: AAPSLogger,
     private val context: Context,
@@ -39,7 +43,7 @@ class GarminHealthSync @Inject constructor(
     private val clock: Clock
 ) {
     
-    private val disposable = CompositeDisposable()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncTimer: Timer? = null
     private var lastStepCount: Int = 0
     private var lastSyncTimestamp: Long = 0
@@ -79,7 +83,7 @@ class GarminHealthSync @Inject constructor(
     fun stop() {
         syncTimer?.cancel()
         syncTimer = null
-        disposable.clear()
+        scope.coroutineContext[kotlinx.coroutines.Job]?.cancelChildren()
         aapsLogger.info(LTag.GARMIN, "Stopped GarminHealthSync")
     }
     
@@ -117,36 +121,6 @@ class GarminHealthSync @Inject constructor(
             "Current watchfaces (Swissalpine, xDrip+/Spike) don't send steps. " +
             "Please use a compatible watchface or modify yours to include steps data."
         )
-        
-        // TODO: Implement Garmin Health API integration
-        // Example (pseudo-code):
-        /*
-        val healthDataManager = HealthDataManager.getInstance(context)
-        healthDataManager.requestData(
-            DataType.STEPS,
-            nowMs - STEP_BUCKET_DURATION_MS,
-            nowMs
-        ) { data ->
-            val currentSteps = data.totalSteps
-            val deltaSteps = if (lastStepCount > 0) {
-                currentSteps - lastStepCount
-            } else {
-                0 // First reading
-            }
-            
-            if (deltaSteps > 0) {
-                insertStepCount(
-                    timestamp = nowMs - STEP_BUCKET_DURATION_MS,
-                    steps = deltaSteps.toDouble(),
-                    duration = STEP_BUCKET_DURATION_MS,
-                    device = "Garmin-HealthAPI"
-                )
-            }
-            
-            lastStepCount = currentSteps
-            lastSyncTimestamp = nowMs
-        }
-        */
     }
     
     /**
@@ -175,27 +149,23 @@ class GarminHealthSync @Inject constructor(
             device = device
         )
         
-        disposable.add(
-            persistenceLayer.insertOrUpdateStepsCount(stepsCount)
-                .subscribeOn(Schedulers.io())
-                .subscribe(
-                    { id ->
-                        aapsLogger.info(
-                            LTag.GARMIN,
-                            "✅ Inserted StepsCount: ${steps.toInt()} steps, " +
-                            "timestamp=${Instant.ofEpochMilli(timestamp)}, " +
-                            "device=$device, id=$id"
-                        )
-                    },
-                    { error ->
-                        aapsLogger.error(
-                            LTag.GARMIN,
-                            "❌ Failed to insert StepsCount: ${error.message}",
-                            error
-                        )
-                    }
+        scope.launch {
+            try {
+                val result = persistenceLayer.insertOrUpdateStepsCount(stepsCount)
+                aapsLogger.info(
+                    LTag.GARMIN,
+                    "✅ Inserted StepsCount: ${steps.toInt()} steps, " +
+                    "timestamp=${Instant.ofEpochMilli(timestamp)}, " +
+                    "device=$device, result=$result"
                 )
-        )
+            } catch (error: Exception) {
+                aapsLogger.error(
+                    LTag.GARMIN,
+                    "❌ Failed to insert StepsCount: ${error.message}",
+                    error
+                )
+            }
+        }
     }
     
     /**

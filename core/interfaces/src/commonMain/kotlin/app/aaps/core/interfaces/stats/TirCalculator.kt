@@ -65,4 +65,14 @@ interface TirCalculator {
      * @return TIR object with aggregated counts from all days
      */
     fun averageTIR(tirs: LongSparseArray<TIR>): TIR
+
+    /**
+     * Calculates Time In Range statistics for the last 1 hour.
+     */
+    suspend fun calculateHour(lowMgdl: Double, highMgdl: Double): LongSparseArray<TIR>
+
+    /**
+     * Calculates Time In Range statistics for today from midnight to now.
+     */
+    suspend fun calculateDaily(lowMgdl: Double, highMgdl: Double): LongSparseArray<TIR>
 }
