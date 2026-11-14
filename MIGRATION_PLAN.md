@@ -48,7 +48,19 @@
   - [x] Модули 8 и 9: PersistenceLayer, базовые модели данных, TIR, DstHelper, CloudBackup, Apex Pump (`:pump:apex`), Ottai CGM plugin (`@IntKey(560)`), Adaptive Smoothing (`@IntKey(650)`), Garmin Sync, Remote Control
   - [x] Модули 2, 3, 4, 7: Сохранение 100% математической логики AIMI (Adaptive Basal, Autodrive, Neural Net, ISF blender, Kalman, TFLite, PKPD, Trajectory Guard, SafetyNet, SMB Damping, Physio, Steps, SOS, WCycle)
   - [x] Полная компиляция и упаковка APK: `:app:compileFullDebugKotlin` и `:app:assembleFullDebug` **BUILD SUCCESSFUL**
-- [ ] **Этап 4: Миграция сервисов и AI-модулей (Модули 5, 6 — AICoachingService, MealAdvisor, Dual Brain)**
+- [x] **Двухконтурный Git-Diff аудит и верификация Этапа 4 (Модули 5, 6 — AICoaching, DualBrain, Vision, Apex, Loop)**
+  - [x] **Контур А (Сохранность фич форка против `pre-aaps4-backup`):**
+    - `pump/apex`: восстановлена проверка `applyBasalConstraints()`, локализованные `Apex*Key` (`app.aaps.pump.apex.R.string.*`), `getPreferenceScreenContent()` с `PreferenceSubScreenDef` и `withEntries`.
+    - `LoopPlugin.kt`: восстановлены `skipQueueCheck` для `MealAdvisor_Direct` и `tempBasalFallback`, трекинг `lastGlucoseWorkerLoopWallClock`, фоновый `autodrive` таймер с периодичностью `ApsMaxSmbFrequency` при `OApsAIMIautoDrive`, исполнение SMB в `acceptChangeRequest()` при `constraintsProcessed.isBolusRequested`.
+    - `WCycleBindings.kt`: зарегистрирован `@Provides fun provideEndometriosisAdjuster()`.
+    - Очищены UTF-8 BOM маркеры в `DetermineBasalAIMI2.kt`, `ContextManager.kt`, `ContextActivity.kt`, `MealAdvisorActivity.kt`.
+    - Заглушка `DashboardPreviewActivity.kt` с ресурсом `dashboard_preview_title` для сборки `:app`.
+  - [x] **Контур Б (Целостность базы upstream 4.0.0):**
+    - Ядро AAPS 4.0.0 (`core/*`, `shared/*`, KMP структура, Metro DI, драйверы помп Dash/Dana/Eros/Medtronic, NSClient v3) сохранено в неприкосновенности.
+  - [x] **Верификация компиляции:**
+    - `:plugins:aps:assemble` — **BUILD SUCCESSFUL**
+    - `:pump:apex:assemble` — **BUILD SUCCESSFUL**
+    - `:app:assembleFullDebug` — **BUILD SUCCESSFUL** (успешная компоновка и упаковка APK)
 - [ ] **Этап 5: Миграция UI-экранов на Jetpack Compose / Material 3 (Модуль 10)**
 - [ ] **Этап 6: Адаптация и запуск unit-тестов (Модуль 11), верификация и стабилизация**
 

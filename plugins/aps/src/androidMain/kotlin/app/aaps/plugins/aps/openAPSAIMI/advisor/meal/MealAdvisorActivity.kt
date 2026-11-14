@@ -1,4 +1,4 @@
-﻿package app.aaps.plugins.aps.openAPSAIMI.advisor.meal
+package app.aaps.plugins.aps.openAPSAIMI.advisor.meal
 
 import android.content.Intent
 import android.graphics.Color

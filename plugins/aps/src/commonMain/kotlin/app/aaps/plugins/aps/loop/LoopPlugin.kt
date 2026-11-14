@@ -163,6 +163,16 @@ class LoopPlugin(
     override var lastRun: LastRun? = null
     override var closedLoopEnabled: Constraint<Boolean>? = null
 
+    /**
+     * Wall-clock time of last successful [invoke] from the glucose worker (`Calculation for … cause=EventNewBG` / History).
+     * Skips AIMI periodic autodrive when a glucose-driven loop already ran recently; periodic fallback still runs if BG stalls.
+     */
+    private var lastGlucoseWorkerLoopWallClock: Long = 0L
+
+    private fun isGlucoseWorkerInitiator(initiator: String): Boolean =
+        initiator.startsWith("Calculation for ") &&
+            (initiator.contains("cause=EventNewBG") || initiator.contains("cause=EventNewHistoryData"))
+
     // Debounces the device-status upload. Was a Handler on its own HandlerThread; a Job on the app
     // scope does the same and is the only part of this class that was ever Android.
     private var deviceStatusJob: Job? = null
@@ -238,6 +248,38 @@ class LoopPlugin(
                 }
             }
             .launchIn(appScope).also(collectors::add)
+
+        // Periodic autodrive loop
+        appScope.launch {
+            while (true) {
+                val freqMinutes = preferences.get(IntKey.ApsMaxSmbFrequency)
+                val freqMs = T.mins(freqMinutes.toLong()).msecs().coerceAtLeast(60_000L)
+                delay(freqMs)
+                try {
+                    val autodrive = preferences.get(BooleanKey.OApsAIMIautoDrive)
+                    if (autodrive) {
+                        val now = dateUtil.now()
+                        val sinceGlucoseMs =
+                            if (lastGlucoseWorkerLoopWallClock == 0L) Long.MAX_VALUE
+                            else (now - lastGlucoseWorkerLoopWallClock).coerceAtLeast(0L)
+                        if (sinceGlucoseMs >= freqMs) {
+                            aapsLogger.debug(
+                                LTag.APS,
+                                "Periodic autodrive fallback (last glucose-driven loop ${sinceGlucoseMs}ms ago, period ${freqMs}ms)"
+                            )
+                            invoke("PeriodicApsMaxSmbFrequency", true)
+                        } else {
+                            aapsLogger.debug(
+                                LTag.APS,
+                                "Periodic autodrive skipped (glucose-driven loop ${sinceGlucoseMs}ms ago < period ${freqMs}ms)"
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    aapsLogger.error(LTag.APS, "Periodic autodrive loop error", e)
+                }
+            }
+        }.also(collectors::add)
     }
 
     override suspend fun onStop() {
@@ -569,7 +611,8 @@ class LoopPlugin(
                 return@withContext
             }
 
-            if (!isEmptyQueue()) {
+            val skipQueueCheck = initiator == "MealAdvisor_Direct" || initiator == "tempBasalFallback"
+            if (!skipQueueCheck && !isEmptyQueue()) {
                 aapsLogger.debug(LTag.APS, rh.gs(CoreUiStrings.pump_busy))
                 rxBus.send(EventLoopSetLastRunGui(rh.gs(CoreUiStrings.pump_busy)))
                 return@withContext
@@ -587,6 +630,10 @@ class LoopPlugin(
             if (apsResult == null) {
                 rxBus.send(EventLoopSetLastRunGui(rh.gs(ApsStrings.no_aps_selected)))
                 return@withContext
+            }
+
+            if (isGlucoseWorkerInitiator(initiator)) {
+                lastGlucoseWorkerLoopWallClock = dateUtil.now()
             }
 
             storeApsResult(apsResult)
@@ -842,6 +889,15 @@ class LoopPlugin(
                 lastRun.lastOpenModeAccept = dateUtil.now()
                 scheduleBuildAndStoreDeviceStatus("acceptChangeRequest")
                 preferences.inc(IntNonKey.ObjectivesManualEnacts)
+            }
+            if (constraintsProcessed.isBolusRequested && constraintsProcessed.smb > 0.0) {
+                val smbResult = applySMBRequest(constraintsProcessed)
+                if (smbResult.enacted) {
+                    lastRun.smbSetByPump = smbResult
+                    lastRun.lastSMBRequest = lastRun.lastAPSRun
+                    lastRun.lastSMBEnact = dateUtil.now()
+                    scheduleBuildAndStoreDeviceStatus("acceptChangeRequest_SMB")
+                }
             }
             rxBus.send(EventAcceptOpenLoopChange())
         }

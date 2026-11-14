@@ -1,4 +1,4 @@
-﻿package app.aaps.plugins.aps.openAPSAIMI.context.ui
+package app.aaps.plugins.aps.openAPSAIMI.context.ui
 
 import android.os.Bundle
 import android.view.MenuItem

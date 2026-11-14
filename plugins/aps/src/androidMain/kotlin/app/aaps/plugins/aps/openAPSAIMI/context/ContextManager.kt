@@ -1,4 +1,4 @@
-﻿package app.aaps.plugins.aps.openAPSAIMI.context
+package app.aaps.plugins.aps.openAPSAIMI.context
 
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.TE

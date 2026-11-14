@@ -17,13 +17,13 @@ enum class ApexDoubleKey(
     override val dependency: BooleanPreferenceKey? = null,
     override val negativeDependency: BooleanPreferenceKey? = null,
     override val hideParentScreenIfHidden: Boolean = false,
-    override val exportable: Boolean = true
+    override val exportable: Boolean = true,
+    override val title: TextRef = TextRef.Literal(""),
+    override val summary: TextRef? = null
 ): DoublePreferenceKey {
     // 0 == uninitialized
-    MaxBasal("apex_max_basal", 0.0, 0.0, 25.0),
-    MaxBolus("apex_max_bolus", 0.0, 0.0, 25.0),
-    BatteryLowVoltage("apex_low_batt_vtg", 1.2, 1.0, 1.8),
-    BatteryHighVoltage("apex_high_batt_vtg", 1.5, 1.0, 1.8);
-
-    override val title: TextRef = TextRef.Literal("")
+    MaxBasal("apex_max_basal", 0.0, 0.0, 25.0, title = TextRef.AndroidRes(app.aaps.pump.apex.R.string.setting_max_basal)),
+    MaxBolus("apex_max_bolus", 0.0, 0.0, 25.0, title = TextRef.AndroidRes(app.aaps.pump.apex.R.string.setting_max_bolus)),
+    BatteryLowVoltage("apex_low_batt_vtg", 1.2, 1.0, 1.8, title = TextRef.AndroidRes(app.aaps.pump.apex.R.string.setting_calc_battery_low_vtg)),
+    BatteryHighVoltage("apex_high_batt_vtg", 1.5, 1.0, 1.8, title = TextRef.AndroidRes(app.aaps.pump.apex.R.string.setting_calc_battery_high_vtg));
 }

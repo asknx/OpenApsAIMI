@@ -54,4 +54,12 @@ object WCycleBindings {
         logger: WCycleCsvLogger
     ): WCycleFacade =
         WCycleFacade(adjuster, logger)
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideEndometriosisAdjuster(
+        preferences: Preferences,
+        aapsLogger: app.aaps.core.interfaces.logging.AAPSLogger
+    ): app.aaps.plugins.aps.openAPSAIMI.wcycle.EndometriosisAdjuster =
+        app.aaps.plugins.aps.openAPSAIMI.wcycle.EndometriosisAdjuster(preferences, aapsLogger)
 }

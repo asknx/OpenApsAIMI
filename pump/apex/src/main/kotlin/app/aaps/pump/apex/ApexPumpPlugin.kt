@@ -60,6 +60,10 @@ import io.reactivex.rxjava3.kotlin.plusAssign
 import org.json.JSONException
 
 import org.json.JSONObject
+import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.keys.interfaces.PreferenceItem
+import app.aaps.core.keys.interfaces.withEntries
+import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
 import dev.zacsweers.metro.Inject
 import kotlin.math.abs
 import kotlin.math.roundToLong
@@ -81,6 +85,7 @@ class ApexPumpPlugin @Inject constructor(
     val pump: ApexPump,
     val config: Config,
     private val constraintsChecker: ConstraintsChecker,
+    private val profileFunction: ProfileFunction,
     notificationManager: NotificationManager
 ): PumpPluginBase(
     PluginDescription()
@@ -362,9 +367,49 @@ class ApexPumpPlugin @Inject constructor(
         service!!.cancelBolus("ApexPumpPlugin-stopBolusDelivering")
     }
 
+    override fun getPreferenceScreenContent(): PreferenceItem = PreferenceSubScreenDef(
+        key = "apex_settings",
+        titleResId = R.string.apex_settings,
+        items = listOf(
+            ApexStringKey.FirmwareVer.withEntries(
+                FirmwareVersion.entries.associate { it.name to app.aaps.core.keys.interfaces.TextRef.Literal(it.name) }
+            ),
+            ApexStringKey.AlarmSoundLength.withEntries(
+                mapOf(
+                    AlarmLength.Short.name to app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.setting_alarm_length_short),
+                    AlarmLength.Medium.name to app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.setting_alarm_length_medium),
+                    AlarmLength.Long.name to app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.setting_alarm_length_long)
+                )
+            ),
+            ApexBooleanKey.LogInsulinChange,
+            ApexBooleanKey.LogBatteryChange,
+            ApexBooleanKey.HideSerial,
+            ApexBooleanKey.CalculateBatteryPercentage,
+            ApexStringKey.CalcBatteryType.withEntries(
+                mapOf(
+                    BatteryType.Alkaline.name to app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.setting_calc_battery_type_alkaline),
+                    BatteryType.Lithium.name to app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.setting_calc_battery_type_lithium),
+                    BatteryType.NiMh.name to app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.setting_calc_battery_type_ni_mh),
+                    BatteryType.NiZn.name to app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.setting_calc_battery_type_ni_zn),
+                    BatteryType.Custom.name to app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.setting_calc_battery_type_custom)
+                )
+            ),
+            ApexDoubleKey.BatteryLowVoltage,
+            ApexDoubleKey.BatteryHighVoltage
+        ),
+        icon = pluginDescription.icon
+    )
+
     override suspend fun setTempBasalAbsolute(absoluteRate: Double, durationInMinutes: Int, enforceNew: Boolean, tbrType: PumpSync.TemporaryBasalType): PumpEnactResult {
         val pumpEnactResult = PumpEnactResultImpl()
-        val rate = absoluteRate
+        val profile = profileFunction.getProfile()
+        val rate = if (profile != null) {
+            constraintsChecker
+                .applyBasalConstraints(ConstraintObject(absoluteRate, aapsLogger), profile)
+                .value()
+        } else {
+            absoluteRate
+        }
         val duration = durationInMinutes - durationInMinutes % 15
 
         if (!isInitialized() || !isConnected()) {

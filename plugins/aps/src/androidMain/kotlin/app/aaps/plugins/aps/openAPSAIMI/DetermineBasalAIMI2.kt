@@ -1,4 +1,4 @@
-﻿package app.aaps.plugins.aps.openAPSAIMI
+package app.aaps.plugins.aps.openAPSAIMI
 
 import android.annotation.SuppressLint
 import android.content.Context
