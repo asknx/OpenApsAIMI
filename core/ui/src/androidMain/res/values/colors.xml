@@ -31,5 +31,7 @@
     <color name="widget_inrange">#00FF00</color>
     <color name="widget_low">#FF0000</color>
     <color name="widget_high">#FFFF00</color>
+    <color name="high">#FFFF00</color>
+    <color name="low">#FF0000</color>
 
 </resources>

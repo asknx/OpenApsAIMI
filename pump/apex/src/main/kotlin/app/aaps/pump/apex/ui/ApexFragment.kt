@@ -20,24 +20,22 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventInitializationChanged
-import app.aaps.core.interfaces.rx.events.EventPreferenceChange
 import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.rx.events.EventQueueChanged
-import app.aaps.core.interfaces.rx.events.EventTempBasalChange
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.interfaces.Preferences
-import app.aaps.core.ui.extensions.toVisibility
 import app.aaps.pump.apex.ApexDriverStatus
 import app.aaps.pump.apex.ApexPump
 import app.aaps.pump.apex.R
 import app.aaps.pump.apex.databinding.ApexFragmentBinding
 import app.aaps.pump.apex.events.EventApexPumpDataChanged
 import app.aaps.pump.apex.utils.keys.ApexBooleanKey
+import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.di.injectMetroMembers
 import androidx.fragment.app.Fragment
 import dev.zacsweers.metro.Inject
-import io.reactivex.rxjava3.disposables.CompositeDisposable
-import io.reactivex.rxjava3.kotlin.plusAssign
 
 class ApexFragment : Fragment() {
     @Inject lateinit var activePlugin: ActivePlugin
@@ -58,7 +56,6 @@ class ApexFragment : Fragment() {
         context.injectMetroMembers(this)
     }
 
-    private val disposable = CompositeDisposable()
     private val handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
     private var refreshLoop: Runnable = Runnable {
         activity?.runOnUiThread { updateGUI() }
@@ -71,7 +68,9 @@ class ApexFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         _binding = ApexFragmentBinding.inflate(inflater, container, false)
         binding.refresh.setOnClickListener {
-            commandQueue.readStatus("ApexFragment-manualRefresh", null)
+            viewLifecycleOwner.lifecycleScope.launch {
+                commandQueue.readStatus("ApexFragment-manualRefresh")
+            }
         }
         binding.cancelBolus.setOnClickListener {
             uel.log(Action.CANCEL_BOLUS, Sources.Pump)
@@ -88,26 +87,16 @@ class ApexFragment : Fragment() {
     override fun onResume() {
         super.onResume()
 
-        for (clazz in listOf(
-            EventInitializationChanged::class.java,
-            EventPumpStatusChanged::class.java,
-            EventApexPumpDataChanged::class.java,
-            EventPreferenceChange::class.java,
-            EventTempBasalChange::class.java,
-            EventQueueChanged::class.java,
-        )) {
-            disposable += rxBus
-                .toObservable(clazz)
-                .observeOn(aapsSchedulers.io)
-                .subscribe({ activity?.runOnUiThread { updateGUI() } }, fabricPrivacy::logException)
-        }
+        rxBus.toFlow(EventInitializationChanged::class).collectResilient(viewLifecycleOwner.lifecycleScope, aapsLogger, LTag.UI) { updateGUI() }
+        rxBus.toFlow(EventPumpStatusChanged::class).collectResilient(viewLifecycleOwner.lifecycleScope, aapsLogger, LTag.UI) { updateGUI() }
+        rxBus.toFlow(EventApexPumpDataChanged::class).collectResilient(viewLifecycleOwner.lifecycleScope, aapsLogger, LTag.UI) { updateGUI() }
+        rxBus.toFlow(EventQueueChanged::class).collectResilient(viewLifecycleOwner.lifecycleScope, aapsLogger, LTag.UI) { updateGUI() }
 
         updateGUI()
         handler.postDelayed(refreshLoop, T.secs(15).msecs())
     }
 
     override fun onPause() {
-        disposable.clear()
         handler.removeCallbacks(refreshLoop)
         super.onPause()
     }
@@ -137,10 +126,10 @@ class ApexFragment : Fragment() {
 
         val msg = this.status.message
         binding.currAction.text = msg ?: ""
-        binding.currAction.visibility = (msg != null).toVisibility()
+        binding.currAction.visibility = if (msg != null) View.VISIBLE else View.GONE
 
-        binding.cancelBolus.visibility = (pump.inProgressBolus != null).toVisibility()
-        binding.serial.visibility = (preferences.get(ApexBooleanKey.HideSerial) == false).toVisibility()
+        binding.cancelBolus.visibility = if (pump.inProgressBolus != null) View.VISIBLE else View.GONE
+        binding.serial.visibility = if (preferences.get(ApexBooleanKey.HideSerial) == false) View.VISIBLE else View.GONE
 
         if (status == null)
             binding.lastUpdate.text = "?"

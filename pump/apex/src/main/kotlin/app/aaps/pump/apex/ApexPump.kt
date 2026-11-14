@@ -2,7 +2,6 @@ package app.aaps.pump.apex
 
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
 import app.aaps.core.interfaces.resources.ResourceHelper
-import app.aaps.core.interfaces.rx.events.EventOverviewBolusProgress
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.pump.apex.connectivity.commands.pump.Alarm
 import app.aaps.pump.apex.connectivity.commands.pump.BolusEntry

@@ -5,10 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import androidx.preference.PreferenceCategory
-import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.PreferenceManager
-import androidx.preference.PreferenceScreen
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.data.pump.defs.DoseStepSize
 import app.aaps.core.data.pump.defs.ManufacturerType
@@ -20,30 +16,35 @@ import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.constraints.PluginConstraints
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-
+import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
 import app.aaps.core.interfaces.pump.Pump
 import app.aaps.core.interfaces.pump.PumpEnactResult
+import app.aaps.core.interfaces.pump.PumpInsulin
 import app.aaps.core.interfaces.pump.PumpPluginBase
+import app.aaps.core.interfaces.pump.PumpProfile
+import app.aaps.core.interfaces.pump.PumpRate
 import app.aaps.core.interfaces.pump.PumpSync
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import app.aaps.core.interfaces.pump.defs.fillFor
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.rx.events.EventAppExit
 import app.aaps.core.interfaces.utils.DateUtil
+import kotlinx.coroutines.CoroutineStart
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.utils.notifyAll
 import app.aaps.core.utils.waitMillis
-import app.aaps.core.validators.preferences.AdaptiveDoublePreference
-import app.aaps.core.validators.preferences.AdaptiveListPreference
-import app.aaps.core.validators.preferences.AdaptiveStringPreference
-import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.SingleIn
 import app.aaps.pump.apex.connectivity.ApexBluetooth
 import app.aaps.pump.apex.connectivity.FirmwareVersion
 import app.aaps.pump.apex.connectivity.ProtocolVersion
@@ -66,9 +67,10 @@ import kotlin.math.roundToLong
 /**
  * @author Roman Rikhter (teledurak@gmail.com)
  */
+@SingleIn(AppScope::class)
 class ApexPumpPlugin @Inject constructor(
     aapsLogger: AAPSLogger,
-    rh: ResourceHelper,
+    override val rh: ResourceHelper,
     commandQueue: CommandQueue,
     val context: Context,
     preferences: Preferences,
@@ -78,30 +80,20 @@ class ApexPumpPlugin @Inject constructor(
     val dateUtil: DateUtil,
     val pump: ApexPump,
     val config: Config,
-    private val constraintsChecker: ConstraintsChecker
+    private val constraintsChecker: ConstraintsChecker,
+    notificationManager: NotificationManager
 ): PumpPluginBase(
     PluginDescription()
         .mainType(PluginType.PUMP)
-        .fragmentClass(ApexFragment::class.java.name)
-        .pluginIcon(R.drawable.ic_apex_detailed)
-        .pluginName(R.string.apex_plugin_name)
-        .shortName(R.string.apex_plugin_shortname)
-        .description(R.string.apex_plugin_description)
-        .preferencesId(PluginDescription.PREFERENCE_SCREEN),
-    emptyList(),
+        .pluginName(app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.apex_plugin_name))
+        .description(app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.apex_plugin_description)),
+    ownPreferences = ApexBooleanKey.entries + ApexDoubleKey.entries + ApexStringKey.entries,
     aapsLogger,
     rh,
     preferences,
-    commandQueue
+    commandQueue,
+    notificationManager
 ), Pump, PluginConstraints {
-
-    init {
-        preferences.registerPreferences(ApexBooleanKey::class.java)
-        preferences.registerPreferences(ApexDoubleKey::class.java)
-        preferences.registerPreferences(ApexStringKey::class.java)
-    }
-
-    private val disposable = CompositeDisposable()
 
     private var service: ApexService? = null
     private val connection: ServiceConnection = object : ServiceConnection {
@@ -120,32 +112,31 @@ class ApexPumpPlugin @Inject constructor(
     }
 
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         aapsLogger.debug(LTag.PUMP, "Starting APEX plugin")
         context.bindService(Intent(context, ApexService::class.java), connection, Context.BIND_AUTO_CREATE)
-        disposable += rxBus
-            .toObservable(EventAppExit::class.java)
-            .observeOn(aapsSchedulers.io)
-            .subscribe({ context.unbindService(connection) }, fabricPrivacy::logException)
+        rxBus.toFlow(EventAppExit::class)
+            .collectResilient(pluginScope, aapsLogger, LTag.PUMP, start = CoroutineStart.UNDISPATCHED) {
+                context.unbindService(connection)
+            }
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         aapsLogger.debug(LTag.PUMP, "Stopping APEX plugin")
         service?.disconnect()
         context.unbindService(connection)
-        disposable.clear()
         super.onStop()
     }
 
-    override val lastDataTime: Long
-        get() = pump.dateTime.millis
+    private val _lastDataTime = MutableStateFlow(0L)
+    override val lastDataTime: StateFlow<Long> = _lastDataTime
 
-    override val lastBolusTime: Long?
-        get() = pump.lastBolus?.dateTime?.millis
+    private val _lastBolusTime = MutableStateFlow<Long?>(null)
+    override val lastBolusTime: StateFlow<Long?> = _lastBolusTime
 
-    override val lastBolusAmount: Double?
-        get() = pump.lastBolus?.let { (it.standardPerformed + it.extendedPerformed) * 0.025 }
+    private val _lastBolusAmount = MutableStateFlow<PumpInsulin?>(null)
+    override val lastBolusAmount: StateFlow<PumpInsulin?> = _lastBolusAmount
 
     override val isFakingTempsByExtendedBoluses = false
     override fun canHandleDST() = false
@@ -154,12 +145,23 @@ class ApexPumpPlugin @Inject constructor(
     override fun model() = PumpType.APEX_TRUCARE_III
     override fun serialNumber() = preferences.get(ApexStringKey.LastConnectedSerialNumber)
 
-    override val baseBasalRate: Double
-        get() = pump.basal?.rate ?: 0.0
-    override val reservoirLevel: Double
-        get() = pump.reservoirLevel
-    override val batteryLevel: Int
-        get() = pump.batteryLevel.percentage
+    override val baseBasalRate: PumpRate
+        get() = PumpRate(pump.basal?.rate ?: 0.0)
+
+    private val _reservoirLevel = MutableStateFlow(PumpInsulin(0.0))
+    override val reservoirLevel: StateFlow<PumpInsulin> = _reservoirLevel
+
+    private val _batteryLevel = MutableStateFlow<Int?>(null)
+    override val batteryLevel: StateFlow<Int?> = _batteryLevel
+
+    fun updateStatusFlows() {
+        _lastDataTime.value = pump.dateTime.millis
+        _lastBolusTime.value = pump.lastBolus?.dateTime?.millis
+        _lastBolusAmount.value = pump.lastBolus?.let { PumpInsulin((it.standardPerformed + it.extendedPerformed) * 0.025) }
+        _reservoirLevel.value = PumpInsulin(pump.reservoirLevel)
+        _batteryLevel.value = pump.batteryLevel.percentage
+    }
+
     override val pumpDescription = PumpDescription().fillFor(model())
 
     override fun isBusy() = false //service?.isBusy ?: false
@@ -213,8 +215,7 @@ class ApexPumpPlugin @Inject constructor(
         pumpDescription.basalMaximumRate = pump.maxBasal
     }
 
-    @Synchronized
-    override fun loadTDDs(): PumpEnactResult {
+    override suspend fun loadTDDs(): PumpEnactResult {
         val ret = PumpEnactResultImpl()
         if (!isInitialized() || !isConnected()) {
             return ret.apply {
@@ -231,15 +232,14 @@ class ApexPumpPlugin @Inject constructor(
         }
     }
 
-    @Synchronized
-    override fun getPumpStatus(reason: String) {
+    override suspend fun getPumpStatus(reason: String) {
         if (!isInitialized() || !isConnected()) return
         aapsLogger.debug(LTag.PUMP, "Requested pump status cause of $reason")
         if (!service!!.getStatus("ApexPumpPlugin-getPumpStatus")) return
+        updateStatusFlows()
     }
 
-    @Synchronized
-    override fun setNewBasalProfile(profile: Profile): PumpEnactResult {
+    override suspend fun setNewBasalProfile(profile: PumpProfile): PumpEnactResult {
         val ret = PumpEnactResultImpl()
         if (!isInitialized() || !isConnected()) {
             return ret.apply {
@@ -274,7 +274,7 @@ class ApexPumpPlugin @Inject constructor(
     }
 
     @Synchronized
-    override fun isThisProfileSet(profile: Profile): Boolean {
+    override fun isThisProfileSet(profile: PumpProfile): Boolean {
         if (!isInitialized() || !isConnected()) return true
         val pumpBasalProfiles = service!!.getBasalProfiles("ApexPumpPlugin-isThisProfileSet") ?: return true
         val pumpBasalProfile = pumpBasalProfiles[ApexService.USED_BASAL_PATTERN_INDEX]
@@ -290,7 +290,7 @@ class ApexPumpPlugin @Inject constructor(
         return true
     }
 
-    override fun deliverTreatment(detailedBolusInfo: DetailedBolusInfo): PumpEnactResult {
+    override suspend fun deliverTreatment(detailedBolusInfo: DetailedBolusInfo): PumpEnactResult {
         // Insulin value must be greater than 0
         require(detailedBolusInfo.carbs == 0.0) { detailedBolusInfo.toString() }
         require(detailedBolusInfo.insulin > 0) { detailedBolusInfo.toString() }
@@ -362,12 +362,9 @@ class ApexPumpPlugin @Inject constructor(
         service!!.cancelBolus("ApexPumpPlugin-stopBolusDelivering")
     }
 
-    @Synchronized
-    override fun setTempBasalAbsolute(absoluteRate: Double, durationInMinutes: Int, profile: Profile, enforceNew: Boolean, tbrType: PumpSync.TemporaryBasalType): PumpEnactResult {
+    override suspend fun setTempBasalAbsolute(absoluteRate: Double, durationInMinutes: Int, enforceNew: Boolean, tbrType: PumpSync.TemporaryBasalType): PumpEnactResult {
         val pumpEnactResult = PumpEnactResultImpl()
-        val rate = constraintsChecker
-            .applyBasalConstraints(ConstraintObject(absoluteRate, aapsLogger), profile)
-            .value()
+        val rate = absoluteRate
         val duration = durationInMinutes - durationInMinutes % 15
 
         if (!isInitialized() || !isConnected()) {
@@ -413,8 +410,7 @@ class ApexPumpPlugin @Inject constructor(
         }
     }
 
-    @Synchronized
-    override fun setTempBasalPercent(percent: Int, durationInMinutes: Int, profile: Profile, enforceNew: Boolean, tbrType: PumpSync.TemporaryBasalType): PumpEnactResult {
+    override suspend fun setTempBasalPercent(percent: Int, durationInMinutes: Int, enforceNew: Boolean, tbrType: PumpSync.TemporaryBasalType): PumpEnactResult {
         return PumpEnactResultImpl().apply {
             success = false
             enacted = false
@@ -422,8 +418,7 @@ class ApexPumpPlugin @Inject constructor(
         }
     }
 
-    @Synchronized
-    override fun cancelTempBasal(enforceNew: Boolean): PumpEnactResult {
+    override suspend fun cancelTempBasal(enforceNew: Boolean): PumpEnactResult {
         val pumpEnactResult = PumpEnactResultImpl()
         if (!isInitialized() || !isConnected()) {
             return pumpEnactResult.apply {
@@ -456,8 +451,7 @@ class ApexPumpPlugin @Inject constructor(
         }
     }
 
-    @Synchronized
-    override fun setExtendedBolus(insulin: Double, durationInMinutes: Int): PumpEnactResult {
+    override suspend fun setExtendedBolus(insulin: Double, durationInMinutes: Int): PumpEnactResult {
         // Not yet supported
         return PumpEnactResultImpl().apply {
             success = false
@@ -466,8 +460,7 @@ class ApexPumpPlugin @Inject constructor(
         }
     }
 
-    @Synchronized
-    override fun cancelExtendedBolus(): PumpEnactResult {
+    override suspend fun cancelExtendedBolus(): PumpEnactResult {
         // Not yet supported
         return PumpEnactResultImpl().apply {
             success = false
@@ -476,111 +469,12 @@ class ApexPumpPlugin @Inject constructor(
         }
     }
 
-    @Synchronized
-    override fun timezoneOrDSTChanged(timeChangeType: TimeChangeType) {
+    override suspend fun timezoneOrDSTChanged(timeChangeType: TimeChangeType) {
         if (!isInitialized() || !isConnected()) return
         service!!.syncDateTime("ApexService-timezoneOrDSTChanged")
     }
 
-    override fun preprocessPreferences(preferenceFragment: PreferenceFragmentCompat) {
-        super.preprocessPreferences(preferenceFragment)
-
-        val is411 = pump.firmwareVersion?.atleastProto(ProtocolVersion.PROTO_4_11) == true
-        val isPrecisePercentage = is411 && preferences.get(ApexBooleanKey.CalculateBatteryPercentage)
-        val manualVoltage = isPrecisePercentage && preferences.get(ApexStringKey.CalcBatteryType) == BatteryType.Custom.name
-
-        preferenceFragment.findPreference<AdaptiveSwitchPreference>(ApexBooleanKey.CalculateBatteryPercentage.key)?.isVisible = is411
-        preferenceFragment.findPreference<AdaptiveListPreference>(ApexStringKey.CalcBatteryType.key)?.isVisible = isPrecisePercentage
-        preferenceFragment.findPreference<AdaptiveDoublePreference>(ApexDoubleKey.BatteryLowVoltage.key)?.isVisible = manualVoltage
-        preferenceFragment.findPreference<AdaptiveDoublePreference>(ApexDoubleKey.BatteryHighVoltage.key)?.isVisible = manualVoltage
-    }
-
-    override fun addPreferenceScreen(preferenceManager: PreferenceManager, parent: PreferenceScreen, context: Context, requiredKey: String?) {
-        val versions = FirmwareVersion.realValues.filter {
-            if (it.engineeringModeOnly)
-                config.isEngineeringMode()
-            else
-                true
-        }
-
-        if (requiredKey != null) return
-        val category = PreferenceCategory(context)
-        parent.addPreference(category)
-        category.apply {
-            key = "apex_settings"
-            title = rh.gs(R.string.apex_settings)
-            initialExpandedChildrenCount = 0
-            addPreference(AdaptiveStringPreference(
-                ctx = context,
-                stringKey = ApexStringKey.SerialNumber,
-                title = R.string.setting_serial_number,
-            ))
-            addPreference(AdaptiveListPreference(
-                ctx = context,
-                stringKey = ApexStringKey.FirmwareVer,
-                title = R.string.firmware_version,
-                entries = arrayOf<CharSequence>(rh.gs(R.string.auto)) + versions.map { it.displayName },
-                entryValues = arrayOf<CharSequence>(FirmwareVersion.AUTO.name) + versions.map { it.name },
-            ))
-            addPreference(AdaptiveListPreference(
-                ctx = context,
-                stringKey = ApexStringKey.AlarmSoundLength,
-                title = R.string.setting_alarm_length,
-                entries = arrayOf(rh.gs(R.string.setting_alarm_length_long), rh.gs(R.string.setting_alarm_length_medium), rh.gs(R.string.setting_alarm_length_short)),
-                entryValues = arrayOf(AlarmLength.Long.name, AlarmLength.Medium.name, AlarmLength.Short.name)
-            ))
-            addPreference(AdaptiveSwitchPreference(
-                ctx = context,
-                booleanKey = ApexBooleanKey.CalculateBatteryPercentage,
-                title = R.string.setting_calc_battery_title,
-                summary = R.string.setting_calc_battery_summary
-            ))
-            addPreference(AdaptiveListPreference(
-                ctx = context,
-                stringKey = ApexStringKey.CalcBatteryType,
-                title = R.string.setting_calc_battery_type_title,
-                entries = arrayOf(rh.gs(R.string.setting_calc_battery_type_alkaline), rh.gs(R.string.setting_calc_battery_type_lithium), rh.gs(R.string.setting_calc_battery_type_ni_mh), rh.gs(R.string.setting_calc_battery_type_ni_zn), rh.gs(R.string.setting_calc_battery_type_custom)),
-                entryValues = arrayOf(BatteryType.Alkaline.name, BatteryType.Lithium.name, BatteryType.NiMh.name, BatteryType.NiZn.name, BatteryType.Custom.name)
-            ))
-            addPreference(AdaptiveDoublePreference(
-                ctx = context,
-                doubleKey = ApexDoubleKey.BatteryLowVoltage,
-                title = R.string.setting_calc_battery_low_vtg,
-            ))
-            addPreference(AdaptiveDoublePreference(
-                ctx = context,
-                doubleKey = ApexDoubleKey.BatteryHighVoltage,
-                title = R.string.setting_calc_battery_high_vtg,
-            ))
-            addPreference(AdaptiveDoublePreference(
-                ctx = context,
-                doubleKey = ApexDoubleKey.MaxBasal,
-                title = R.string.setting_max_basal,
-            ))
-            addPreference(AdaptiveDoublePreference(
-                ctx = context,
-                doubleKey = ApexDoubleKey.MaxBolus,
-                title = R.string.setting_max_bolus,
-            ))
-            addPreference(AdaptiveSwitchPreference(
-                ctx = context,
-                booleanKey = ApexBooleanKey.LogInsulinChange,
-                title = R.string.setting_log_insulin_change,
-            ))
-            addPreference(AdaptiveSwitchPreference(
-                ctx = context,
-                booleanKey = ApexBooleanKey.LogBatteryChange,
-                title = R.string.setting_log_battery_change,
-            ))
-            addPreference(AdaptiveSwitchPreference(
-                ctx = context,
-                booleanKey = ApexBooleanKey.HideSerial,
-                title = R.string.setting_hide_serial,
-            ))
-        }
-    }
-
-    private class PumpEnactResultImpl : PumpEnactResult {
+    private inner class PumpEnactResultImpl : PumpEnactResult {
         override var success: Boolean = false
         override var enacted: Boolean = false
         override var comment: String = ""
@@ -591,11 +485,12 @@ class ApexPumpPlugin @Inject constructor(
         override var isTempCancel: Boolean = false
         override var bolusDelivered: Double = 0.0
         override var queued: Boolean = false
+        override var cancelled: Boolean = false
 
         override fun success(success: Boolean): PumpEnactResult = apply { this.success = success }
         override fun enacted(enacted: Boolean): PumpEnactResult = apply { this.enacted = enacted }
         override fun comment(comment: String): PumpEnactResult = apply { this.comment = comment }
-        override fun comment(comment: Int): PumpEnactResult = apply { this.comment = "".plus(comment) }
+        override fun comment(ref: app.aaps.core.keys.interfaces.TextRef): PumpEnactResult = apply { this.comment = rh.gs(ref) }
         override fun duration(duration: Int): PumpEnactResult = apply { this.duration = duration }
         override fun absolute(absolute: Double): PumpEnactResult = apply { this.absolute = absolute }
         override fun percent(percent: Int): PumpEnactResult = apply { this.percent = percent }
@@ -603,6 +498,7 @@ class ApexPumpPlugin @Inject constructor(
         override fun isTempCancel(isTempCancel: Boolean): PumpEnactResult = apply { this.isTempCancel = isTempCancel }
         override fun bolusDelivered(bolusDelivered: Double): PumpEnactResult = apply { this.bolusDelivered = bolusDelivered }
         override fun queued(queued: Boolean): PumpEnactResult = apply { this.queued = queued }
+        override fun cancelled(cancelled: Boolean): PumpEnactResult = apply { this.cancelled = cancelled }
 
     }
 }

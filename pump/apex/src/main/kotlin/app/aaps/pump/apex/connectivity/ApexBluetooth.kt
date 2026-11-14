@@ -21,11 +21,12 @@ import android.os.SystemClock
 import androidx.core.app.ActivityCompat
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.notifications.Notification
+import app.aaps.core.interfaces.notifications.NotificationId
+import app.aaps.core.interfaces.notifications.NotificationLevel
+import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.resources.ResourceHelper
-import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.keys.interfaces.Preferences
-import app.aaps.core.ui.toast.ToastUtils
+import android.widget.Toast
 import app.aaps.core.utils.toHex
 import app.aaps.pump.apex.ApexDriverStatus
 import app.aaps.pump.apex.R
@@ -34,16 +35,17 @@ import app.aaps.pump.apex.connectivity.commands.pump.PumpCommand
 import app.aaps.pump.apex.utils.keys.ApexStringKey
 import kotlinx.coroutines.sync.Mutex
 import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlin.math.min
 
-@Singleton
+@SingleIn(AppScope::class)
 class ApexBluetooth @Inject constructor(
     val aapsLogger: AAPSLogger,
     val preferences: Preferences,
     val context: Context,
-    val uiInteraction: UiInteraction,
+    val notificationManager: NotificationManager,
     val apexDriverStatus: ApexDriverStatus,
 ) {
     companion object {
@@ -133,21 +135,23 @@ class ApexBluetooth @Inject constructor(
     }
 
     @SuppressLint("MissingPermission")
-    fun connect() = synchronized (connectionLock) {
-        if (_status != Status.DISCONNECTED) {
-            aapsLogger.debug(LTag.PUMPBTCOMM, "Already connecting! Ignoring repeated request")
-            return
+    fun connect() {
+        synchronized(connectionLock) {
+            if (_status != Status.DISCONNECTED) {
+                aapsLogger.debug(LTag.PUMPBTCOMM, "Already connecting! Ignoring repeated request")
+                return
+            }
+
+            aapsLogger.debug(LTag.PUMPBTCOMM, "Connect")
+            if (preferences.get(ApexStringKey.SerialNumber).isEmpty()) return
+            if (checkBT()) return
+            _status = Status.CONNECTING
+            connectionId++
+            if (preferences.get(ApexStringKey.BluetoothAddress).isNotEmpty()) return reconnect()
+
+            aapsLogger.debug(LTag.PUMPBTCOMM, "Scan started")
+            bluetoothAdapter?.bluetoothLeScanner?.startScan(scanFilters, scanSettings, scanCallback)
         }
-
-        aapsLogger.debug(LTag.PUMPBTCOMM, "Connect")
-        if (preferences.get(ApexStringKey.SerialNumber).isEmpty()) return
-        if (checkBT()) return
-        _status = Status.CONNECTING
-        connectionId++
-        if (preferences.get(ApexStringKey.BluetoothAddress).isNotEmpty()) return reconnect()
-
-        aapsLogger.debug(LTag.PUMPBTCOMM, "Scan started")
-        bluetoothAdapter.bluetoothLeScanner.startScan(scanFilters, scanSettings, scanCallback)
     }
 
     @SuppressLint("MissingPermission")
@@ -166,22 +170,22 @@ class ApexBluetooth @Inject constructor(
 
     private fun checkBT(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            ToastUtils.errorToast(context, context.getString(app.aaps.core.ui.R.string.need_connect_permission))
-            uiInteraction.addNotification(
-                Notification.PERMISSION_BT,
+            Toast.makeText(context, context.getString(app.aaps.core.ui.R.string.need_connect_permission), Toast.LENGTH_LONG).show()
+            notificationManager.post(
+                NotificationId.BLUETOOTH_PERMISSION_MISSING,
                 context.getString(app.aaps.core.ui.R.string.need_connect_permission),
-                Notification.URGENT)
+                NotificationLevel.URGENT)
             aapsLogger.error(LTag.PUMPBTCOMM, "No Bluetooth permission!")
             return true
         }
 
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
             ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ToastUtils.errorToast(context, context.getString(app.aaps.core.ui.R.string.location_permission_not_granted))
-            uiInteraction.addNotification(
-                Notification.PERMISSION_LOCATION,
+            Toast.makeText(context, context.getString(app.aaps.core.ui.R.string.location_permission_not_granted), Toast.LENGTH_LONG).show()
+            notificationManager.post(
+                NotificationId.BLUETOOTH_PERMISSION_MISSING,
                 context.getString(app.aaps.core.ui.R.string.location_permission_not_granted),
-                Notification.URGENT)
+                NotificationLevel.URGENT)
             aapsLogger.error(LTag.PUMPBTCOMM, "No coarse/fine location permission!")
             return true
         }

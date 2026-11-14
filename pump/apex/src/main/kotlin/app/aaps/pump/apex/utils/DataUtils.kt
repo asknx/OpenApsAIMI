@@ -1,6 +1,7 @@
 package app.aaps.pump.apex.utils
 
 import app.aaps.core.interfaces.profile.Profile
+import app.aaps.core.interfaces.pump.PumpProfile
 import app.aaps.pump.apex.connectivity.ProtocolVersion
 import app.aaps.pump.apex.interfaces.ApexDeviceInfo
 import org.joda.time.DateTime

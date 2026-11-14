@@ -43,7 +43,7 @@
                     android:textSize="14sp"
                     tools:ignore="HardcodedText" />
 
-                <com.joanzapata.iconify.widget.IconTextView
+                <TextView
                     android:id="@+id/connection_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -81,7 +81,7 @@
                     android:textSize="14sp"
                     tools:ignore="HardcodedText" />
 
-                <com.joanzapata.iconify.widget.IconTextView
+                <TextView
                     android:id="@+id/pump_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -166,7 +166,7 @@
                     android:textSize="14sp"
                     tools:ignore="HardcodedText" />
 
-                <com.joanzapata.iconify.widget.IconTextView
+                <TextView
                     android:id="@+id/battery"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -467,20 +467,16 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/refresh"
-            style="@style/ButtonSmallFontStyle"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:drawableTop="@drawable/ic_actions_refill"
             android:paddingStart="0dp"
             android:paddingEnd="0dp"
             android:text="@string/refresh" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/cancel_bolus"
-            style="@style/ButtonSmallFontStyle"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:drawableTop="@drawable/ic_bolus"
             android:paddingStart="0dp"
             android:paddingEnd="0dp"
             android:visibility="gone"

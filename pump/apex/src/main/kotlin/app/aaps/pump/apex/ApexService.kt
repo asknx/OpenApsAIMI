@@ -11,21 +11,32 @@ import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.notifications.Notification
+import app.aaps.core.interfaces.notifications.NotificationId
+import app.aaps.core.interfaces.notifications.NotificationLevel
+import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
+import app.aaps.core.interfaces.pump.PumpInsulin
+import app.aaps.core.interfaces.pump.PumpRate
 import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.queue.Command
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
-import app.aaps.core.interfaces.rx.events.EventDismissNotification
-import app.aaps.core.interfaces.rx.events.EventOverviewBolusProgress
-import app.aaps.core.interfaces.rx.events.EventPreferenceChange
-import app.aaps.core.interfaces.rx.events.EventProfileSwitchChanged
+import app.aaps.core.interfaces.rx.collectResilient
+import app.aaps.core.interfaces.pump.BolusProgressData
+import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.keys.interfaces.TextRef
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import app.aaps.core.utils.notifyAll
 import app.aaps.core.utils.toHex
 import app.aaps.core.utils.waitMillis
@@ -88,6 +99,7 @@ class ApexService : MetroService(), ApexBluetoothCallback {
     @Inject lateinit var apexDeviceInfo: ApexDeviceInfo
     @Inject lateinit var apexPumpPlugin: ApexPumpPlugin
     @Inject lateinit var uiInteraction: UiInteraction
+    @Inject lateinit var notificationManager: NotificationManager
     @Inject lateinit var rh: ResourceHelper
     @Inject lateinit var commandQueue: CommandQueue
     @Inject lateinit var pumpSync: PumpSync
@@ -95,6 +107,7 @@ class ApexService : MetroService(), ApexBluetoothCallback {
     @Inject lateinit var pump: ApexPump
     @Inject lateinit var config: Config
     @Inject lateinit var status: ApexDriverStatus
+    @Inject lateinit var bolusProgressData: BolusProgressData
 
     companion object {
         const val COMMAND_RESPONSE_TIMEOUT = 5000L
@@ -139,7 +152,7 @@ class ApexService : MetroService(), ApexBluetoothCallback {
     }
 
     private val commandLock = Mutex()
-    private val disposable = CompositeDisposable()
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val getValueResult = InGetValueResult()
     private val commandResponse = InCommandResponse()
@@ -321,26 +334,28 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         aapsLogger.debug(LTag.PUMP, "Service created")
         apexBluetooth.setCallback(this)
 
-        disposable += rxBus
-            .toObservable(EventPreferenceChange::class.java)
-            .observeOn(aapsSchedulers.io)
-            .subscribe({
-                        when (it.changedKey) {
-                            ApexStringKey.FirmwareVer.key -> onFwVerChanged()
-                            ApexStringKey.SerialNumber.key -> onSerialChanged()
-                            ApexStringKey.CalcBatteryType.key, ApexDoubleKey.BatteryLowVoltage.key, ApexDoubleKey.BatteryHighVoltage.key, ApexBooleanKey.CalculateBatteryPercentage.key -> onBatteryStuffChanged()
-                            ApexDoubleKey.MaxBolus.key -> if (pump.maxBolus != preferences.get(ApexDoubleKey.MaxBolus)) updateSettings("ApexService-PreferencesListener-MaxBolus")
-                            ApexDoubleKey.MaxBasal.key -> if (pump.maxBasal != preferences.get(ApexDoubleKey.MaxBasal)) updateSettings("ApexService-PreferencesListener-MaxBasal")
-                            ApexStringKey.AlarmSoundLength.key -> if (pump.lastV2?.alarmLength?.name != preferences.get(ApexStringKey.AlarmSoundLength)) updateSettings("ApexService-PreferencesListener-AlarmSoundLength")
-                        }
-                       }, fabricPrivacy::logException)
+        preferences.observe(ApexStringKey.FirmwareVer).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) { onFwVerChanged() }
+        preferences.observe(ApexStringKey.SerialNumber).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) { onSerialChanged() }
+        preferences.observe(ApexStringKey.CalcBatteryType).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) { onBatteryStuffChanged() }
+        preferences.observe(ApexDoubleKey.BatteryLowVoltage).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) { onBatteryStuffChanged() }
+        preferences.observe(ApexDoubleKey.BatteryHighVoltage).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) { onBatteryStuffChanged() }
+        preferences.observe(ApexBooleanKey.CalculateBatteryPercentage).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) { onBatteryStuffChanged() }
+        preferences.observe(ApexDoubleKey.MaxBolus).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) {
+            if (pump.maxBolus != it) updateSettings("ApexService-PreferencesListener-MaxBolus")
+        }
+        preferences.observe(ApexDoubleKey.MaxBasal).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) {
+            if (pump.maxBasal != it) updateSettings("ApexService-PreferencesListener-MaxBasal")
+        }
+        preferences.observe(ApexStringKey.AlarmSoundLength).drop(1).collectResilient(serviceScope, aapsLogger, LTag.PUMP) {
+            if (pump.lastV2?.alarmLength?.name != it) updateSettings("ApexService-PreferencesListener-AlarmSoundLength")
+        }
 
         pump.serialNumber = apexDeviceInfo.serialNumber
     }
 
     override fun onDestroy() {
         aapsLogger.debug(LTag.PUMP, "Service destroyed")
-        disposable.clear()
+        serviceScope.cancel()
         disconnect()
         super.onDestroy()
     }
@@ -461,14 +476,16 @@ class ApexService : MetroService(), ApexBluetoothCallback {
             return false
         }
 
-        val syncResult = pumpSync.addBolusWithTempId(
-            timestamp = dbi.timestamp,
-            amount = dbi.insulin,
-            temporaryId = temporaryId,
-            type = dbi.bolusType,
-            pumpSerial = apexDeviceInfo.serialNumber,
-            pumpType = PumpType.APEX_TRUCARE_III,
-        )
+        val syncResult = runBlocking {
+            pumpSync.addBolusWithTempId(
+                timestamp = dbi.timestamp,
+                amount = PumpInsulin(dbi.insulin),
+                temporaryId = temporaryId,
+                type = dbi.bolusType,
+                pumpSerial = apexDeviceInfo.serialNumber,
+                pumpType = PumpType.APEX_TRUCARE_III,
+            )
+        }
         aapsLogger.debug(LTag.PUMP, "Initial bolus [${dbi.insulin}U] sync succeeded? $syncResult")
 
         pump.inProgressBolus = ApexPump.InProgressBolus(
@@ -548,16 +565,18 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         }
 
         val id = System.currentTimeMillis()
-        pumpSync.syncTemporaryBasalWithPumpId(
-            timestamp = id,
-            pumpId = id,
-            pumpType = PumpType.APEX_TRUCARE_III,
-            pumpSerial = apexDeviceInfo.serialNumber,
-            rate = dose,
-            duration = durationMinutes.toLong() * 60 * 1000,
-            isAbsolute = true,
-            type = type,
-        )
+        runBlocking {
+            pumpSync.syncTemporaryBasalWithPumpId(
+                timestamp = id,
+                pumpId = id,
+                pumpType = PumpType.APEX_TRUCARE_III,
+                pumpSerial = apexDeviceInfo.serialNumber,
+                rate = PumpRate(dose),
+                duration = durationMinutes.toLong() * 60 * 1000,
+                isAbsolute = true,
+                type = type,
+            )
+        }
 
         if (type == PumpSync.TemporaryBasalType.EMULATED_PUMP_SUSPEND) {
             aapsLogger.debug(LTag.PUMP, "Emulated pump suspend detected - disconnecting pump after the queue ends.")
@@ -617,12 +636,14 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         }
 
         val stop = System.currentTimeMillis()
-        pumpSync.syncStopTemporaryBasalWithPumpId(
-            timestamp = stop,
-            endPumpId = stop,
-            pumpType = PumpType.APEX_TRUCARE_III,
-            pumpSerial = apexDeviceInfo.serialNumber,
-        )
+        runBlocking {
+            pumpSync.syncStopTemporaryBasalWithPumpId(
+                timestamp = stop,
+                endPumpId = stop,
+                pumpType = PumpType.APEX_TRUCARE_III,
+                pumpSerial = apexDeviceInfo.serialNumber,
+            )
+        }
 
         getStatus("ApexService-cancelTBR")
         return true
@@ -713,7 +734,7 @@ class ApexService : MetroService(), ApexBluetoothCallback {
             return false
         }
 
-        if (!commandQueue.isRunning(Command.CommandType.BASAL_PROFILE)) rxBus.send(EventProfileSwitchChanged())
+        if (!commandQueue.isRunning(Command.CommandType.BASAL_PROFILE)) rxBus.send(EventPumpStatusChanged(EventPumpStatusChanged.Status.CONNECTED))
         return true
     }
 
@@ -882,7 +903,8 @@ class ApexService : MetroService(), ApexBluetoothCallback {
                 )
             )
 
-            rxBus.send(EventOverviewBolusProgress(rh.gs(R.string.status_delivering, dose), null, (it.currentDose / it.requestedDose * 100).roundToInt()))
+            val percent = (it.currentDose / it.requestedDose * 100).roundToInt()
+            bolusProgressData.updateProgress(percent, TextRef.Literal(rh.gs(R.string.status_delivering, dose)))
         }
     }
 
@@ -898,7 +920,7 @@ class ApexService : MetroService(), ApexBluetoothCallback {
                 else
                     ApexDriverStatus.Action.Bolusing
             )
-            rxBus.send(EventOverviewBolusProgress(rh.gs(R.string.status_delivered, dose), null, 100))
+            bolusProgressData.updateProgress(100, TextRef.Literal(rh.gs(R.string.status_delivered, dose)))
 
             synchronized(it) {
                 it.notifyAll()
@@ -923,7 +945,7 @@ class ApexService : MetroService(), ApexBluetoothCallback {
 
             if (cancelled) {
                 it.cancelled = true
-                rxBus.send(EventOverviewBolusProgress(rh.gs(R.string.status_bolus_cancelled)))
+                bolusProgressData.updateProgress(0, TextRef.Literal(rh.gs(R.string.status_bolus_cancelled)))
                 synchronized(it) {
                     it.notifyAll()
                 }
@@ -966,8 +988,8 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         val prev = update.previous?.alarms
         // Alarm was dismissed
         if (!prev.isNullOrEmpty() && update.current.alarms.isEmpty()) {
-            rxBus.send(EventDismissNotification(Notification.PUMP_ERROR))
-            rxBus.send(EventDismissNotification(Notification.PUMP_WARNING))
+            notificationManager.dismiss(NotificationId.PUMP_ERROR)
+            notificationManager.dismiss(NotificationId.PUMP_WARNING)
         }
 
         // New alarms
@@ -994,16 +1016,18 @@ class ApexService : MetroService(), ApexBluetoothCallback {
                 }
                 if (isUrgent) anyUrgent = true
 
-                uiInteraction.addNotification(
-                    if (isUrgent) Notification.PUMP_ERROR else Notification.PUMP_WARNING,
+                notificationManager.post(
+                    if (isUrgent) NotificationId.PUMP_ERROR else NotificationId.PUMP_WARNING,
                     rh.gs(R.string.alarm_label, name),
-                    if (isUrgent) Notification.URGENT else Notification.NORMAL,
+                    if (isUrgent) NotificationLevel.URGENT else NotificationLevel.NORMAL,
                 )
-                pumpSync.insertAnnouncement(
-                    error = rh.gs(R.string.alarm_label, name),
-                    pumpType = PumpType.APEX_TRUCARE_III,
-                    pumpSerial = apexDeviceInfo.serialNumber,
-                )
+                serviceScope.launch {
+                    pumpSync.insertAnnouncement(
+                        error = rh.gs(R.string.alarm_label, name),
+                        pumpType = PumpType.APEX_TRUCARE_III,
+                        pumpSerial = apexDeviceInfo.serialNumber,
+                    )
+                }
             }
 
             if (anyUrgent && pump.isBolusing) {
@@ -1016,15 +1040,15 @@ class ApexService : MetroService(), ApexBluetoothCallback {
 
     private fun onBasalChanged(update: ApexPump.StatusUpdate) {
         if (update.current.basal == null) {
-            uiInteraction.addNotification(
-                Notification.PUMP_SUSPENDED,
+            notificationManager.post(
+                NotificationId.PUMP_SUSPENDED,
                 rh.gs(R.string.notification_pump_is_suspended),
-                if (pump.isBolusing) Notification.URGENT else Notification.NORMAL,
+                if (pump.isBolusing) NotificationLevel.URGENT else NotificationLevel.NORMAL,
             )
-            commandQueue.loadEvents(null)
+            serviceScope.launch { commandQueue.loadEvents() }
             return
         } else {
-            rxBus.send(EventDismissNotification(Notification.PUMP_SUSPENDED))
+            notificationManager.dismiss(NotificationId.PUMP_SUSPENDED)
         }
     }
 
@@ -1038,12 +1062,14 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         update.previous?.let { old ->
             // Percentage became higher - battery was changed.
             if (cur.batteryLevel.percentage - 26 > old.batteryLevel.percentage && preferences.get(ApexBooleanKey.LogBatteryChange)) {
-                pumpSync.insertTherapyEventIfNewWithTimestamp(
-                    timestamp = System.currentTimeMillis(),
-                    pumpType = PumpType.APEX_TRUCARE_III,
-                    pumpSerial = apexDeviceInfo.serialNumber,
-                    type = TE.Type.PUMP_BATTERY_CHANGE,
-                )
+                serviceScope.launch {
+                    pumpSync.insertTherapyEventIfNewWithTimestamp(
+                        timestamp = System.currentTimeMillis(),
+                        pumpType = PumpType.APEX_TRUCARE_III,
+                        pumpSerial = apexDeviceInfo.serialNumber,
+                        type = TE.Type.PUMP_BATTERY_CHANGE,
+                    )
+                }
                 aapsLogger.debug(LTag.PUMP, "Logged battery change")
             }
         }
@@ -1054,12 +1080,14 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         update.previous?.let { old ->
             // Reservoir level became higher - insulin was changed.
             if (cur.reservoirLevel - 2 > old.reservoirLevel && preferences.get(ApexBooleanKey.LogInsulinChange)) {
-                pumpSync.insertTherapyEventIfNewWithTimestamp(
-                    timestamp = System.currentTimeMillis(),
-                    pumpType = PumpType.APEX_TRUCARE_III,
-                    pumpSerial = apexDeviceInfo.serialNumber,
-                    type = TE.Type.INSULIN_CHANGE,
-                )
+                serviceScope.launch {
+                    pumpSync.insertTherapyEventIfNewWithTimestamp(
+                        timestamp = System.currentTimeMillis(),
+                        pumpType = PumpType.APEX_TRUCARE_III,
+                        pumpSerial = apexDeviceInfo.serialNumber,
+                        type = TE.Type.INSULIN_CHANGE,
+                    )
+                }
                 aapsLogger.debug(LTag.PUMP, "Logged insulin change")
             }
         }
@@ -1067,13 +1095,13 @@ class ApexService : MetroService(), ApexBluetoothCallback {
 
     private fun onSystemStateChanged(v1: StatusV1) {
         if (v1.isLocked == true) {
-            uiInteraction.addNotification(
-                Notification.PUMP_IS_LOCKED,
+            notificationManager.post(
+                NotificationId.PUMP_WARNING,
                 rh.gs(R.string.pump_is_locked),
-                Notification.URGENT,
+                NotificationLevel.URGENT,
             )
         } else {
-            uiInteraction.dismissNotification(Notification.PUMP_IS_LOCKED)
+            notificationManager.dismiss(NotificationId.PUMP_WARNING)
         }
     }
 
@@ -1157,15 +1185,17 @@ class ApexService : MetroService(), ApexBluetoothCallback {
                     return
                 }
 
-                val syncResult = pumpSync.syncBolusWithTempId(
-                    timestamp = entry.dateTime.millis,
-                    temporaryId = it.temporaryId,
-                    amount = entry.standardPerformed * 0.025,
-                    pumpId = entry.dateTime.millis,
-                    pumpType = PumpType.APEX_TRUCARE_III,
-                    pumpSerial = apexDeviceInfo.serialNumber,
-                    type = it.detailedBolusInfo.bolusType,
-                )
+                val syncResult = runBlocking {
+                    pumpSync.syncBolusWithTempId(
+                        timestamp = entry.dateTime.millis,
+                        temporaryId = it.temporaryId,
+                        amount = PumpInsulin(entry.standardPerformed * 0.025),
+                        pumpId = entry.dateTime.millis,
+                        pumpType = PumpType.APEX_TRUCARE_III,
+                        pumpSerial = apexDeviceInfo.serialNumber,
+                        type = it.detailedBolusInfo.bolusType,
+                    )
+                }
                 aapsLogger.debug(LTag.PUMP, "Final bolus [${entry.standardDose * 0.025}U -> ${entry.standardPerformed * 0.025}U] sync succeeded? $syncResult")
                 synchronized(pump.inProgressBolus!!) {
                     pump.inProgressBolus!!.notifyAll()
@@ -1180,14 +1210,16 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         }
 
         // Otherwise, just sync the bolus with the DB
-        pumpSync.syncBolusWithPumpId(
-            timestamp = entry.dateTime.millis,
-            pumpId = entry.dateTime.millis,
-            amount = entry.standardPerformed * 0.025,
-            pumpType = PumpType.APEX_TRUCARE_III,
-            pumpSerial = apexDeviceInfo.serialNumber,
-            type = null,
-        )
+        runBlocking {
+            pumpSync.syncBolusWithPumpId(
+                timestamp = entry.dateTime.millis,
+                pumpId = entry.dateTime.millis,
+                amount = PumpInsulin(entry.standardPerformed * 0.025),
+                pumpType = PumpType.APEX_TRUCARE_III,
+                pumpSerial = apexDeviceInfo.serialNumber,
+                type = null,
+            )
+        }
         aapsLogger.debug(LTag.PUMP, "Synced bolus ${entry.standardPerformed * 0.025}U on ${entry.dateTime}")
     }
 
@@ -1196,15 +1228,17 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         // Ignore unreliable TDDs on 6.25 and older FWs
         if (pump.firmwareVersion?.atleastProto(ProtocolVersion.PROTO_4_11) != true) return
 
-        pumpSync.createOrUpdateTotalDailyDose(
-            timestamp = entry.dateTime.millis,
-            pumpId = entry.dateTime.millis,
-            pumpType = PumpType.APEX_TRUCARE_III,
-            pumpSerial = apexDeviceInfo.serialNumber,
-            bolusAmount = entry.bolus * 0.025,
-            basalAmount = entry.basal * 0.025 + entry.temporaryBasal * 0.025,
-            totalAmount = entry.total * 0.025,
-        )
+        runBlocking {
+            pumpSync.createOrUpdateTotalDailyDose(
+                timestamp = entry.dateTime.millis,
+                pumpId = entry.dateTime.millis,
+                pumpType = PumpType.APEX_TRUCARE_III,
+                pumpSerial = apexDeviceInfo.serialNumber,
+                bolusAmount = entry.bolus * 0.025,
+                basalAmount = entry.basal * 0.025 + entry.temporaryBasal * 0.025,
+                totalAmount = entry.total * 0.025,
+            )
+        }
         aapsLogger.debug(LTag.PUMP, "Synced TDD ${entry.total * 0.025}U on ${entry.dateTime}")
     }
 
@@ -1269,10 +1303,10 @@ class ApexService : MetroService(), ApexBluetoothCallback {
             val version = pump.firmwareVersion!!
             if (!version.isSupported(FIRST_SUPPORTED_PROTO, LAST_SUPPORTED_PROTO)) {
                 aapsLogger.error(LTag.PUMPCOMM, "Unsupported protocol v${version.protocolMajor}.${version.protocolMinor} - disconnecting.")
-                uiInteraction.addNotification(
-                    Notification.PUMP_ERROR,
+                notificationManager.post(
+                    NotificationId.PUMP_ERROR,
                     rh.gs(R.string.notification_pump_unsupported),
-                    Notification.URGENT,
+                    NotificationLevel.URGENT,
                 )
                 return disconnect()
             }
@@ -1390,10 +1424,10 @@ class ApexService : MetroService(), ApexBluetoothCallback {
 
         if (unreachableTimerTask == null)
             unreachableTimerTask = timer.schedule(120000) {
-                uiInteraction.addNotification(
-                    Notification.PUMP_UNREACHABLE,
+                notificationManager.post(
+                    NotificationId.PUMP_UNREACHABLE,
                     rh.gs(R.string.error_pump_unreachable),
-                    Notification.URGENT,
+                    NotificationLevel.URGENT,
                 )
                 aapsLogger.error(LTag.PUMP, "Pump unreachable!")
             }
@@ -1402,10 +1436,10 @@ class ApexService : MetroService(), ApexBluetoothCallback {
     }
 
     private fun createSpecialModeNotification() {
-        uiInteraction.addNotification(
-            Notification.PUMP_WARNING,
+        notificationManager.post(
+            NotificationId.PUMP_WARNING,
             rh.gs(R.string.bolus_error_pump_special_mode),
-            Notification.NORMAL
+            NotificationLevel.NORMAL
         )
     }
 
@@ -1437,10 +1471,10 @@ class ApexService : MetroService(), ApexBluetoothCallback {
         if (validationMsg != null) {
             aapsLogger.error(LTag.PUMPCOMM, "Got invalid (reason: $validationMsg) object of type $type - ${command.objectData.toHex()}")
             if (config.isEngineeringMode()) {
-                uiInteraction.addNotification(
-                    Notification.APEX_SERVICE_MSG,
+                notificationManager.post(
+                    NotificationId.PUMP_WARNING,
                     "Invalid object data ($type, $validationMsg) - please send log to developers!",
-                    Notification.URGENT,
+                    NotificationLevel.URGENT,
                 )
             }
             return

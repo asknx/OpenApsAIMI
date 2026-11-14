@@ -1,6 +1,7 @@
 package app.aaps.pump.apex.utils.keys
 
 import app.aaps.core.keys.interfaces.BooleanPreferenceKey
+import app.aaps.core.keys.interfaces.TextRef
 
 enum class ApexBooleanKey(
     override val key: String,
@@ -19,5 +20,7 @@ enum class ApexBooleanKey(
     LogInsulinChange("apex_log_insulin_change", true, defaultedBySM = true),
     LogBatteryChange("apex_log_battery_change", true, defaultedBySM = true),
     CalculateBatteryPercentage("apex_calc_battery_percentage", true, defaultedBySM = true),
-    HideSerial("apex_hide_serial", true, defaultedBySM = true),
+    HideSerial("apex_hide_serial", true, defaultedBySM = true);
+
+    override val title: TextRef = TextRef.Literal("")
 }
