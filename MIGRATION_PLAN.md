@@ -57,7 +57,10 @@
     - Заглушка `DashboardPreviewActivity.kt` с ресурсом `dashboard_preview_title` для сборки `:app`.
   - [x] **Контур Б (Целостность базы upstream 4.0.0):**
     - Ядро AAPS 4.0.0 (`core/*`, `shared/*`, KMP структура, Metro DI, драйверы помп Dash/Dana/Eros/Medtronic, NSClient v3) сохранено в неприкосновенности.
-  - [x] **Верификация компиляции:**
+  - [x] **Верификация компиляции и ключей:**
+    - `ApexPumpPlugin.kt`: ключи `ApexStringKey.SerialNumber` (первым), `MaxBasal`, `MaxBolus` (после `BatteryHighVoltage`) верифицированы.
+    - `OpenAPSAIMIPlugin.kt`: 45+ ключей форка (Autodrive/Cosine Gate, PKPD/Kicker/ZeroResume/Night Growth, Advisors/OAuth/RemoteControlPin) интегрированы в экран настроек.
+    - `GoogleDriveManager.kt`: поддержка `.jsonl` и маршрутизация `.json`, `.jsonl`, `.csv` с "aimi"/"autodrive" в `CloudConstants.CLOUD_PATH_AIMI`.
     - `:plugins:aps:assemble` — **BUILD SUCCESSFUL**
     - `:pump:apex:assemble` — **BUILD SUCCESSFUL**
     - `:app:assembleFullDebug` — **BUILD SUCCESSFUL** (успешная компоновка и упаковка APK)
