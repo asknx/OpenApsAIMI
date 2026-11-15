@@ -41,15 +41,15 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
         baseline: PhysioBaselineMTR,
         context: PhysioContextMTR
     ): String {
-        val provider = sp.getString(StringKey.AimiPhysioLLMProvider.key, "gpt4")
+        val provider = sp.getString(StringKey.AimiAdvisorProvider.key, "GEMINI")
         val apiKey = getAPIKey(provider)
         
         val useOAuth = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth.key, false)
-        val oauthToken = if (provider == "gemini" && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
+        val oauthToken = if (provider.contains("gemini", ignoreCase = true) && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
             runBlocking { geminiOAuthManager.getValidAccessToken() }
         } else null
 
-        if (apiKey.isBlank() && oauthToken == null) {
+        if (apiKey.isBlank() && oauthToken == null && !provider.contains("custom", ignoreCase = true)) {
             aapsLogger.warn(LTag.APS, "[$TAG] No API key or token configured for $provider")
             return ""
         }
@@ -58,12 +58,21 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
             runBlocking {
                 withTimeout(TIMEOUT_MS) {
                     withContext(Dispatchers.IO) {
+                        val p = provider.lowercase()
                         when {
-                            provider.contains("gpt") || provider.contains("openai") -> analyzeWithGPT(features, baseline, context, apiKey)
-                            provider.contains("gemini") -> analyzeWithGemini(features, baseline, context, apiKey, oauthToken)
-                            provider.contains("claude") -> analyzeWithClaude(features, baseline, context, apiKey)
-                            provider.contains("deepseek") -> analyzeWithDeepSeek(features, baseline, context, apiKey)
-                            provider.contains("glm") -> analyzeWithGlm(features, baseline, context, apiKey)
+                            p.contains("gpt") || p.contains("openai") -> analyzeWithGPT(features, baseline, context, apiKey)
+                            p.contains("gemini") -> analyzeWithGemini(features, baseline, context, apiKey, oauthToken)
+                            p.contains("claude") -> analyzeWithClaude(features, baseline, context, apiKey)
+                            p.contains("deepseek") -> analyzeWithDeepSeek(features, baseline, context, apiKey)
+                            p.contains("glm") -> analyzeWithGlm(features, baseline, context, apiKey)
+                            p.contains("grok") -> analyzeWithOpenAICompatible(features, baseline, context, apiKey, "https://api.x.ai/v1/chat/completions", sp.getString(StringKey.AimiAdvisorModel.key, "grok-beta").ifBlank { "grok-beta" })
+                            p.contains("openrouter") -> analyzeWithOpenAICompatible(features, baseline, context, apiKey, "https://openrouter.ai/api/v1/chat/completions", sp.getString(StringKey.AimiAdvisorModel.key, "anthropic/claude-3.5-haiku").ifBlank { "anthropic/claude-3.5-haiku" })
+                            p.contains("groq") -> analyzeWithOpenAICompatible(features, baseline, context, apiKey, "https://api.groq.com/openai/v1/chat/completions", sp.getString(StringKey.AimiAdvisorModel.key, "llama-3.3-70b-versatile").ifBlank { "llama-3.3-70b-versatile" })
+                            p.contains("custom") -> {
+                                val url = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService.normalizeEndpointUrl(sp.getString(StringKey.AimiAdvisorCustomUrl.key, ""))
+                                val model = sp.getString(StringKey.AimiAdvisorModel.key, "custom-model").ifBlank { "custom-model" }
+                                analyzeWithOpenAICompatible(features, baseline, context, apiKey, url, model)
+                            }
                             else -> ""
                         }
                     }
@@ -229,14 +238,47 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
         return parseGPTResponse(response)
     }
 
+    private fun analyzeWithOpenAICompatible(
+        features: PhysioFeaturesMTR,
+        baseline: PhysioBaselineMTR,
+        context: PhysioContextMTR,
+        apiKey: String,
+        url: String,
+        model: String
+    ): String {
+        val prompt = buildPrompt(features, baseline, context)
+        val requestBody = JSONObject().apply {
+            put("model", model)
+            put("messages", org.json.JSONArray().apply {
+                put(JSONObject().apply { put("role", "system"); put("content", "Expert physiologist. Brief insights.") })
+                put(JSONObject().apply { put("role", "user"); put("content", prompt) })
+            })
+            put("max_tokens", 150)
+        }
+        val headers = mutableMapOf(
+            "Authorization" to "Bearer $apiKey",
+            "Content-Type" to "application/json"
+        )
+        if (url.contains("openrouter")) {
+            headers["HTTP-Referer"] = "https://androidaps.org"
+            headers["X-Title"] = "AndroidAPS AIMI"
+        }
+        val response = makeAPICall(url, requestBody.toString(), headers)
+        return parseGPTResponse(response)
+    }
+
     private fun getAPIKey(provider: String): String {
         val p = provider.lowercase()
         return when {
-            p.contains("gpt") || p.contains("openai") -> sp.getString(StringKey.AimiAdvisorOpenAIKey.key, sp.getString("aimi_openai_api_key", ""))
-            p.contains("gemini") -> sp.getString(StringKey.AimiAdvisorGeminiKey.key, sp.getString("aimi_gemini_api_key", ""))
-            p.contains("claude") -> sp.getString(StringKey.AimiAdvisorClaudeKey.key, sp.getString("aimi_claude_api_key", ""))
-            p.contains("deepseek") -> sp.getString(StringKey.AimiAdvisorDeepSeekKey.key, sp.getString("aimi_deepseek_api_key", ""))
+            p.contains("gpt") || p.contains("openai") -> sp.getString(StringKey.AimiAdvisorOpenAIKey.key, "")
+            p.contains("gemini") -> sp.getString(StringKey.AimiAdvisorGeminiKey.key, "")
+            p.contains("claude") -> sp.getString(StringKey.AimiAdvisorClaudeKey.key, "")
+            p.contains("deepseek") -> sp.getString(StringKey.AimiAdvisorDeepSeekKey.key, "")
             p.contains("glm") -> sp.getString(StringKey.AimiAdvisorGlmKey.key, "")
+            p.contains("grok") -> sp.getString(StringKey.AimiAdvisorGrokKey.key, "")
+            p.contains("openrouter") -> sp.getString(StringKey.AimiAdvisorOpenRouterKey.key, "")
+            p.contains("groq") -> sp.getString(StringKey.AimiAdvisorGroqKey.key, "")
+            p.contains("custom") -> sp.getString(StringKey.AimiAdvisorCustomKey.key, "")
             else -> ""
         }
     }

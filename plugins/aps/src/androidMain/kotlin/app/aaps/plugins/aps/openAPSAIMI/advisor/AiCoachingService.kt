@@ -27,14 +27,21 @@ import kotlinx.coroutines.withContext
 @SingleIn(AppScope::class)
 class AiCoachingService @Inject constructor() {
 
-    enum class Provider { OPENAI, GEMINI, DEEPSEEK, CLAUDE, GLM }
+    enum class Provider(val id: String, val displayName: String) {
+        OPENAI("openai", "OpenAI"),
+        GEMINI("gemini", "Google Gemini"),
+        DEEPSEEK("deepseek", "DeepSeek"),
+        CLAUDE("claude", "Anthropic Claude"),
+        GLM("glm", "Zhipu AI GLM"),
+        GROK("grok", "xAI Grok"),
+        OPENROUTER("openrouter", "OpenRouter"),
+        GROQ("groq", "Groq"),
+        CUSTOM("custom", "Custom Endpoint");
+    }
 
     companion object {
         private const val OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-
         private const val OPENAI_MODEL = "gpt-4o-mini" // Efficient model for coaching logic
-        
-
         
         // DeepSeek Chat (OpenAI-compatible)
         private const val DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
@@ -43,6 +50,16 @@ class AiCoachingService @Inject constructor() {
         // Claude Haiku (Fast & Cheap)
         private const val CLAUDE_URL = "https://api.anthropic.com/v1/messages"
         private const val CLAUDE_MODEL = "claude-3-haiku-20240307"
+
+        fun normalizeEndpointUrl(rawUrl: String): String {
+            val trimmed = rawUrl.trim().trimEnd('/')
+            if (trimmed.isBlank()) return OPENAI_URL
+            return when {
+                trimmed.endsWith("/chat/completions") -> trimmed
+                trimmed.endsWith("/v1") -> "$trimmed/chat/completions"
+                else -> "$trimmed/v1/chat/completions"
+            }
+        }
     }
 
     /**
@@ -56,20 +73,30 @@ class AiCoachingService @Inject constructor() {
         oauthToken: String? = null,
         useOAuth: Boolean = false,
         provider: Provider,
-        history: List<app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.AdvisorActionLog> = emptyList()
+        history: List<app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.AdvisorActionLog> = emptyList(),
+        customUrl: String? = null,
+        customModel: String? = null
     ): String = withContext(Dispatchers.IO) {
         val tokenToUse = if (useOAuth) oauthToken else null
-        if (apiKey.isBlank() && tokenToUse == null) return@withContext "API Key or OAuth token missing."
+        if (apiKey.isBlank() && tokenToUse == null && provider != Provider.CUSTOM) return@withContext "API Key or OAuth token missing."
 
         try {
             val prompt = buildPrompt(androidContext, context, report, history)
             
             return@withContext when (provider) {
                 Provider.GEMINI -> callGemini(androidContext, apiKey, tokenToUse, prompt)
-                Provider.DEEPSEEK -> callDeepSeek(apiKey, prompt)
-                Provider.CLAUDE -> callClaude(apiKey, prompt)
-                Provider.GLM -> callGlm(apiKey, prompt)
-                else -> callOpenAI(apiKey, prompt)
+                Provider.CLAUDE -> callClaude(apiKey, prompt, customModel)
+                Provider.OPENAI -> callOpenAICompatible(OPENAI_URL, apiKey, customModel?.ifBlank { null } ?: OPENAI_MODEL, prompt, "OpenAI")
+                Provider.DEEPSEEK -> callOpenAICompatible(DEEPSEEK_URL, apiKey, customModel?.ifBlank { null } ?: DEEPSEEK_MODEL, prompt, "DeepSeek")
+                Provider.GLM -> callOpenAICompatible("https://open.bigmodel.cn/api/paas/v4/chat/completions", apiKey, customModel?.ifBlank { null } ?: "glm-4-flash", prompt, "GLM")
+                Provider.GROK -> callOpenAICompatible("https://api.x.ai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "grok-beta", prompt, "Grok")
+                Provider.OPENROUTER -> callOpenAICompatible("https://openrouter.ai/api/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "anthropic/claude-3.5-haiku", prompt, "OpenRouter", mapOf("HTTP-Referer" to "https://androidaps.org", "X-Title" to "AndroidAPS AIMI"))
+                Provider.GROQ -> callOpenAICompatible("https://api.groq.com/openai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "llama-3.3-70b-versatile", prompt, "Groq")
+                Provider.CUSTOM -> {
+                    val url = normalizeEndpointUrl(customUrl ?: "")
+                    val model = customModel?.ifBlank { null } ?: "custom-model"
+                    callOpenAICompatible(url, apiKey, model, prompt, "Custom")
+                }
             }
 
         } catch (e: Exception) {
@@ -87,63 +114,79 @@ class AiCoachingService @Inject constructor() {
         apiKey: String,
         oauthToken: String? = null,
         useOAuth: Boolean = false,
-        provider: Provider
+        provider: Provider,
+        customUrl: String? = null,
+        customModel: String? = null
     ): String = withContext(Dispatchers.IO) {
         val tokenToUse = if (useOAuth) oauthToken else null
-        if (apiKey.isBlank() && tokenToUse == null) return@withContext "API Key missing."
+        if (apiKey.isBlank() && tokenToUse == null && provider != Provider.CUSTOM) return@withContext "API Key missing."
         if (prompt.isBlank()) return@withContext "Empty prompt."
         
         try {
             return@withContext when (provider) {
                 Provider.GEMINI -> callGemini(context, apiKey, tokenToUse, prompt)
-                Provider.DEEPSEEK -> callDeepSeek(apiKey, prompt)
-                Provider.CLAUDE -> callClaude(apiKey, prompt)
-                Provider.GLM -> callGlm(apiKey, prompt)
-                else -> callOpenAI(apiKey, prompt)
+                Provider.CLAUDE -> callClaude(apiKey, prompt, customModel)
+                Provider.OPENAI -> callOpenAICompatible(OPENAI_URL, apiKey, customModel?.ifBlank { null } ?: OPENAI_MODEL, prompt, "OpenAI")
+                Provider.DEEPSEEK -> callOpenAICompatible(DEEPSEEK_URL, apiKey, customModel?.ifBlank { null } ?: DEEPSEEK_MODEL, prompt, "DeepSeek")
+                Provider.GLM -> callOpenAICompatible("https://open.bigmodel.cn/api/paas/v4/chat/completions", apiKey, customModel?.ifBlank { null } ?: "glm-4-flash", prompt, "GLM")
+                Provider.GROK -> callOpenAICompatible("https://api.x.ai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "grok-beta", prompt, "Grok")
+                Provider.OPENROUTER -> callOpenAICompatible("https://openrouter.ai/api/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "anthropic/claude-3.5-haiku", prompt, "OpenRouter", mapOf("HTTP-Referer" to "https://androidaps.org", "X-Title" to "AndroidAPS AIMI"))
+                Provider.GROQ -> callOpenAICompatible("https://api.groq.com/openai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "llama-3.3-70b-versatile", prompt, "Groq")
+                Provider.CUSTOM -> {
+                    val url = normalizeEndpointUrl(customUrl ?: "")
+                    val model = customModel?.ifBlank { null } ?: "custom-model"
+                    callOpenAICompatible(url, apiKey, model, prompt, "Custom")
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            return@withContext "Error: ${e.localizedMessage}"
+            throw Exception("[Provider: ${provider.name} | Error: ${e.message}]", e)
         }
     }
 
     // ... (keep private methods)
 
 
-    private fun callOpenAI(apiKey: String, prompt: String): String {
-        val jsonBody = buildOpenAiJson(prompt)
-        val url = URL(OPENAI_URL)
+    private fun callOpenAICompatible(
+        urlStr: String,
+        apiKey: String,
+        model: String,
+        prompt: String,
+        providerName: String,
+        extraHeaders: Map<String, String> = emptyMap()
+    ): String {
+        val root = JSONObject()
+        root.put("model", model)
+        val messages = JSONArray()
+        messages.put(JSONObject().put("role", "user").put("content", prompt))
+        root.put("messages", messages)
+        root.put("max_tokens", 4096)
+
+        val url = URL(urlStr)
         val connection = url.openConnection() as HttpURLConnection
-        
         connection.apply {
             requestMethod = "POST"
             setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Authorization", "Bearer $apiKey")
+            if (apiKey.isNotBlank()) {
+                setRequestProperty("Authorization", "Bearer $apiKey")
+            }
+            extraHeaders.forEach { (k, v) -> setRequestProperty(k, v) }
             doOutput = true
             connectTimeout = 15000
-            readTimeout = 30000
+            readTimeout = 45000
         }
 
-        val writer = OutputStreamWriter(connection.outputStream)
-        writer.write(jsonBody.toString())
-        writer.flush()
-        writer.close()
+        OutputStreamWriter(connection.outputStream, java.nio.charset.StandardCharsets.UTF_8).use {
+            it.write(root.toString())
+        }
 
         val responseCode = connection.responseCode
-        if (responseCode == 200) {
-            val reader = BufferedReader(InputStreamReader(connection.inputStream))
-            val response = StringBuilder()
-            var line: String?
-            while (reader.readLine().also { line = it } != null) response.append(line)
-            reader.close()
-            return parseOpenAiResponse(response.toString())
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            val response = connection.inputStream.bufferedReader(java.nio.charset.StandardCharsets.UTF_8).use { it.readText() }
+            return parseOpenAiResponse(response)
         } else {
-             // Try read error stream
-            val reader = BufferedReader(InputStreamReader(connection.errorStream ?: connection.inputStream))
-            val err = StringBuilder()
-            var line: String?
-            while (reader.readLine().also { line = it } != null) err.append(line)
-            return "[Provider: OpenAI | URL: $OPENAI_URL | HTTP $responseCode: $err]"
+            val err = (connection.errorStream ?: connection.inputStream)?.bufferedReader(java.nio.charset.StandardCharsets.UTF_8)?.use { it.readText() } ?: "Empty error"
+            throw Exception("[Provider: $providerName | URL: $urlStr | HTTP $responseCode: $err]")
         }
     }
 
@@ -420,50 +463,12 @@ class AiCoachingService @Inject constructor() {
         }
     }
     
-    private fun callDeepSeek(apiKey: String, prompt: String): String {
-        val jsonBody = buildOpenAiJson(prompt) // DeepSeek uses OpenAI-compatible format
-        jsonBody.put("model", DEEPSEEK_MODEL) // Override model
-        
-        val url = URL(DEEPSEEK_URL)
-        val connection = url.openConnection() as HttpURLConnection
-        
-        connection.apply {
-            requestMethod = "POST"
-            setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Authorization", "Bearer $apiKey")
-            doOutput = true
-            connectTimeout = 15000
-            readTimeout = 30000
-        }
-
-        val writer = OutputStreamWriter(connection.outputStream)
-        writer.write(jsonBody.toString())
-        writer.flush()
-        writer.close()
-
-        val responseCode = connection.responseCode
-        if (responseCode == 200) {
-            val reader = BufferedReader(InputStreamReader(connection.inputStream))
-            val response = StringBuilder()
-            var line: String?
-            while (reader.readLine().also { line = it } != null) response.append(line)
-            reader.close()
-            return parseOpenAiResponse(response.toString()) // Same format
-        } else {
-            val reader = BufferedReader(InputStreamReader(connection.errorStream ?: connection.inputStream))
-            val err = StringBuilder()
-            var line: String?
-            while (reader.readLine().also { line = it } != null) err.append(line)
-            return "[Provider: DeepSeek | URL: $DEEPSEEK_URL | HTTP $responseCode: $err]"
-        }
-    }
-    
-    private fun callClaude(apiKey: String, prompt: String): String {
+    private fun callClaude(apiKey: String, prompt: String, customModel: String? = null): String {
         val url = URL(CLAUDE_URL)
         val connection = url.openConnection() as HttpURLConnection
         
         val jsonBody = JSONObject()
-        jsonBody.put("model", CLAUDE_MODEL)
+        jsonBody.put("model", customModel?.ifBlank { null } ?: CLAUDE_MODEL)
         jsonBody.put("max_tokens", 4096)
         jsonBody.put("temperature", 0.7)
         
@@ -503,7 +508,7 @@ class AiCoachingService @Inject constructor() {
             val err = StringBuilder()
             var line: String?
             while (reader.readLine().also { line = it } != null) err.append(line)
-            return "[Provider: Claude | URL: $CLAUDE_URL | HTTP $responseCode: $err]"
+            throw Exception("[Provider: Claude | URL: $CLAUDE_URL | HTTP $responseCode: $err]")
         }
     }
     
@@ -513,45 +518,7 @@ class AiCoachingService @Inject constructor() {
             val content = root.getJSONArray("content")
             content.getJSONObject(0).getString("text").trim()
         } catch (e: Exception) {
-            "Erreur lecture Claude."
-        }
-    }
-
-    private fun callGlm(apiKey: String, prompt: String): String {
-        val jsonBody = JSONObject().apply {
-            put("model", "glm-4-flash")
-            put("messages", JSONArray().apply {
-                put(JSONObject().apply {
-                    put("role", "system")
-                    put("content", "You are an intelligent AI medical and diabetes assistant.")
-                })
-                put(JSONObject().apply {
-                    put("role", "user")
-                    put("content", prompt)
-                })
-            })
-            put("temperature", 0.3)
-        }.toString()
-
-        val url = URL("https://open.bigmodel.cn/api/paas/v4/chat/completions")
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Authorization", "Bearer $apiKey")
-            doOutput = true
-            connectTimeout = 15000
-            readTimeout = 30000
-        }
-
-        OutputStreamWriter(connection.outputStream, "UTF-8").use { it.write(jsonBody) }
-
-        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-            val responseStr = connection.inputStream.bufferedReader().use { it.readText() }
-            val root = JSONObject(responseStr)
-            return root.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
-        } else {
-            val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
-            return "[Provider: GLM | URL: https://open.bigmodel.cn/api/paas/v4/chat/completions | HTTP ${connection.responseCode}: $err]"
+            "Erreur lecture Claude: ${e.message}"
         }
     }
 }

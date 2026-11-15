@@ -245,22 +245,30 @@ enum class StringKey(
     AimiAdvisorCustomUrl("aimi_advisor_custom_url", "", title = TextRef.Literal("AIMI Advisor Custom URL")),
     AimiAdvisorCustomKey("aimi_advisor_custom_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Custom Key")),
     AimiAdvisorModel("aimi_advisor_model", "", title = TextRef.Literal("AIMI Advisor Model")),
-    AimiAdvisorProvider("aimi_advisor_provider", "GEMINI", title = TextRef.Literal("AIMI Advisor Provider")),
+    AimiAdvisorProvider(
+        key = "aimi_advisor_provider",
+        defaultValue = "GEMINI",
+        title = TextRef.Literal("AIMI Advisor Provider"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "GEMINI" to "Gemini (Google)",
+            "OPENAI" to "OpenAI (ChatGPT)",
+            "DEEPSEEK" to "DeepSeek",
+            "CLAUDE" to "Claude (Anthropic)",
+            "GLM" to "GLM (Zhipu AI)",
+            "GROK" to "Grok (xAI)",
+            "OPENROUTER" to "OpenRouter",
+            "GROQ" to "Groq",
+            "CUSTOM" to "Custom Endpoint"
+        )
+    ),
     AimiAuditorMode("aimi_auditor_mode", "AUDIT_ONLY", title = TextRef.Literal("AIMI Auditor Mode")),
 
     // Context Module
-    ContextLLMProvider("aimi_context_llm_provider", "GEMINI", title = TextRef.Literal("AIMI Context LLM Provider")),
-    ContextLLMOpenAIKey("aimi_context_llm_openai_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM OpenAI Key")),
-    ContextLLMGeminiKey("aimi_context_llm_gemini_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM Gemini Key")),
-    ContextLLMDeepSeekKey("aimi_context_llm_deepseek_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM DeepSeek Key")),
-    ContextLLMClaudeKey("aimi_context_llm_claude_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM Claude Key")),
     ContextMode("aimi_context_mode", "BALANCED", title = TextRef.Literal("AIMI Context Mode")),
 
     OApsAIMIUnstableModeState("key_oaps_aimi_mode_state", "", title = TextRef.Literal("AIMI Unstable Mode State")),
     OApsAIMIContextStorage("aimi_context_storage", "", title = TextRef.Literal("AIMI Context Storage")),
-
-    // AIMI Physiological Assistant (MTR)
-    AimiPhysioLLMProvider("aimi_physio_llm_provider", "gpt4", title = TextRef.Literal("AIMI Physio LLM Provider")),
 
     // Thyroid / Basedow Module (MTR)
     OApsAIMIThyroidMode("key_aimi_thyroid_mode", "MANUAL", title = TextRef.Literal("AIMI Thyroid Mode")),

@@ -41,7 +41,7 @@ class GeminiVisionProvider(
     }
     
     private fun callGeminiAPI(apiKey: String, oauthToken: String?, base64Image: String, userDescription: String, glucoseContext: String?): String {
-        val preferredModel = preferences.get(app.aaps.core.keys.StringKey.AimiAdvisorProvider)
+        val preferredModel = preferences.get(app.aaps.core.keys.StringKey.AimiAdvisorModel)
         val primaryModel = geminiResolver.resolveGenerateContentModel(
             if (oauthToken == null) apiKey else null, 
             oauthToken, 

@@ -10,9 +10,12 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-class OpenAIVisionProvider : AIVisionProvider {
-    override val displayName = "OpenAI (GPT-4o Vision)"
-    override val providerId = "OPENAI"
+class OpenAIVisionProvider(
+    private val endpointUrl: String = "https://api.openai.com/v1/chat/completions",
+    private val modelName: String = "gpt-4o",
+    override val displayName: String = "OpenAI (GPT-4o Vision)",
+    override val providerId: String = "OPENAI"
+) : AIVisionProvider {
     
     override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String, glucoseContext: String?): EstimationResult = withContext(Dispatchers.IO) {
         try {
@@ -20,7 +23,7 @@ class OpenAIVisionProvider : AIVisionProvider {
             val responseJson = callOpenAIAPI(apiKey, base64Image, userDescription, glucoseContext)
             parseResponse(responseJson)
         } catch (e: Exception) {
-            FoodAnalysisPrompt.emptyErrorResult("OpenAI Error", e.message ?: "Unknown error")
+            FoodAnalysisPrompt.emptyErrorResult("$displayName Error", e.message ?: "Unknown error")
         }
     }
     
@@ -31,11 +34,17 @@ class OpenAIVisionProvider : AIVisionProvider {
     }
     
     private fun callOpenAIAPI(apiKey: String, base64Image: String, userDescription: String, glucoseContext: String?): String {
-        val url = URL("https://api.openai.com/v1/chat/completions")
+        val url = URL(endpointUrl)
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
-        connection.setRequestProperty("Authorization", "Bearer $apiKey")
+        if (apiKey.isNotBlank()) {
+            connection.setRequestProperty("Authorization", "Bearer $apiKey")
+        }
+        if (endpointUrl.contains("openrouter")) {
+            connection.setRequestProperty("HTTP-Referer", "https://androidaps.org")
+            connection.setRequestProperty("X-Title", "AndroidAPS AIMI")
+        }
         connection.doOutput = true
         connection.connectTimeout = 30000
         connection.readTimeout = 45000
@@ -47,7 +56,7 @@ class OpenAIVisionProvider : AIVisionProvider {
         }.toString()
 
         val jsonBody = JSONObject().apply {
-            put("model", "gpt-4o")
+            put("model", modelName)
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "system")
@@ -80,7 +89,7 @@ class OpenAIVisionProvider : AIVisionProvider {
             return connection.inputStream.bufferedReader().use { it.readText() }
         } else {
             val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
-            throw Exception("[Provider: OpenAI | URL: https://api.openai.com/v1/chat/completions | HTTP $code: $err]")
+            throw Exception("[Provider: $displayName | URL: $endpointUrl | HTTP $code: $err]")
         }
     }
     

@@ -220,11 +220,14 @@ Output:
             // Get provider and API key from SHARED preferences (same as Advisor)
             val providerStr = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "GEMINI").uppercase()
             val provider = when {
-                providerStr.contains("OPENAI") -> AiCoachingService.Provider.OPENAI
+                providerStr.contains("OPENAI") || providerStr.contains("CHATGPT") -> AiCoachingService.Provider.OPENAI
                 providerStr.contains("DEEPSEEK") -> AiCoachingService.Provider.DEEPSEEK
-                providerStr.contains("CLAUDE") -> AiCoachingService.Provider.CLAUDE
-                providerStr.contains("GLM") -> AiCoachingService.Provider.GLM
-                providerStr.contains("GEMINI") -> AiCoachingService.Provider.GEMINI
+                providerStr.contains("CLAUDE") || providerStr.contains("ANTHROPIC") -> AiCoachingService.Provider.CLAUDE
+                providerStr.contains("GLM") || providerStr.contains("ZHIPU") -> AiCoachingService.Provider.GLM
+                providerStr.contains("GROK") || providerStr.contains("XAI") -> AiCoachingService.Provider.GROK
+                providerStr.contains("OPENROUTER") -> AiCoachingService.Provider.OPENROUTER
+                providerStr.contains("GROQ") -> AiCoachingService.Provider.GROQ
+                providerStr.contains("CUSTOM") -> AiCoachingService.Provider.CUSTOM
                 else -> AiCoachingService.Provider.GEMINI
             }
             
@@ -234,23 +237,32 @@ Output:
                 AiCoachingService.Provider.DEEPSEEK -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorDeepSeekKey.key, "")
                 AiCoachingService.Provider.CLAUDE -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorClaudeKey.key, "")
                 AiCoachingService.Provider.GLM -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorGlmKey.key, "")
+                AiCoachingService.Provider.GROK -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorGrokKey.key, "")
+                AiCoachingService.Provider.OPENROUTER -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorOpenRouterKey.key, "")
+                AiCoachingService.Provider.GROQ -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorGroqKey.key, "")
+                AiCoachingService.Provider.CUSTOM -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorCustomKey.key, "")
             }
+            
+            val customUrl = if (provider == AiCoachingService.Provider.CUSTOM) {
+                sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorCustomUrl.key, "")
+            } else null
+            val customModel = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorModel.key, "").ifBlank { null }
             
             val useOAuth = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth.key, false)
             val token = if (provider == AiCoachingService.Provider.GEMINI && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
                 geminiOAuthManager.getValidAccessToken()
             } else null
 
-            if (apiKey.isBlank() && token == null) {
+            if (apiKey.isBlank() && token == null && provider != AiCoachingService.Provider.CUSTOM) {
                 aapsLogger.error(LTag.APS, "[ContextLLM] API key or OAuth token not configured for $provider")
                 return emptyList()
             }
             
             // Call LLM service
-            val llmResponse = aiCoachingService.fetchText(context, prompt, apiKey, token, useOAuth, provider)
+            val llmResponse = aiCoachingService.fetchText(context, prompt, apiKey, token, useOAuth, provider, customUrl, customModel)
             
             // Check for service errors
-            if (llmResponse.startsWith("Erreur")) {
+            if (llmResponse.startsWith("Erreur") || llmResponse.startsWith("[Provider:")) {
                 aapsLogger.error(LTag.APS, "[ContextLLM] Service error: $llmResponse")
                 throw Exception(llmResponse)
             }
@@ -259,7 +271,7 @@ Output:
             parseJsonResponse(llmResponse, userText)
             
         } catch (e: Exception) {
-            aapsLogger.error(LTag.APS, "[ContextLLM] LLM parsing failed: ${e.message}")
+            aapsLogger.error(LTag.APS, "[ContextLLM] LLM parsing failed: ${e.message}", e)
             emptyList()
         }
     }

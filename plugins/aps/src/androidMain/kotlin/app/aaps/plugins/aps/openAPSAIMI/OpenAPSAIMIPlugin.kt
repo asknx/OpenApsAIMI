@@ -1150,11 +1150,6 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             BooleanKey.AimiMealAdvisorEnable,
                             BooleanKey.OApsAIMIContextEnabled,
                             BooleanKey.OApsAIMIContextLLMEnabled,
-                            StringKey.ContextLLMProvider,
-                            StringKey.ContextLLMOpenAIKey,
-                            StringKey.ContextLLMGeminiKey,
-                            StringKey.ContextLLMDeepSeekKey,
-                            StringKey.ContextLLMClaudeKey,
                             StringKey.ContextMode,
                             StringKey.AimiGeminiOAuthLoginButton,
                             StringKey.AimiGeminiOAuthLogoutButton,
@@ -1180,8 +1175,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                             BooleanKey.AimiPhysioSleepDataEnable,
                             BooleanKey.AimiPhysioHRVDataEnable,
                             BooleanKey.AimiPhysioLLMAnalysisEnable,
-                            BooleanKey.AimiPhysioDebugLogs,
-                            StringKey.AimiPhysioLLMProvider
+                            BooleanKey.AimiPhysioDebugLogs
                         )
                     ),
                     PreferenceSubScreenDef(

@@ -28,6 +28,35 @@ class FoodRecognitionService(
             providerName == "DEEPSEEK" -> DeepSeekVisionProvider()
             providerName == "CLAUDE" -> ClaudeVisionProvider()
             providerName == "GLM" -> GlmVisionProvider()
+            providerName == "GROK" -> OpenAIVisionProvider(
+                endpointUrl = "https://api.x.ai/v1/chat/completions",
+                modelName = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "grok-vision-beta" },
+                displayName = "xAI Grok Vision",
+                providerId = "GROK"
+            )
+            providerName == "OPENROUTER" -> OpenAIVisionProvider(
+                endpointUrl = "https://openrouter.ai/api/v1/chat/completions",
+                modelName = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "google/gemini-flash-1.5" },
+                displayName = "OpenRouter Vision",
+                providerId = "OPENROUTER"
+            )
+            providerName == "GROQ" -> OpenAIVisionProvider(
+                endpointUrl = "https://api.groq.com/openai/v1/chat/completions",
+                modelName = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "llama-3.2-11b-vision-preview" },
+                displayName = "Groq Vision",
+                providerId = "GROQ"
+            )
+            providerName == "CUSTOM" -> {
+                val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl)
+                val url = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService.normalizeEndpointUrl(rawUrl)
+                val model = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "custom-model" }
+                OpenAIVisionProvider(
+                    endpointUrl = url,
+                    modelName = model,
+                    displayName = "Custom Vision",
+                    providerId = "CUSTOM"
+                )
+            }
             else -> GeminiVisionProvider(context, preferences, oauthManager)
         }
     }
@@ -43,6 +72,10 @@ class FoodRecognitionService(
             id == "DEEPSEEK" -> preferences.get(StringKey.AimiAdvisorDeepSeekKey)
             id == "CLAUDE" -> preferences.get(StringKey.AimiAdvisorClaudeKey)
             id == "GLM" -> preferences.get(StringKey.AimiAdvisorGlmKey)
+            id == "GROK" -> preferences.get(StringKey.AimiAdvisorGrokKey)
+            id == "OPENROUTER" -> preferences.get(StringKey.AimiAdvisorOpenRouterKey)
+            id == "GROQ" -> preferences.get(StringKey.AimiAdvisorGroqKey)
+            id == "CUSTOM" -> preferences.get(StringKey.AimiAdvisorCustomKey)
             else -> ""
         }
     }
@@ -57,7 +90,7 @@ class FoodRecognitionService(
         val isGemini = provider.providerId.startsWith("GEMINI")
         val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth) && oauthManager.isOAuthEnabled()
         
-        if (apiKey.isBlank() && !(isGemini && useOAuth)) {
+        if (apiKey.isBlank() && !(isGemini && useOAuth) && provider.providerId != "CUSTOM") {
             return@withContext FoodAnalysisPrompt.emptyErrorResult(
                 "API Key Missing",
                 "Please configure ${provider.displayName} API key or Google OAuth in AIMI Preferences → Meal Advisor."
