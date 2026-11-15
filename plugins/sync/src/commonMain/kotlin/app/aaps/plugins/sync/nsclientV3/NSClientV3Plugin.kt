@@ -478,12 +478,15 @@ class NSClientV3Plugin(
         }
         if (config.AAPSCLIENT || nsClientSource.isEnabled()) {
             scope.launch {
-                var origin = "3_MIN_AFTER_BG"
+                val isOneMinute = preferences.get(BooleanKey.OApsxdriponeminute)
+                val interval = if (isOneMinute) T.mins(1).plus(T.secs(5)).msecs() else T.mins(3).plus(T.secs(15)).msecs()
+                var origin = if (isOneMinute) "1_MIN_AFTER_BG" else "3_MIN_AFTER_BG"
                 val lastGlucoseTimestamp = persistenceLayer.getLastGlucoseValue()?.timestamp ?: 0L
-                var toTime = lastGlucoseTimestamp + T.mins(3).plus(T.secs(15)).msecs()
+                var toTime = lastGlucoseTimestamp + interval
                 if (toTime < dateUtil.now()) {
-                    toTime = dateUtil.now() + T.mins(1).plus(T.secs(0)).msecs()
-                    origin = "1_MIN_OLD_DATA"
+                    val retryDelay = if (isOneMinute) T.secs(15).msecs() else T.mins(1).plus(T.secs(0)).msecs()
+                    toTime = dateUtil.now() + retryDelay
+                    origin = "OLD_DATA"
                 }
                 delay(maxOf(0L, toTime - dateUtil.now()))
                 executeLoop(origin)

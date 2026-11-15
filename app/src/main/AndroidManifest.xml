@@ -53,7 +53,17 @@
     <queries>
         <!-- Detect if Health Connect is installed -->
         <package android:name="com.google.android.apps.healthdata" />
-        
+        <package android:name="com.eveningoutpost.dexdrip" />
+        <package android:name="com.eveningoutpost.dexdrip.debug" />
+        <package android:name="tk.glucodata" />
+
+        <intent>
+            <action android:name="com.eveningoutpost.dexdrip.BgEstimate" />
+        </intent>
+        <intent>
+            <action android:name="glucodata.Minute" />
+        </intent>
+
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>
@@ -136,6 +146,8 @@
             <intent-filter>
                 <!-- Receiver from xDrip -->
                 <action android:name="com.eveningoutpost.dexdrip.BgEstimate" />
+                <!-- Receiver from Juggluco / xDrip Minute -->
+                <action android:name="glucodata.Minute" />
                 <!-- Receiver from 640g uploader -->
                 <action android:name="com.eveningoutpost.dexdrip.NS_EMULATOR" />
                 <!-- Receiver from glimp -->

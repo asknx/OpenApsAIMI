@@ -64,7 +64,9 @@ class XdripSourcePlugin(
     preferences: Preferences,
     config: Config,
     notificationManager: NotificationManager,
-    private val persistenceLayer: PersistenceLayer
+    private val persistenceLayer: PersistenceLayer,
+    private val context: Context,
+    private val dateUtil: DateUtil
 ) : AbstractBgSourceWithSensorInsertLogPlugin(
     pluginDescription = PluginDescription()
         .mainType(PluginType.BGSOURCE)
@@ -88,19 +90,67 @@ class XdripSourcePlugin(
     private var pollingJob: Job? = null
     private var prefObserverJob: Job? = null
     internal var lastPolledTimestamp: Long = 0L
+    private var isReceiverRegistered = false
+
+    private val directBroadcastReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(ctx: Context, intent: android.content.Intent) {
+            val bundle = intent.extras ?: return
+            pluginScope.launch(Dispatchers.IO) {
+                handleDirectBroadcast(intent.action, bundle)
+            }
+        }
+    }
 
     internal val isPollingActive: Boolean get() = pollingJob?.isActive == true
     internal val currentPollingJob: Job? get() = pollingJob
     internal val currentPrefObserverJob: Job? get() = prefObserverJob
+    internal val isDirectReceiverRegistered: Boolean get() = isReceiverRegistered
+
+    fun registerDirectReceiver() {
+        if (isReceiverRegistered) return
+        val filter = android.content.IntentFilter().apply {
+            addAction(Intents.ACTION_NEW_BG_ESTIMATE)
+            addAction(Intents.GLUCODATA_MINUTE)
+        }
+        try {
+            androidx.core.content.ContextCompat.registerReceiver(
+                context,
+                directBroadcastReceiver,
+                filter,
+                androidx.core.content.ContextCompat.RECEIVER_EXPORTED
+            )
+            isReceiverRegistered = true
+            aapsLogger.info(LTag.BGSOURCE, "Registered direct dynamic xDrip/Glucodata broadcast receiver")
+        } catch (e: Exception) {
+            aapsLogger.error(LTag.BGSOURCE, "Failed to register direct receiver", e)
+        }
+    }
+
+    fun unregisterDirectReceiver() {
+        if (!isReceiverRegistered) return
+        try {
+            context.unregisterReceiver(directBroadcastReceiver)
+        } catch (e: Exception) {
+            aapsLogger.debug(LTag.BGSOURCE, "Error unregistering direct receiver: ${e.message}")
+        }
+        isReceiverRegistered = false
+    }
 
     override suspend fun onStart() {
         super.onStart()
+        if (isEnabled()) {
+            registerDirectReceiver()
+        }
         prefObserverJob?.cancel()
         prefObserverJob = pluginScope.launch {
             preferences.observe(BooleanKey.OApsxdriponeminute).collect { enabled ->
                 if (enabled && isEnabled()) {
+                    registerDirectReceiver()
                     if (pollingJob?.isActive == true) return@collect
                     startPolling()
+                } else if (!isEnabled()) {
+                    unregisterDirectReceiver()
+                    stopPolling()
                 } else {
                     stopPolling()
                 }
@@ -109,10 +159,88 @@ class XdripSourcePlugin(
     }
 
     override suspend fun onStop() {
-        super.onStop()
+        unregisterDirectReceiver()
         prefObserverJob?.cancel()
         prefObserverJob = null
         stopPolling()
+        super.onStop()
+    }
+
+    internal fun mapRateToTrendArrow(rate: Float): TrendArrow = when {
+        rate >= 3.5f  -> TrendArrow.DOUBLE_UP
+        rate >= 2.0f  -> TrendArrow.SINGLE_UP
+        rate >= 1.0f  -> TrendArrow.FORTY_FIVE_UP
+        rate > -1.0f  -> TrendArrow.FLAT
+        rate > -2.0f  -> TrendArrow.FORTY_FIVE_DOWN
+        rate > -3.5f  -> TrendArrow.SINGLE_DOWN
+        else          -> TrendArrow.DOUBLE_DOWN
+    }
+
+    internal suspend fun handleDirectBroadcast(action: String?, bundle: Bundle) {
+        if (!isEnabled()) return
+        val gv: GV
+        val timestamp: Long
+        when (action) {
+            Intents.ACTION_NEW_BG_ESTIMATE -> {
+                timestamp = bundle.getLong(Intents.EXTRA_TIMESTAMP, 0L)
+                val bgValue = bundle.getDouble(Intents.EXTRA_BG_ESTIMATE, 0.0)
+                if (timestamp <= 0L || bgValue <= 0.0) return
+                val slopeName = bundle.getString(Intents.EXTRA_BG_SLOPE_NAME)
+                val raw = bundle.getDouble(Intents.EXTRA_RAW, 0.0)
+                val source = bundle.getString(Intents.XDRIP_DATA_SOURCE) ?: ""
+                gv = GV(
+                    timestamp = timestamp,
+                    value = round(bgValue),
+                    raw = round(raw),
+                    noise = null,
+                    trendArrow = TrendArrow.fromString(slopeName),
+                    sourceSensor = SourceSensor.fromString(source)
+                )
+                sensorBatteryLevel = bundle.getInt(Intents.EXTRA_SENSOR_BATTERY, -1)
+            }
+            Intents.GLUCODATA_MINUTE -> {
+                timestamp = bundle.getLong("glucodata.Minute.Time", 0L).takeIf { it > 0L } ?: dateUtil.now()
+                val bgMgdl = if (bundle.containsKey("glucodata.Minute.mgdl")) {
+                    bundle.getInt("glucodata.Minute.mgdl").toDouble()
+                } else if (bundle.containsKey("glucodata.Minute.glucose")) {
+                    val g = bundle.getFloat("glucodata.Minute.glucose").toDouble()
+                    if (g < 35.0) g * app.aaps.core.data.configuration.Constants.MMOLL_TO_MGDL else g
+                } else 0.0
+                if (timestamp <= 0L || bgMgdl <= 0.0) return
+                val rate = bundle.getFloat("glucodata.Minute.Rate", 0.0f)
+                val trend = mapRateToTrendArrow(rate)
+                val serial = bundle.getString("glucodata.Minute.SerialNumber") ?: "Juggluco"
+                gv = GV(
+                    timestamp = timestamp,
+                    value = round(bgMgdl),
+                    raw = 0.0,
+                    noise = null,
+                    trendArrow = trend,
+                    sourceSensor = SourceSensor.fromString(serial)
+                )
+            }
+            else -> return
+        }
+
+        if (timestamp == XdripSourceWorker.lastDataTimestamp || timestamp == lastPolledTimestamp) {
+            aapsLogger.debug(LTag.BGSOURCE, "Direct broadcast: skipping duplicate timestamp $timestamp")
+            return
+        }
+
+        if (!preferences.get(BooleanKey.OApsxdriponeminute) && timestamp - XdripSourceWorker.lastDataTimestamp < 240000L) {
+            aapsLogger.debug(LTag.BGSOURCE, "Direct broadcast: ignoring data, not enough time passed since last processing")
+            return
+        }
+
+        XdripSourceWorker.lastDataTimestamp = maxOf(XdripSourceWorker.lastDataTimestamp, timestamp)
+        lastPolledTimestamp = maxOf(lastPolledTimestamp, timestamp)
+
+        try {
+            persistenceLayer.insertCgmSourceData(Sources.Xdrip, listOf(gv), emptyList(), null)
+            aapsLogger.info(LTag.BGSOURCE, "Direct broadcast: inserted new SGV ${gv.value} at $timestamp from $action")
+        } catch (e: Exception) {
+            aapsLogger.error(LTag.BGSOURCE, "Direct broadcast: error inserting data", e)
+        }
     }
 
     internal fun isValidPolledReading(
@@ -154,8 +282,9 @@ class XdripSourcePlugin(
     }
 
     fun stopPolling() {
-        pollingJob?.cancel()
+        val job = pollingJob
         pollingJob = null
+        job?.cancel()
     }
 
     private suspend fun pollXdripWebServer() {
@@ -278,15 +407,15 @@ class XdripSourcePlugin(
                 aapsLogger.warn(LTag.BGSOURCE, "Skipping xDrip bundle: missing or invalid timestamp")
                 return
             }
-            if (currentTimestamp <= lastDataTimestamp) {
-                aapsLogger.debug(LTag.BGSOURCE, "Ignoring duplicate or older xDrip data: $currentTimestamp <= $lastDataTimestamp")
+            if (currentTimestamp == lastDataTimestamp) {
+                aapsLogger.debug(LTag.BGSOURCE, "Ignoring duplicate xDrip data: $currentTimestamp == $lastDataTimestamp")
                 return
             }
             if (!preferences.get(BooleanKey.OApsxdriponeminute) && currentTimestamp - lastDataTimestamp < 240000) {
                 aapsLogger.debug(LTag.BGSOURCE, "Ignoring data, not enough time passed since last processing")
                 return
             }
-            lastDataTimestamp = currentTimestamp
+            lastDataTimestamp = maxOf(lastDataTimestamp, currentTimestamp)
 
             aapsLogger.debug(LTag.BGSOURCE, "Received xDrip data: $bundle")
             val glucoseValues = mutableListOf<GV>()

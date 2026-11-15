@@ -90,6 +90,18 @@ class DataReceiverTest : TestBase() {
     }
 
     @Test
+    fun `glucodata Minute routes to XdripInbox`() {
+        whenever(bundle.containsKey("glucodata.Minute.mgdl")).thenReturn(true)
+        whenever(bundle.getInt("glucodata.Minute.mgdl")).thenReturn(120)
+        whenever(bundle.getLong(eq("glucodata.Minute.Time"), any())).thenReturn(1000L)
+        whenever(bundle.getFloat(eq("glucodata.Minute.Rate"), any())).thenReturn(0.5f)
+        whenever(bundle.getString(eq("glucodata.Minute.SerialNumber"))).thenReturn("Juggluco")
+
+        dataReceiver.processIntent(context, createIntent(Intents.GLUCODATA_MINUTE))
+        verify(dataInbox).putAndEnqueue(eq(XdripInbox), any())
+    }
+
+    @Test
     fun `SMS_RECEIVED routes to SmsInbox`() {
         dataReceiver.processIntent(context, createIntent(Telephony.Sms.Intents.SMS_RECEIVED_ACTION))
         verify(dataInbox).putAndEnqueue(eq(SmsInbox), eq(bundle))

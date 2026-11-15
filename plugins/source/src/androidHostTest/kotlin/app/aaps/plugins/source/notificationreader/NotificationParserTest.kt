@@ -108,6 +108,25 @@ class NotificationParserTest {
             // U+2764 is in Dingbats range
             assertThat(parser.cleanText("142\u2764")).isEqualTo("142")
         }
+
+        @Test
+        fun `remove positive delta`() {
+            assertThat(parser.cleanText("115 +2")).isEqualTo("115")
+            assertThat(parser.cleanText("115 (+2.0)")).isEqualTo("115")
+            assertThat(parser.cleanText("6.4 +0.1")).isEqualTo("6.4")
+        }
+
+        @Test
+        fun `remove negative delta`() {
+            assertThat(parser.cleanText("115 -3")).isEqualTo("115")
+            assertThat(parser.cleanText("6.4 -0.2")).isEqualTo("6.4")
+        }
+
+        @Test
+        fun `remove arrows and delta combined`() {
+            assertThat(parser.cleanText("115 \u2192 +2")).isEqualTo("115")
+            assertThat(parser.cleanText("6.4 \u2197 +0.1 mmol/l")).isEqualTo("6.4")
+        }
     }
 
     @Nested
@@ -240,6 +259,22 @@ class NotificationParserTest {
             val result = parser.extractGlucose(listOf("142"), "com.unknown.app", useMgdl = true)
             assertThat(result).isNotNull()
             assertThat(result!!.sourceSensor).isEqualTo(SourceSensor.UNKNOWN)
+        }
+
+        @Test
+        fun `xdrip notification with delta and flat arrow extracts glucose and trend`() {
+            val result = parser.extractGlucose(listOf("115 \u2192 +2", "+2 mg/dL"), "com.eveningoutpost.dexdrip", useMgdl = true)
+            assertThat(result).isNotNull()
+            assertThat(result!!.glucoseMgdl).isEqualTo(115)
+            assertThat(result.trendArrow).isEqualTo(app.aaps.core.data.model.TrendArrow.FLAT)
+        }
+
+        @Test
+        fun `xdrip notification mmol with delta and up arrow extracts glucose and trend`() {
+            val result = parser.extractGlucose(listOf("6.4 \u2197 +0.1", "+0.1 mmol/l"), "com.eveningoutpost.dexdrip", useMgdl = false)
+            assertThat(result).isNotNull()
+            assertThat(result!!.glucoseMgdl).isIn(115..116)
+            assertThat(result.trendArrow).isEqualTo(app.aaps.core.data.model.TrendArrow.FORTY_FIVE_UP)
         }
     }
 

@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.GlucoseUnit
+import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.model.TrendArrow
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.interfaces.db.PersistenceLayer
@@ -29,6 +30,7 @@ class NotificationCollectorService : NotificationListenerService() {
 
     @Inject lateinit var aapsLogger: AAPSLogger
     @Inject lateinit var notificationReaderPlugin: NotificationReaderPlugin
+    @Inject lateinit var xdripSourcePlugin: app.aaps.plugins.source.XdripSourcePlugin
     @Inject lateinit var persistenceLayer: PersistenceLayer
     @Inject lateinit var profileFunction: ProfileFunction
     @Inject lateinit var preferences: Preferences
@@ -66,15 +68,23 @@ class NotificationCollectorService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val packageName = sbn.packageName
         if (!notificationReaderPlugin.packageConfig.isSupportedPackage(packageName)) return
-        if (!notificationReaderPlugin.isEnabled()) return
 
-        aapsLogger.debug(LTag.BGSOURCE, "Notification from: $packageName")
-        processNotification(sbn.notification, packageName)
+        val isXdripPkg = packageName == "com.eveningoutpost.dexdrip" ||
+            packageName == "com.eveningoutpost.dexdrip.debug" ||
+            packageName == "tk.glucodata"
+
+        val canHandleNotificationReader = notificationReaderPlugin.isEnabled()
+        val canHandleXdrip = isXdripPkg && xdripSourcePlugin.isEnabled()
+
+        if (!canHandleNotificationReader && !canHandleXdrip) return
+
+        aapsLogger.debug(LTag.BGSOURCE, "Notification from: $packageName (xdripMode=$canHandleXdrip)")
+        processNotification(sbn.notification, packageName, isXdrip = canHandleXdrip)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) = Unit
 
-    private fun processNotification(notification: Notification?, packageName: String) {
+    private fun processNotification(notification: Notification?, packageName: String, isXdrip: Boolean = false) {
         if (notification == null) return
 
         val texts = extractTexts(notification)
@@ -88,7 +98,7 @@ class NotificationCollectorService : NotificationListenerService() {
         val useMgdl = profileFunction.getUnits() == GlucoseUnit.MGDL
         val result = parser?.extractGlucose(texts, packageName, useMgdl) ?: return
 
-        aapsLogger.debug(LTag.BGSOURCE, "Glucose: ${result.glucoseMgdl} mg/dL from $packageName (${result.sourceSensor})")
+        aapsLogger.debug(LTag.BGSOURCE, "Glucose: ${result.glucoseMgdl} mg/dL from $packageName (${result.sourceSensor}) trend=${result.trendArrow}")
 
         val now = System.currentTimeMillis()
         if (deduplicator?.process(packageName, now) != true) {
@@ -96,18 +106,29 @@ class NotificationCollectorService : NotificationListenerService() {
             return
         }
 
+        val readingTimestamp = if (notification.`when` > 0L && kotlin.math.abs(now - notification.`when`) < 300_000L) {
+            notification.`when`
+        } else {
+            now
+        }
+
         val gv = GV(
-            timestamp = now,
+            timestamp = readingTimestamp,
             value = result.glucoseMgdl.toDouble(),
             raw = null,
             noise = null,
-            trendArrow = TrendArrow.NONE,
-            sourceSensor = result.sourceSensor
+            trendArrow = result.trendArrow,
+            sourceSensor = if (isXdrip) SourceSensor.UNKNOWN else result.sourceSensor
         )
 
         scope.launch {
             try {
-                persistenceLayer.insertCgmSourceData(Sources.NotificationReader, listOf(gv), emptyList(), null)
+                val source = if (isXdrip) Sources.Xdrip else Sources.NotificationReader
+                persistenceLayer.insertCgmSourceData(source, listOf(gv), emptyList(), null)
+                if (isXdrip) {
+                    app.aaps.plugins.source.XdripSourcePlugin.XdripSourceWorker.lastDataTimestamp =
+                        maxOf(app.aaps.plugins.source.XdripSourcePlugin.XdripSourceWorker.lastDataTimestamp, readingTimestamp)
+                }
             } catch (e: Exception) {
                 aapsLogger.error(LTag.BGSOURCE, "Error inserting glucose data", e)
             }

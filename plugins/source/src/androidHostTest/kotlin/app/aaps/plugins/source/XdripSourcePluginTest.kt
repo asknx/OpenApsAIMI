@@ -1,24 +1,42 @@
 package app.aaps.plugins.source
 
+import android.os.Bundle
+import app.aaps.core.data.model.GV
+import app.aaps.core.data.model.TrendArrow
 import app.aaps.core.data.plugin.PluginType
+import app.aaps.core.data.ue.Sources
+import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.receivers.Intents
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
+import app.aaps.shared.tests.BundleMock
 import app.aaps.shared.tests.TestBaseWithProfile
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.check
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class XdripSourcePluginTest : TestBaseWithProfile() {
 
+    private val persistenceLayer: PersistenceLayer = mock()
+    private val oApsxdriponeminuteFlow = MutableStateFlow(true)
     private lateinit var xdripSourcePlugin: XdripSourcePlugin
 
     @BeforeEach
     fun setup() {
-        xdripSourcePlugin = XdripSourcePlugin(rh, aapsLogger, preferences, config, mock(), mock())
+        XdripSourcePlugin.XdripSourceWorker.lastDataTimestamp = 0L
+        oApsxdriponeminuteFlow.value = true
+        whenever(preferences.observe(BooleanKey.OApsxdriponeminute)).thenReturn(oApsxdriponeminuteFlow)
+        whenever(preferences.get(BooleanKey.OApsxdriponeminute)).thenAnswer { oApsxdriponeminuteFlow.value }
+        xdripSourcePlugin = XdripSourcePlugin(rh, aapsLogger, preferences, config, notificationManager, persistenceLayer, context, dateUtil)
     }
 
     @Test
@@ -120,7 +138,8 @@ class XdripSourcePluginTest : TestBaseWithProfile() {
 
         // Toggle preference to false -> polling job is cancelled
         flow.value = false
-        waitUntil { !xdripSourcePlugin.isPollingActive }
+        waitUntil { xdripSourcePlugin.currentPollingJob == null }
+        assertThat(xdripSourcePlugin.isPollingActive).isFalse()
         assertThat(xdripSourcePlugin.currentPollingJob).isNull()
 
         // Toggle back to true -> new polling job is started
@@ -133,4 +152,172 @@ class XdripSourcePluginTest : TestBaseWithProfile() {
         assertThat(xdripSourcePlugin.currentPollingJob).isNull()
         assertThat(xdripSourcePlugin.currentPrefObserverJob).isNull()
     }
+
+    @Test
+    fun `handleDirectBroadcast ignores when plugin is disabled`() = runBlocking {
+        xdripSourcePlugin.setPluginEnabledBlocking(PluginType.BGSOURCE, false)
+        val bundle = BundleMock.mocked().apply {
+            putLong(Intents.EXTRA_TIMESTAMP, 1_000_000L)
+            putDouble(Intents.EXTRA_BG_ESTIMATE, 120.0)
+        }
+
+        xdripSourcePlugin.handleDirectBroadcast(Intents.ACTION_NEW_BG_ESTIMATE, bundle)
+
+        verify(persistenceLayer, never()).insertCgmSourceData(any(), any(), any(), any())
+    }
+
+    @Test
+    fun `handleDirectBroadcast inserts reading for ACTION_NEW_BG_ESTIMATE`() = runBlocking {
+        oApsxdriponeminuteFlow.value = true
+        xdripSourcePlugin.setPluginEnabledBlocking(PluginType.BGSOURCE, true)
+        val timestamp = 1_000_000L
+        val bundle = BundleMock.mocked().apply {
+            putLong(Intents.EXTRA_TIMESTAMP, timestamp)
+            putDouble(Intents.EXTRA_BG_ESTIMATE, 135.0)
+            putDouble(Intents.EXTRA_RAW, 134.0)
+            putString(Intents.EXTRA_BG_SLOPE_NAME, "Flat")
+            putString(Intents.XDRIP_DATA_SOURCE, "G6 Native")
+            putInt(Intents.EXTRA_SENSOR_BATTERY, 85)
+        }
+
+        xdripSourcePlugin.handleDirectBroadcast(Intents.ACTION_NEW_BG_ESTIMATE, bundle)
+
+        verify(persistenceLayer).insertCgmSourceData(
+            eq(Sources.Xdrip),
+            check { gvs ->
+                assertThat(gvs).hasSize(1)
+                val gv = gvs.first()
+                assertThat(gv.timestamp).isEqualTo(timestamp)
+                assertThat(gv.value).isEqualTo(135.0)
+                assertThat(gv.raw).isEqualTo(134.0)
+                assertThat(gv.trendArrow).isEqualTo(TrendArrow.FLAT)
+            },
+            eq(emptyList()),
+            eq(null)
+        )
+        assertThat(xdripSourcePlugin.sensorBatteryLevel).isEqualTo(85)
+        assertThat(XdripSourcePlugin.XdripSourceWorker.lastDataTimestamp).isEqualTo(timestamp)
+    }
+
+    @Test
+    fun `handleDirectBroadcast inserts reading for GLUCODATA_MINUTE with mgdl`() = runBlocking {
+        oApsxdriponeminuteFlow.value = true
+        xdripSourcePlugin.setPluginEnabledBlocking(PluginType.BGSOURCE, true)
+        val timestamp = 1_000_000L
+        val bundle = BundleMock.mocked().apply {
+            putLong("glucodata.Minute.Time", timestamp)
+            putInt("glucodata.Minute.mgdl", 110)
+            putFloat("glucodata.Minute.Rate", 1.5f)
+            putString("glucodata.Minute.SerialNumber", "FreeStyleLibre")
+        }
+
+        xdripSourcePlugin.handleDirectBroadcast(Intents.GLUCODATA_MINUTE, bundle)
+
+        verify(persistenceLayer).insertCgmSourceData(
+            eq(Sources.Xdrip),
+            check { gvs ->
+                assertThat(gvs).hasSize(1)
+                val gv = gvs.first()
+                assertThat(gv.timestamp).isEqualTo(timestamp)
+                assertThat(gv.value).isEqualTo(110.0)
+                assertThat(gv.trendArrow).isEqualTo(TrendArrow.FORTY_FIVE_UP)
+            },
+            eq(emptyList()),
+            eq(null)
+        )
+        assertThat(XdripSourcePlugin.XdripSourceWorker.lastDataTimestamp).isEqualTo(timestamp)
+    }
+
+    @Test
+    fun `handleDirectBroadcast inserts reading for GLUCODATA_MINUTE with mmol glucose converted to mgdl`() = runBlocking {
+        oApsxdriponeminuteFlow.value = true
+        xdripSourcePlugin.setPluginEnabledBlocking(PluginType.BGSOURCE, true)
+        val timestamp = 1_000_000L
+        val bundle = BundleMock.mocked().apply {
+            putLong("glucodata.Minute.Time", timestamp)
+            putFloat("glucodata.Minute.glucose", 6.0f) // 6.0 mmol/l -> 108 mg/dl
+            putFloat("glucodata.Minute.Rate", -2.5f)
+        }
+
+        xdripSourcePlugin.handleDirectBroadcast(Intents.GLUCODATA_MINUTE, bundle)
+
+        verify(persistenceLayer).insertCgmSourceData(
+            eq(Sources.Xdrip),
+            check { gvs ->
+                assertThat(gvs).hasSize(1)
+                val gv = gvs.first()
+                assertThat(gv.timestamp).isEqualTo(timestamp)
+                assertThat(gv.value).isEqualTo(108.0)
+                assertThat(gv.trendArrow).isEqualTo(TrendArrow.SINGLE_DOWN)
+            },
+            eq(emptyList()),
+            eq(null)
+        )
+    }
+
+    @Test
+    fun `handleDirectBroadcast skips duplicate readings`() = runBlocking {
+        oApsxdriponeminuteFlow.value = true
+        xdripSourcePlugin.setPluginEnabledBlocking(PluginType.BGSOURCE, true)
+        val timestamp = 1_000_000L
+        val bundle = BundleMock.mocked().apply {
+            putLong(Intents.EXTRA_TIMESTAMP, timestamp)
+            putDouble(Intents.EXTRA_BG_ESTIMATE, 120.0)
+        }
+
+        // First broadcast succeeds
+        xdripSourcePlugin.handleDirectBroadcast(Intents.ACTION_NEW_BG_ESTIMATE, bundle)
+        verify(persistenceLayer).insertCgmSourceData(any(), any(), any(), any())
+
+        // Duplicate broadcast with same timestamp is skipped
+        xdripSourcePlugin.handleDirectBroadcast(Intents.ACTION_NEW_BG_ESTIMATE, bundle)
+        // verify called only once in total
+        verify(persistenceLayer).insertCgmSourceData(any(), any(), any(), any())
+    }
+
+    @Test
+    fun `handleDirectBroadcast throttles when OApsxdriponeminute is false and interval under 4 minutes`() = runBlocking {
+        oApsxdriponeminuteFlow.value = false
+        xdripSourcePlugin.setPluginEnabledBlocking(PluginType.BGSOURCE, true)
+        val firstTs = 1_000_000L
+        val bundle1 = BundleMock.mocked().apply {
+            putLong(Intents.EXTRA_TIMESTAMP, firstTs)
+            putDouble(Intents.EXTRA_BG_ESTIMATE, 120.0)
+        }
+        xdripSourcePlugin.handleDirectBroadcast(Intents.ACTION_NEW_BG_ESTIMATE, bundle1)
+        verify(persistenceLayer).insertCgmSourceData(any(), any(), any(), any())
+
+        // 60 seconds later, but OApsxdriponeminute is false
+        val secondTs = firstTs + 60_000L
+        val bundle2 = BundleMock.mocked().apply {
+            putLong(Intents.EXTRA_TIMESTAMP, secondTs)
+            putDouble(Intents.EXTRA_BG_ESTIMATE, 122.0)
+        }
+        xdripSourcePlugin.handleDirectBroadcast(Intents.ACTION_NEW_BG_ESTIMATE, bundle2)
+        // second broadcast should have been ignored
+        verify(persistenceLayer).insertCgmSourceData(any(), any(), any(), any())
+    }
+
+    @Test
+    fun `handleDirectBroadcast processes 1-minute updates when OApsxdriponeminute is true`() = runBlocking {
+        oApsxdriponeminuteFlow.value = true
+        xdripSourcePlugin.setPluginEnabledBlocking(PluginType.BGSOURCE, true)
+        val firstTs = 1_000_000L
+        val bundle1 = BundleMock.mocked().apply {
+            putLong(Intents.EXTRA_TIMESTAMP, firstTs)
+            putDouble(Intents.EXTRA_BG_ESTIMATE, 120.0)
+        }
+        xdripSourcePlugin.handleDirectBroadcast(Intents.ACTION_NEW_BG_ESTIMATE, bundle1)
+
+        val secondTs = firstTs + 60_000L
+        val bundle2 = BundleMock.mocked().apply {
+            putLong(Intents.EXTRA_TIMESTAMP, secondTs)
+            putDouble(Intents.EXTRA_BG_ESTIMATE, 122.0)
+        }
+        xdripSourcePlugin.handleDirectBroadcast(Intents.ACTION_NEW_BG_ESTIMATE, bundle2)
+
+        // Both calls should insert
+        org.mockito.kotlin.verify(persistenceLayer, org.mockito.kotlin.times(2)).insertCgmSourceData(any(), any(), any(), any())
+    }
 }
+

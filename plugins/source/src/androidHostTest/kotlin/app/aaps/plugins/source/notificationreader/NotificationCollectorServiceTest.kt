@@ -34,6 +34,7 @@ import org.robolectric.annotation.Config
 class NotificationCollectorServiceTest {
 
     private val plugin: NotificationReaderPlugin = mock()
+    private val xdripSourcePlugin: app.aaps.plugins.source.XdripSourcePlugin = mock()
     private val packageConfig: PackageConfig = mock()
     private val persistenceLayer: PersistenceLayer = mock()
     private val profileFunction: ProfileFunction = mock()
@@ -48,6 +49,7 @@ class NotificationCollectorServiceTest {
         service = NotificationCollectorService()
         service.aapsLogger = AAPSLoggerTest()
         service.notificationReaderPlugin = plugin
+        service.xdripSourcePlugin = xdripSourcePlugin
         service.persistenceLayer = persistenceLayer
         service.profileFunction = profileFunction
         service.preferences = preferences
@@ -55,6 +57,7 @@ class NotificationCollectorServiceTest {
         setPrivate("deduplicator", deduplicator)
         whenever(plugin.packageConfig).thenReturn(packageConfig)
         whenever(profileFunction.getUnits()).thenReturn(GlucoseUnit.MGDL)
+        whenever(xdripSourcePlugin.isEnabled()).thenReturn(false)
     }
 
     private fun setPrivate(name: String, value: Any?) {
@@ -130,5 +133,29 @@ class NotificationCollectorServiceTest {
     @Test
     fun `onNotificationRemoved is a no-op`() {
         service.onNotificationRemoved(sbn("com.foo"))
+    }
+
+    @Test
+    fun `xdrip notification is intercepted when xdripSourcePlugin is enabled even if notificationReaderPlugin is disabled`() {
+        whenever(packageConfig.isSupportedPackage("com.eveningoutpost.dexdrip")).thenReturn(true)
+        whenever(plugin.isEnabled()).thenReturn(false)
+        whenever(xdripSourcePlugin.isEnabled()).thenReturn(true)
+        whenever(parser.extractGlucose(any(), any(), any())).thenReturn(NotificationParser.GlucoseResult(120, SourceSensor.UNKNOWN))
+        whenever(deduplicator.process(any(), any())).thenReturn(true)
+        runBlocking {
+            whenever(persistenceLayer.insertCgmSourceData(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+                .thenReturn(PersistenceLayer.TransactionResult())
+        }
+
+        service.onNotificationPosted(sbn("com.eveningoutpost.dexdrip"))
+
+        runBlocking {
+            verify(persistenceLayer, timeout(2000)).insertCgmSourceData(
+                org.mockito.kotlin.eq(app.aaps.core.data.ue.Sources.Xdrip),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull()
+            )
+        }
     }
 }

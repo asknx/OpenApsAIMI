@@ -53,23 +53,28 @@ class LoadBgRunner(
                     else max(nsClientV3Plugin.lastLoadedSrvModified.collections.entries, dateUtil.now() - nsClientV3Plugin.maxAge)
                 val newestOnServer = nsClientV3Plugin.newestDataOnServer?.collections?.entries ?: Long.MAX_VALUE
                 val lastGlucose = persistenceLayer.getLastGlucoseValue()
-                val dataIsOld = (lastGlucose?.timestamp ?: 0L) < dateUtil.now() - T.mins(3).plus(T.secs(10)).msecs()
+                val minThreshold = if (preferences.get(BooleanKey.OApsxdriponeminute)) T.secs(55).msecs() else T.mins(3).plus(T.secs(10)).msecs()
+                val dataIsOld = (lastGlucose?.timestamp ?: 0L) < dateUtil.now() - minThreshold
 
                 if (newestOnServer > lastLoaded || (nsClientSource.isEnabled() && dataIsOld)) {
                     if (newestOnServer <= lastLoaded) {
                         aapsLogger.info(LTag.NSCLIENT, "Forcing BG load because data is old (${dateUtil.dateAndTimeAndSecondsString(lastGlucose?.timestamp ?: 0L)}) and NS is source. newestOnServer: $newestOnServer lastLoaded: $lastLoaded")
                     }
-                    val sgvs: List<NSSgvV3>
-                    val response: NSAndroidClient.ReadResponse<List<NSSgvV3>>
-                    var cursorStalled = false
-                    if (isFirstLoad) {
-                        response = nsAndroidClient.getSgvsNewerThan(max(lastLoaded, advanceTimestamp), NSClientV3Plugin.RECORDS_TO_LOAD)
-                    } else if (nsClientSource.isEnabled()) {
-                        response = nsAndroidClient.getSgvsNewerThan(max(lastGlucose?.timestamp ?: 0L, advanceTimestamp), NSClientV3Plugin.RECORDS_TO_LOAD)
+                    val response: NSAndroidClient.ReadResponse<List<NSSgvV3>>? = if (isFirstLoad) {
+                        nsAndroidClient.getSgvsNewerThan(max(lastLoaded, advanceTimestamp), NSClientV3Plugin.RECORDS_TO_LOAD)
+                    } else if (nsClientSource.isEnabled() && dataIsOld && newestOnServer <= lastLoaded) {
+                        @Suppress("USELESS_ELVIS")
+                        ((nsAndroidClient.getSgvsNewerThan(max(lastGlucose?.timestamp ?: 0L, advanceTimestamp), NSClientV3Plugin.RECORDS_TO_LOAD) as NSAndroidClient.ReadResponse<List<NSSgvV3>>?)
+                            ?: nsAndroidClient.getSgvsModifiedSince(lastLoaded, NSClientV3Plugin.RECORDS_TO_LOAD))
                     } else {
-                        response = nsAndroidClient.getSgvsModifiedSince(lastLoaded, NSClientV3Plugin.RECORDS_TO_LOAD)
-                        cursorStalled = response.lastServerModified?.let { it <= lastLoaded } == true
+                        @Suppress("USELESS_ELVIS")
+                        ((nsAndroidClient.getSgvsModifiedSince(lastLoaded, NSClientV3Plugin.RECORDS_TO_LOAD) as NSAndroidClient.ReadResponse<List<NSSgvV3>>?)
+                            ?: nsAndroidClient.getSgvsNewerThan(max(lastGlucose?.timestamp ?: 0L, advanceTimestamp), NSClientV3Plugin.RECORDS_TO_LOAD))
                     }
+                    if (response == null) {
+                        break
+                    }
+                    val cursorStalled = response.lastServerModified?.let { it <= lastLoaded } == true
                     aapsLogger.debug(LTag.NSCLIENT, "lastLoadedSrvModified: ${response.lastServerModified}")
                     val nextSrvModified = response.lastServerModified ?: response.values.mapNotNull { it.srvModified }.maxOrNull()
                     nextSrvModified?.let {
@@ -81,7 +86,7 @@ class LoadBgRunner(
                     if (!isFirstLoad) {
                         nsClientV3Plugin.scheduleIrregularExecution() // Idea is to run after 3 min after last BG
                     }
-                    sgvs = response.values
+                    val sgvs = response.values
                     // Calibration mbg entries ride the same entries fetch + cursor; ingest them
                     // regardless of whether there were any sgvs in this page.
                     if (response.calibrations.isNotEmpty()) {

@@ -155,6 +155,61 @@ class XdripSourceWorkerTest : TestBaseWithProfile() {
         }
     }
 
+    @Test
+    fun `When OApsxdriponeminute is true then consecutive 1-minute readings are inserted`() {
+        runTest {
+            whenever(xdripSourcePlugin.isEnabled()).thenReturn(true)
+            whenever(preferences.get(BooleanKey.OApsxdriponeminute)).thenReturn(true)
+            whenever(persistenceLayer.insertCgmSourceData(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+                .thenReturn(PersistenceLayer.TransactionResult())
+
+            val ts1 = now - 120_000L
+            val ts2 = now - 60_000L // 1 minute later
+            val bundle1 = validBundle(ts1, 120.0)
+            val bundle2 = validBundle(ts2, 125.0)
+
+            whenever(dataInbox.drain(eq(XdripInbox)))
+                .thenReturn(listOf(bundle1))
+                .thenReturn(listOf(bundle2))
+
+            val result1 = worker.doWork()
+            Assertions.assertEquals(ListenableWorker.Result.success(), result1)
+
+            val result2 = worker.doWork()
+            Assertions.assertEquals(ListenableWorker.Result.success(), result2)
+
+            verify(persistenceLayer, org.mockito.kotlin.times(2)).insertCgmSourceData(eq(Sources.Xdrip), any(), any(), anyOrNull())
+        }
+    }
+
+    @Test
+    fun `When OApsxdriponeminute is false then reading under 4 minutes is skipped`() {
+        runTest {
+            whenever(xdripSourcePlugin.isEnabled()).thenReturn(true)
+            whenever(preferences.get(BooleanKey.OApsxdriponeminute)).thenReturn(false)
+            whenever(persistenceLayer.insertCgmSourceData(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+                .thenReturn(PersistenceLayer.TransactionResult())
+
+            val ts1 = now - 120_000L
+            val ts2 = now - 60_000L // 1 minute later, under 4 min
+            val bundle1 = validBundle(ts1, 120.0)
+            val bundle2 = validBundle(ts2, 125.0)
+
+            whenever(dataInbox.drain(eq(XdripInbox)))
+                .thenReturn(listOf(bundle1))
+                .thenReturn(listOf(bundle2))
+
+            val result1 = worker.doWork()
+            Assertions.assertEquals(ListenableWorker.Result.success(), result1)
+
+            val result2 = worker.doWork()
+            Assertions.assertEquals(ListenableWorker.Result.success(), result2)
+
+            // Only the first reading should be inserted, the second skipped
+            verify(persistenceLayer, org.mockito.kotlin.times(1)).insertCgmSourceData(eq(Sources.Xdrip), any(), any(), anyOrNull())
+        }
+    }
+
     private fun validBundle(timestamp: Long, bg: Double) = BundleMock.mocked().apply {
         putString(Intents.XDRIP_DATA_SOURCE, "G6 Native")
         putLong(Intents.EXTRA_TIMESTAMP, timestamp)

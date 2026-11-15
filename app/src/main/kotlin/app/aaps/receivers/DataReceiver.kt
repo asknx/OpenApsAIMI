@@ -59,6 +59,34 @@ open class DataReceiver : MetroBroadcastReceiver() {
             Intents.ACTION_NEW_BG_ESTIMATE            ->
                 dataInbox.putAndEnqueue(XdripInbox, bundle)
 
+            Intents.GLUCODATA_MINUTE                  -> {
+                val bgMgdl = if (bundle.containsKey("glucodata.Minute.mgdl")) {
+                    bundle.getInt("glucodata.Minute.mgdl").toDouble()
+                } else if (bundle.containsKey("glucodata.Minute.glucose")) {
+                    val g = bundle.getFloat("glucodata.Minute.glucose").toDouble()
+                    if (g < 35.0) g * app.aaps.core.data.configuration.Constants.MMOLL_TO_MGDL else g
+                } else 0.0
+
+                val timestamp = bundle.getLong("glucodata.Minute.Time", 0L).takeIf { it > 0L } ?: System.currentTimeMillis()
+                val rate = bundle.getFloat("glucodata.Minute.Rate", 0.0f)
+                val slopeName = when {
+                    rate >= 3.5f -> "DoubleUp"
+                    rate >= 2.0f -> "SingleUp"
+                    rate >= 1.0f -> "FortyFiveUp"
+                    rate > -1.0f -> "Flat"
+                    rate > -2.0f -> "FortyFiveDown"
+                    rate > -3.5f -> "SingleDown"
+                    else         -> "DoubleDown"
+                }
+                val outBundle = android.os.Bundle().apply {
+                    putDouble(Intents.EXTRA_BG_ESTIMATE, bgMgdl)
+                    putLong(Intents.EXTRA_TIMESTAMP, timestamp)
+                    putString(Intents.EXTRA_BG_SLOPE_NAME, slopeName)
+                    putString(Intents.XDRIP_DATA_SOURCE, bundle.getString("glucodata.Minute.SerialNumber") ?: "Juggluco")
+                }
+                dataInbox.putAndEnqueue(XdripInbox, outBundle)
+            }
+
             Intents.POCTECH_BG                        ->
                 enqueueInline(
                     PoctechPlugin.PoctechWorker::class.java,
