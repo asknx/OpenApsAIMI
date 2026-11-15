@@ -364,8 +364,9 @@ enum class StringKey(
             "gemini-3.8-flash" to "Gemini 3.8 Flash (Рекомендуется)",
             "gemini-3.8-flash-lite" to "Gemini 3.8 Flash Lite (Быстрая)",
             "gemini-3.1-pro" to "Gemini 3.1 Pro (Рассуждения)",
-            "gemini-2.5-flash" to "Gemini 2.5 Flash",
-            "gemini-2.5-pro" to "Gemini 2.5 Pro"
+            "gemini-2.0-flash" to "Gemini 2.0 Flash",
+            "gemini-1.5-flash" to "Gemini 1.5 Flash",
+            "gemini-1.5-pro" to "Gemini 1.5 Pro"
         ),
         visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GEMINI" }
     ),
@@ -443,7 +444,7 @@ enum class StringKey(
             "meta-llama/llama-3.3-70b-instruct" to "Llama 3.3 70B Instruct",
             "anthropic/claude-3.5-sonnet" to "Claude 3.5 Sonnet",
             "deepseek/deepseek-chat" to "DeepSeek Chat V3",
-            "google/gemini-2.5-flash" to "Gemini 2.5 Flash",
+            "google/gemini-2.0-flash-001" to "Gemini 2.0 Flash",
             "openai/gpt-4o" to "GPT-4o"
         ),
         visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "OPENROUTER" }

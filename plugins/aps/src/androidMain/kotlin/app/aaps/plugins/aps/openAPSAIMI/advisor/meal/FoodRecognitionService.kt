@@ -38,7 +38,7 @@ class FoodRecognitionService(
             )
             providerName == "OPENROUTER" -> OpenAIVisionProvider(
                 endpointUrl = "https://openrouter.ai/api/v1/chat/completions",
-                modelName = preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "google/gemini-2.5-flash" },
+                modelName = preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "google/gemini-2.0-flash-001" },
                 displayName = "OpenRouter Vision",
                 providerId = "OPENROUTER"
             )

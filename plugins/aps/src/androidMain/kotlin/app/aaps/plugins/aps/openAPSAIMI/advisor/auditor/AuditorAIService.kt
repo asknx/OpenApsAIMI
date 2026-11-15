@@ -365,8 +365,12 @@ class AuditorAIService @Inject constructor(
         return try {
             executeGeminiRequest(apiKey, prompt, primaryModel, requireJson)
         } catch (e: Exception) {
-            val fallbackModel = "gemini-2.5-flash"
-            executeGeminiRequest(apiKey, prompt, fallbackModel, requireJson)
+            val msg = e.message?.lowercase() ?: ""
+            if (msg.contains("429") || msg.contains("resource_exhausted") || msg.contains("quota")) {
+                val fallbackModel = if (primaryModel != "gemini-3.8-flash-lite") "gemini-3.8-flash-lite" else "gemini-3.8-flash"
+                return executeGeminiRequest(apiKey, prompt, fallbackModel, requireJson)
+            }
+            throw e
         }
     }
 
@@ -512,8 +516,9 @@ class AuditorAIService @Inject constructor(
                     "gemini-3.8-flash",
                     "gemini-3.8-flash-lite",
                     "gemini-3.1-pro",
-                    "gemini-2.5-flash",
-                    "gemini-2.5-pro"
+                    "gemini-2.0-flash",
+                    "gemini-1.5-flash",
+                    "gemini-1.5-pro"
                 )
             }
             Provider.CLAUDE -> {

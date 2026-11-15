@@ -57,34 +57,31 @@ class GeminiModelResolver @Inject constructor(
      * @return A valid model ID ready for use in URL
      */
     fun resolveGenerateContentModel(apiKey: String?, oauthToken: String?, preferredModel: String?): String {
-        val availableModels = getOrFetchModels(apiKey, oauthToken)
-        
-        // 1. Explicit Mapping for the new UI internal IDs
+        // If preferredModel is directly provided and valid, prioritize it directly!
         if (!preferredModel.isNullOrBlank()) {
             val mappedModel = when (preferredModel.uppercase(Locale.US)) {
                 "GEMINI-3.1-PRO" -> "gemini-3.1-pro"
                 "GEMINI-3.8-FLASH" -> "gemini-3.8-flash"
+                "GEMINI-3.8-FLASH-LITE" -> "gemini-3.8-flash-lite"
                 "GEMINI-1.5-PRO" -> "gemini-1.5-pro-latest"
                 "GEMINI-1.5-FLASH" -> "gemini-1.5-flash-latest"
                 "GEMINI-2.0-FLASH" -> "gemini-2.0-flash-exp"
                 "GEMINI" -> "gemini-3.8-flash"
                 else -> preferredModel.trim().removePrefix("models/")
             }
-
-            if (availableModels.contains(mappedModel)) {
-                Log.d(TAG, "Using mapped/preferred model: $mappedModel")
-                return mappedModel
-            }
+            return mappedModel
         }
 
-        // 2. Iterate Priority List
+        val availableModels = getOrFetchModels(apiKey, oauthToken)
+
+        // Iterate Priority List
         for (candidate in FALLBACK_PRIORITY) {
             if (availableModels.contains(candidate)) {
                 return candidate
             }
         }
 
-        // 3. Last resort
+        // Last resort
         return availableModels.firstOrNull { it.contains("gemini") } ?: "gemini-3.8-flash"
     }
     

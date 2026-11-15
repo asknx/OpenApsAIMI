@@ -1049,18 +1049,7 @@ class AimiAdvisorService {
         // 1. Try AI Analysis (Strategic Coaching)
         val aiAnalysis = auditorAIService?.let { service ->
             val prompt = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.TherapyPromptBuilder.buildAnalysisPrompt(context, report)
-            val provStr = preferences?.get(StringKey.AimiAdvisorProvider)?.uppercase(Locale.US) ?: "GEMINI"
-            val provider = when {
-                provStr.contains("OPENAI") -> AuditorAIService.Provider.OPENAI
-                provStr.contains("DEEPSEEK") -> AuditorAIService.Provider.DEEPSEEK
-                provStr.contains("CLAUDE") -> AuditorAIService.Provider.CLAUDE
-                provStr.contains("GLM") -> AuditorAIService.Provider.GLM
-                provStr.contains("GROK") -> AuditorAIService.Provider.GROK
-                provStr.contains("OPENROUTER") -> AuditorAIService.Provider.OPENROUTER
-                provStr.contains("GROQ") -> AuditorAIService.Provider.GROQ
-                provStr.contains("CUSTOM") -> AuditorAIService.Provider.CUSTOM
-                else -> AuditorAIService.Provider.GEMINI_38_FLASH
-            }
+            val provider = service.getProvider()
             service.getChatCompletion(prompt, provider, useHighPerf = false)
         }
         
