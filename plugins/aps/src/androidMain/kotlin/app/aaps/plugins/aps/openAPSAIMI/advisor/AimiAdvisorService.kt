@@ -255,6 +255,168 @@ class AimiAdvisorService {
         return if (totalDuration > 0) totalWeightedValue / totalDuration else 0.0
     }
 
+    data class JugglucoMetrics(
+        val totalCount: Double,
+        val meanBg: Double,
+        val sdBg: Double,
+        val cvPct: Double,
+        val gmi: Double,
+        val tirVeryLow: Double,
+        val tirLow: Double,
+        val tirInRange: Double,
+        val tirHigh: Double,
+        val tirVeryHigh: Double,
+        val tir70_140: Double,
+        val cHypo: Double,
+        val cHyper: Double,
+        val gri: Double,
+        val griZone: String,
+        val gvi: Double,
+        val psg: Double,
+        val iqrBg: Double,
+        val medianBg: Double,
+        val p10Bg: Double,
+        val p25Bg: Double,
+        val p75Bg: Double,
+        val p90Bg: Double
+    )
+
+    companion object {
+        internal fun scaleProfileScheduleArray(
+            existing: JSONArray?,
+            currentVal: Double,
+            proposedVal: Double
+        ): JSONArray {
+            val ratioFactor = if (currentVal > 0.0) {
+                (proposedVal / currentVal).coerceIn(0.85, 1.15)
+            } else 1.0
+
+            return if (existing != null && existing.length() > 0) {
+                JSONArray().apply {
+                    for (i in 0 until existing.length()) {
+                        val obj = existing.getJSONObject(i)
+                        val oldVal = obj.optDouble("value", currentVal)
+                        val scaledVal = kotlin.math.round(oldVal * ratioFactor * 100.0) / 100.0
+                        put(JSONObject().apply {
+                            put("time", obj.optString("time", "00:00"))
+                            put("value", scaledVal)
+                            put("timeAsSeconds", obj.optInt("timeAsSeconds", 0))
+                        })
+                    }
+                }
+            } else {
+                JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("time", "00:00")
+                        put("value", kotlin.math.round(proposedVal * 100.0) / 100.0)
+                        put("timeAsSeconds", 0)
+                    })
+                }
+            }
+        }
+
+        internal fun calculateJugglucoMetrics(values: List<Double>): JugglucoMetrics {
+            if (values.isEmpty()) {
+                val defaultMean = 160.0
+                return JugglucoMetrics(
+                    totalCount = 0.0,
+                    meanBg = defaultMean,
+                    sdBg = 0.0,
+                    cvPct = 0.0,
+                    gmi = 3.31 + (0.02392 * defaultMean),
+                    tirVeryLow = 0.01,
+                    tirLow = 0.04,
+                    tirInRange = 0.65,
+                    tirHigh = 0.25,
+                    tirVeryHigh = 0.05,
+                    tir70_140 = 0.40,
+                    cHypo = 0.0,
+                    cHyper = 0.0,
+                    gri = 0.0,
+                    griZone = "Zone A",
+                    gvi = 1.0,
+                    psg = defaultMean / 100.0,
+                    iqrBg = 0.0,
+                    medianBg = defaultMean,
+                    p10Bg = defaultMean,
+                    p25Bg = defaultMean,
+                    p75Bg = defaultMean,
+                    p90Bg = defaultMean
+                )
+            }
+
+            val totalCount = values.size.toDouble()
+            val tirVeryLow = values.count { it < 54.0 } / totalCount
+            val tirLow = values.count { it in 54.0..69.99 } / totalCount
+            val tirInRange = values.count { it in 70.0..180.0 } / totalCount
+            val tirHigh = values.count { it in 180.01..250.0 } / totalCount
+            val tirVeryHigh = values.count { it > 250.0 } / totalCount
+            val tir70_140 = values.count { it in 70.0..140.0 } / totalCount
+
+            val sorted = values.sorted()
+            val meanBg = values.average()
+            val medianBg = sorted[sorted.size / 2]
+            val p10Bg = sorted[(sorted.size * 0.10).toInt().coerceIn(0, sorted.size - 1)]
+            val p25Bg = sorted[(sorted.size * 0.25).toInt().coerceIn(0, sorted.size - 1)]
+            val p75Bg = sorted[(sorted.size * 0.75).toInt().coerceIn(0, sorted.size - 1)]
+            val p90Bg = sorted[(sorted.size * 0.90).toInt().coerceIn(0, sorted.size - 1)]
+            val iqrBg = p75Bg - p25Bg
+
+            val variance = values.sumOf { (it - meanBg).pow(2) } / values.size
+            val sdBg = sqrt(variance)
+            val cvPct = if (meanBg > 0.0) (sdBg / meanBg) * 100.0 else 0.0
+            val gmi = 3.31 + (0.02392 * meanBg)
+
+            // GVI (Glycemic Variability Index)
+            var actualCurveLength = 0.0
+            for (i in 1 until values.size) {
+                val deltaVal = abs(values[i] - values[i - 1])
+                actualCurveLength += hypot(5.0, deltaVal)
+            }
+            val idealLength = (values.size - 1).coerceAtLeast(1) * 5.0
+            val gvi = (actualCurveLength / idealLength).coerceAtLeast(1.0)
+            val psg = gvi * (meanBg / 100.0)
+
+            // GRI (Glycemia Risk Index) 0-100
+            val cHypo = (tirVeryLow * 100.0) + (0.8 * tirLow * 100.0)
+            val cHyper = (tirVeryHigh * 100.0) + (0.5 * tirHigh * 100.0)
+            val gri = ((3.0 * cHypo) + (1.6 * cHyper)).coerceIn(0.0, 100.0)
+            val griZone = when {
+                gri < 20.0 -> "Zone A"
+                gri < 40.0 -> "Zone B"
+                gri < 60.0 -> "Zone C"
+                gri < 80.0 -> "Zone D"
+                else -> "Zone E"
+            }
+
+            return JugglucoMetrics(
+                totalCount = totalCount,
+                meanBg = meanBg,
+                sdBg = sdBg,
+                cvPct = cvPct,
+                gmi = gmi,
+                tirVeryLow = tirVeryLow,
+                tirLow = tirLow,
+                tirInRange = tirInRange,
+                tirHigh = tirHigh,
+                tirVeryHigh = tirVeryHigh,
+                tir70_140 = tir70_140,
+                cHypo = cHypo,
+                cHyper = cHyper,
+                gri = gri,
+                griZone = griZone,
+                gvi = gvi,
+                psg = psg,
+                iqrBg = iqrBg,
+                medianBg = medianBg,
+                p10Bg = p10Bg,
+                p25Bg = p25Bg,
+                p75Bg = p75Bg,
+                p90Bg = p90Bg
+            )
+        }
+    }
+
     fun calculateMetrics(days: Int): AdvisorMetrics {
         val now = System.currentTimeMillis()
         val fromTime = now - (days * 24 * 3600 * 1000L)
@@ -308,47 +470,32 @@ class AimiAdvisorService {
             )
         }
 
-        val totalCount = values.size.toDouble()
-        val tirVeryLow = values.count { it < 54.0 } / totalCount
-        val tirLow = values.count { it in 54.0..69.99 } / totalCount
-        val tirInRange = values.count { it in 70.0..180.0 } / totalCount
-        val tirHigh = values.count { it in 180.01..250.0 } / totalCount
-        val tirVeryHigh = values.count { it > 250.0 } / totalCount
+        val jm = calculateJugglucoMetrics(values)
+        val totalCount = jm.totalCount
+        val tirVeryLow = jm.tirVeryLow
+        val tirLow = jm.tirLow
+        val tirInRange = jm.tirInRange
+        val tirHigh = jm.tirHigh
+        val tirVeryHigh = jm.tirVeryHigh
 
         val sorted = values.sorted()
-        val meanBg = values.average()
-        val medianBg = sorted[sorted.size / 2]
-        val p10Bg = sorted[(sorted.size * 0.10).toInt().coerceIn(0, sorted.size - 1)]
-        val p25Bg = sorted[(sorted.size * 0.25).toInt().coerceIn(0, sorted.size - 1)]
-        val p75Bg = sorted[(sorted.size * 0.75).toInt().coerceIn(0, sorted.size - 1)]
-        val p90Bg = sorted[(sorted.size * 0.90).toInt().coerceIn(0, sorted.size - 1)]
-        val iqrBg = p75Bg - p25Bg
+        val meanBg = jm.meanBg
+        val medianBg = jm.medianBg
+        val p10Bg = jm.p10Bg
+        val p25Bg = jm.p25Bg
+        val p75Bg = jm.p75Bg
+        val p90Bg = jm.p90Bg
+        val iqrBg = jm.iqrBg
 
-        val variance = values.sumOf { (it - meanBg).pow(2) } / values.size
-        val sdBg = sqrt(variance)
-        val cvPct = if (meanBg > 0.0) (sdBg / meanBg) * 100.0 else 0.0
+        val sdBg = jm.sdBg
+        val cvPct = jm.cvPct
 
-        // GVI (Glycemic Variability Index)
-        var actualCurveLength = 0.0
-        for (i in 1 until validReadings.size) {
-            val deltaVal = abs(validReadings[i].value - validReadings[i - 1].value)
-            actualCurveLength += hypot(5.0, deltaVal)
-        }
-        val idealLength = (validReadings.size - 1).coerceAtLeast(1) * 5.0
-        val gvi = (actualCurveLength / idealLength).coerceAtLeast(1.0)
-        val psg = gvi * (meanBg / 100.0)
-
-        // GRI (Glycemia Risk Index) 0-100
-        val cHypo = (tirVeryLow * 100.0) + (0.8 * tirLow * 100.0)
-        val cHyper = (tirVeryHigh * 100.0) + (0.5 * tirHigh * 100.0)
-        val gri = ((3.0 * cHypo) + (1.6 * cHyper)).coerceIn(0.0, 100.0)
-        val griZone = when {
-            gri < 20.0 -> "Zone A"
-            gri < 40.0 -> "Zone B"
-            gri < 60.0 -> "Zone C"
-            gri < 80.0 -> "Zone D"
-            else -> "Zone E"
-        }
+        val gvi = jm.gvi
+        val psg = jm.psg
+        val cHypo = jm.cHypo
+        val cHyper = jm.cHyper
+        val gri = jm.gri
+        val griZone = jm.griZone
 
         // Hourly AGP (24 bins)
         val cal = Calendar.getInstance()
@@ -1079,66 +1226,14 @@ class AimiAdvisorService {
             baseJson["basal"] as? JSONArray ?: JSONArray()
         }
 
-        val icRatioFactor = if (proposal.currentIc > 0.0) {
-            (proposal.proposedIc / proposal.currentIc).coerceIn(0.85, 1.15)
-        } else 1.0
-
-        val isfRatioFactor = if (proposal.currentIsf > 0.0) {
-            (proposal.proposedIsf / proposal.currentIsf).coerceIn(0.85, 1.15)
-        } else 1.0
-
         val icArray = if (applyIc && proposal.proposedIc > 0.0) {
-            val existing = baseJson["carbratio"] as? JSONArray
-            if (existing != null && existing.length() > 0) {
-                JSONArray().apply {
-                    for (i in 0 until existing.length()) {
-                        val obj = existing.getJSONObject(i)
-                        val oldVal = obj.optDouble("value", proposal.currentIc)
-                        val scaledVal = kotlin.math.round(oldVal * icRatioFactor * 100.0) / 100.0
-                        put(JSONObject().apply {
-                            put("time", obj.optString("time", "00:00"))
-                            put("value", scaledVal)
-                            put("timeAsSeconds", obj.optInt("timeAsSeconds", 0))
-                        })
-                    }
-                }
-            } else {
-                JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("time", "00:00")
-                        put("value", kotlin.math.round(proposal.proposedIc * 100.0) / 100.0)
-                        put("timeAsSeconds", 0)
-                    })
-                }
-            }
+            scaleProfileScheduleArray(baseJson["carbratio"] as? JSONArray, proposal.currentIc, proposal.proposedIc)
         } else {
             baseJson["carbratio"] as? JSONArray ?: JSONArray()
         }
 
         val isfArray = if (applyIsf && proposal.proposedIsf > 0.0) {
-            val existing = baseJson["sens"] as? JSONArray
-            if (existing != null && existing.length() > 0) {
-                JSONArray().apply {
-                    for (i in 0 until existing.length()) {
-                        val obj = existing.getJSONObject(i)
-                        val oldVal = obj.optDouble("value", proposal.currentIsf)
-                        val scaledVal = kotlin.math.round(oldVal * isfRatioFactor * 100.0) / 100.0
-                        put(JSONObject().apply {
-                            put("time", obj.optString("time", "00:00"))
-                            put("value", scaledVal)
-                            put("timeAsSeconds", obj.optInt("timeAsSeconds", 0))
-                        })
-                    }
-                }
-            } else {
-                JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("time", "00:00")
-                        put("value", kotlin.math.round(proposal.proposedIsf * 100.0) / 100.0)
-                        put("timeAsSeconds", 0)
-                    })
-                }
-            }
+            scaleProfileScheduleArray(baseJson["sens"] as? JSONArray, proposal.currentIsf, proposal.proposedIsf)
         } else {
             baseJson["sens"] as? JSONArray ?: JSONArray()
         }

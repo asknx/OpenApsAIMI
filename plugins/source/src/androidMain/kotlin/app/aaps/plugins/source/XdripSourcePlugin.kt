@@ -86,31 +86,69 @@ class XdripSourcePlugin(
     override var sensorBatteryLevel = -1
 
     private var pollingJob: Job? = null
-    private var lastPolledTimestamp: Long = 0L
+    private var prefObserverJob: Job? = null
+    internal var lastPolledTimestamp: Long = 0L
+
+    internal val isPollingActive: Boolean get() = pollingJob?.isActive == true
+    internal val currentPollingJob: Job? get() = pollingJob
+    internal val currentPrefObserverJob: Job? get() = prefObserverJob
 
     override suspend fun onStart() {
         super.onStart()
-        startPollingIfEnabled()
+        prefObserverJob?.cancel()
+        prefObserverJob = pluginScope.launch {
+            preferences.observe(BooleanKey.OApsxdriponeminute).collect { enabled ->
+                if (enabled && isEnabled()) {
+                    if (pollingJob?.isActive == true) return@collect
+                    startPolling()
+                } else {
+                    stopPolling()
+                }
+            }
+        }
     }
 
     override suspend fun onStop() {
         super.onStop()
+        prefObserverJob?.cancel()
+        prefObserverJob = null
         stopPolling()
     }
 
+    internal fun isValidPolledReading(
+        timestamp: Long,
+        sgv: Double,
+        now: Long,
+        lastPolledTs: Long,
+        lastWorkerTs: Long
+    ): Boolean {
+        if (timestamp <= 0 || sgv <= 0.0) return false
+        if (now - timestamp > 600_000L) return false
+        if (timestamp - now > 60_000L) return false
+        if (timestamp <= lastPolledTs || timestamp <= lastWorkerTs) return false
+        return true
+    }
+
     fun startPollingIfEnabled() {
-        stopPolling()
         if (isEnabled() && preferences.get(BooleanKey.OApsxdriponeminute)) {
-            aapsLogger.info(LTag.BGSOURCE, "Starting xDrip 1-min local web server poller (127.0.0.1:17580)")
-            pollingJob = pluginScope.launch(Dispatchers.IO) {
-                while (isActive) {
-                    try {
-                        pollXdripWebServer()
-                    } catch (e: Exception) {
-                        aapsLogger.debug(LTag.BGSOURCE, "xDrip 1-min poller check failed: ${e.message}")
-                    }
-                    delay(60_000L)
+            if (pollingJob?.isActive == true) return
+            startPolling()
+        } else {
+            stopPolling()
+        }
+    }
+
+    private fun startPolling() {
+        stopPolling()
+        aapsLogger.info(LTag.BGSOURCE, "Starting xDrip 1-min local web server poller (127.0.0.1:17580)")
+        pollingJob = pluginScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                try {
+                    pollXdripWebServer()
+                } catch (e: Exception) {
+                    aapsLogger.debug(LTag.BGSOURCE, "xDrip 1-min poller check failed: ${e.message}")
                 }
+                delay(60_000L)
             }
         }
     }
@@ -137,25 +175,21 @@ class XdripSourcePlugin(
                 val direction = item.optString("direction", "")
                 val device = item.optString("device", "xDrip")
 
-                if (timestamp > 0 && sgv > 0.0) {
-                    val now = System.currentTimeMillis()
-                    if (now - timestamp > 600_000L) return
+                val now = System.currentTimeMillis()
+                if (isValidPolledReading(timestamp, sgv, now, lastPolledTimestamp, XdripSourceWorker.lastDataTimestamp)) {
+                    lastPolledTimestamp = timestamp
+                    XdripSourceWorker.lastDataTimestamp = timestamp
 
-                    if (timestamp > lastPolledTimestamp && timestamp > XdripSourceWorker.lastDataTimestamp) {
-                        lastPolledTimestamp = timestamp
-                        XdripSourceWorker.lastDataTimestamp = timestamp
-
-                        val gv = GV(
-                            timestamp = timestamp,
-                            value = round(sgv),
-                            raw = round(item.optDouble("raw", 0.0)),
-                            noise = null,
-                            trendArrow = TrendArrow.fromString(direction),
-                            sourceSensor = SourceSensor.fromString(device)
-                        )
-                        persistenceLayer.insertCgmSourceData(Sources.Xdrip, listOf(gv), emptyList(), null)
-                        aapsLogger.info(LTag.BGSOURCE, "xDrip 1-min poller: inserted new SGV $sgv at $timestamp, loop triggered")
-                    }
+                    val gv = GV(
+                        timestamp = timestamp,
+                        value = round(sgv),
+                        raw = round(item.optDouble("raw", 0.0)),
+                        noise = null,
+                        trendArrow = TrendArrow.fromString(direction),
+                        sourceSensor = SourceSensor.fromString(device)
+                    )
+                    persistenceLayer.insertCgmSourceData(Sources.Xdrip, listOf(gv), emptyList(), null)
+                    aapsLogger.info(LTag.BGSOURCE, "xDrip 1-min poller: inserted new SGV $sgv at $timestamp, loop triggered")
                 }
             }
         }

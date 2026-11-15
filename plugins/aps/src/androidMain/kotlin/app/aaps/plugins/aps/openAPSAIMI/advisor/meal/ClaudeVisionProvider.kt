@@ -33,6 +33,7 @@ class ClaudeVisionProvider : AIVisionProvider {
     private fun callClaudeAPI(apiKey: String, base64Image: String, userDescription: String, glucoseContext: String?): String {
         val url = URL("https://api.anthropic.com/v1/messages")
         val connection = url.openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
         connection.setRequestProperty("x-api-key", apiKey)

@@ -185,4 +185,21 @@ class PreferencesImplTest {
 
         assertThat(values).containsExactly(false, true, false).inOrder()
     }
+
+    @Test
+    fun `isExportableKey matches custom prefixes and registered keys`() {
+        val prefs = preferences(client = false)
+        assertThat(prefs.isExportableKey("aimi_dev_options_unlocked")).isTrue()
+        assertThat(prefs.isExportableKey("aimi_engineering_bypass_enabled")).isTrue()
+        assertThat(prefs.isExportableKey("key_oaps_aimi_ngr_enabled")).isTrue()
+        assertThat(prefs.isExportableKey("oa_aimi_lunch_factor")).isTrue()
+        assertThat(prefs.isExportableKey("apex_serial_number")).isTrue()
+        assertThat(prefs.isExportableKey("garmin_enabled")).isTrue()
+        assertThat(prefs.isExportableKey("LocalProfile_profiles")).isTrue()
+        assertThat(prefs.isExportableKey("Objectives_started_2")).isTrue()
+        assertThat(prefs.isExportableKey("unknown_random_unexportable_key")).isFalse()
+
+        assertThat(PreferencesImpl.isCustomExportableKeyPrefix("aimi_test")).isTrue()
+        assertThat(PreferencesImpl.isCustomExportableKeyPrefix("non_custom_key")).isFalse()
+    }
 }

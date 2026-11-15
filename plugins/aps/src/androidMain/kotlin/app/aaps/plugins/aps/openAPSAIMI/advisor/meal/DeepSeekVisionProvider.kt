@@ -33,6 +33,7 @@ class DeepSeekVisionProvider : AIVisionProvider {
     private fun callDeepSeekAPI(apiKey: String, base64Image: String, userDescription: String, glucoseContext: String?): String {
         val url = URL("https://api.deepseek.com/v1/chat/completions")
         val connection = url.openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
         connection.setRequestProperty("Authorization", "Bearer $apiKey")

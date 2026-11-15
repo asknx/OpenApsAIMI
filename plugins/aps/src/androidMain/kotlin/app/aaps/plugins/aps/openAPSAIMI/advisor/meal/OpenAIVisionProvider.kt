@@ -36,6 +36,7 @@ class OpenAIVisionProvider(
     private fun callOpenAIAPI(apiKey: String, base64Image: String, userDescription: String, glucoseContext: String?): String {
         val url = URL(endpointUrl)
         val connection = url.openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
         if (apiKey.isNotBlank()) {

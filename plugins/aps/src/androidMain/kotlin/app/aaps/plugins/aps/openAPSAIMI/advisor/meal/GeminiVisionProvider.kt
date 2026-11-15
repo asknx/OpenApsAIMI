@@ -66,6 +66,7 @@ class GeminiVisionProvider(
         
         val url = URL(urlStr)
         val connection = url.openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
         if (oauthToken != null) {

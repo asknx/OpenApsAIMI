@@ -33,6 +33,7 @@ class GlmVisionProvider : AIVisionProvider {
     private fun callGlmAPI(apiKey: String, base64Image: String, userDescription: String, glucoseContext: String?): String {
         val url = URL("https://open.bigmodel.cn/api/paas/v4/chat/completions")
         val connection = url.openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
         connection.setRequestProperty("Authorization", "Bearer $apiKey")

@@ -206,6 +206,7 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
 
     private fun makeAPICall(url: String, body: String, headers: Map<String, String>): String {
         val connection = URL(url).openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         try {
             connection.requestMethod = "POST"
             connection.doOutput = true

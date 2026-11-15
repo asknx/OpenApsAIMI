@@ -87,7 +87,14 @@ class FoodRecognitionService(
      * Uses currently selected provider from preferences
      */
     suspend fun estimateCarbsFromImage(bitmap: Bitmap, userDescription: String = ""): EstimationResult = withContext(Dispatchers.IO) {
-        val provider = getProvider()
+        val provider = try {
+            getProvider()
+        } catch (e: Exception) {
+            return@withContext FoodAnalysisPrompt.emptyErrorResult(
+                "Configuration Error",
+                e.message ?: "Invalid AI configuration"
+            )
+        }
         val apiKey = getApiKey(provider.providerId)
         
         if (apiKey.isBlank() && provider.providerId != "CUSTOM") {

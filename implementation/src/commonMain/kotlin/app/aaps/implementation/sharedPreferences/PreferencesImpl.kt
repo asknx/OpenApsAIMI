@@ -471,16 +471,13 @@ class PreferencesImpl(
                 if (singleKey.startsWith(key.key)) it.add(SafeParse.stringToInt(singleKey.split(key.key)[1]))
         }
 
+    companion object {
+        internal fun isCustomExportableKeyPrefix(key: String): Boolean =
+            app.aaps.core.keys.ExportableKeys.isCustomExportableKeyPrefix(key)
+    }
+
     override fun isExportableKey(key: String): Boolean {
-        if (key.startsWith("aimi_") ||
-            key.startsWith("key_oaps_aimi_") ||
-            key.startsWith("oa_aimi_") ||
-            key.startsWith("key_aimi_") ||
-            key.startsWith("apex_") ||
-            key.startsWith("garmin_") ||
-            key.startsWith("LocalProfile_") ||
-            key.startsWith("Objectives_")
-        ) {
+        if (isCustomExportableKeyPrefix(key)) {
             return true
         }
         prefsList

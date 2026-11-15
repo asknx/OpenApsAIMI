@@ -253,6 +253,15 @@ Output:
             val customModel = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorModel.key, "").ifBlank { null }
             val token: String? = null
 
+            if (provider == AiCoachingService.Provider.CUSTOM) {
+                if (customUrl.isNullOrBlank() || (!customUrl.trim().startsWith("http://") && !customUrl.trim().startsWith("https://"))) {
+                    val err = "Кастомный Endpoint URL не задан в настройках AIMI"
+                    aapsLogger.error(LTag.APS, "[ContextLLM] $err")
+                    lastError = err
+                    return emptyList()
+                }
+            }
+
             if (apiKey.isBlank() && provider != AiCoachingService.Provider.CUSTOM) {
                 val err = "API key not configured for $provider"
                 aapsLogger.error(LTag.APS, "[ContextLLM] $err")

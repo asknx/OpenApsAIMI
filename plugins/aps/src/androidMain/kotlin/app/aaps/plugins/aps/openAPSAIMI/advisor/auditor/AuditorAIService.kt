@@ -42,7 +42,12 @@ class AuditorAIService @Inject constructor(
 
         fun normalizeEndpointUrl(rawUrl: String): String {
             val trimmed = rawUrl.trim().trimEnd('/')
-            if (trimmed.isBlank()) return "https://api.openai.com/v1/chat/completions"
+            if (trimmed.isBlank()) {
+                throw IllegalArgumentException("Кастомный Endpoint URL не задан в настройках AIMI")
+            }
+            if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                throw IllegalArgumentException("Кастомный Endpoint URL должен начинаться с http:// или https://: $trimmed")
+            }
             return when {
                 trimmed.endsWith("/chat/completions") -> trimmed
                 trimmed.endsWith("/v1") -> "$trimmed/chat/completions"
@@ -79,6 +84,15 @@ class AuditorAIService @Inject constructor(
             AuditorStatusTracker.updateStatus(AuditorStatusTracker.Status.OFFLINE_NO_APIKEY)
             auditorStatusLiveData.notifyUpdate()
             return@withContext null
+        }
+
+        if (provider == Provider.CUSTOM) {
+            val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl)
+            if (rawUrl.isBlank() || (!rawUrl.trim().startsWith("http://") && !rawUrl.trim().startsWith("https://"))) {
+                AuditorStatusTracker.updateStatus(AuditorStatusTracker.Status.ERROR_EXCEPTION)
+                auditorStatusLiveData.notifyUpdate()
+                return@withContext null
+            }
         }
         
         val prompt = AuditorPromptBuilder.buildPrompt(input)
@@ -153,6 +167,13 @@ class AuditorAIService @Inject constructor(
         useHighPerf: Boolean = true
     ): String = withContext(Dispatchers.IO) {
         val apiKey = getApiKey(provider)
+
+        if (provider == Provider.CUSTOM) {
+            val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl)
+            if (rawUrl.isBlank() || (!rawUrl.trim().startsWith("http://") && !rawUrl.trim().startsWith("https://"))) {
+                return@withContext "⚠️ Ошибка AI (${provider.displayName}): Кастомный Endpoint URL не задан в настройках AIMI"
+            }
+        }
 
         try {
             val responseJson = when (provider) {
@@ -258,6 +279,7 @@ class AuditorAIService @Inject constructor(
     private fun callOpenAICompatible(apiKey: String, baseUrl: String, model: String, prompt: String, requireJson: Boolean): String {
         val url = URL(baseUrl)
         val connection = (url.openConnection() as HttpURLConnection).apply {
+            instanceFollowRedirects = false
             requestMethod = "POST"
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
@@ -326,6 +348,7 @@ class AuditorAIService @Inject constructor(
         val urlStr = geminiResolver.getGenerateContentUrl(modelId, apiKey)
         val url = URL(urlStr)
         val connection = (url.openConnection() as HttpURLConnection).apply {
+            instanceFollowRedirects = false
             requestMethod = "POST"
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
@@ -378,6 +401,7 @@ class AuditorAIService @Inject constructor(
         val model = getModel(Provider.CLAUDE, useHighPerf)
         val url = URL(CLAUDE_URL)
         val connection = (url.openConnection() as HttpURLConnection).apply {
+            instanceFollowRedirects = false
             requestMethod = "POST"
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
@@ -487,7 +511,7 @@ class AuditorAIService @Inject constructor(
             Provider.GROQ -> "https://api.groq.com/openai/v1/models"
             Provider.CUSTOM -> {
                 val url = preferences.get(StringKey.AimiAdvisorCustomUrl).trim()
-                if (url.isBlank()) return@withContext emptyList()
+                if (url.isBlank() || (!url.startsWith("http://") && !url.startsWith("https://"))) return@withContext emptyList()
                 if (url.contains("/chat/completions")) url.replace("/chat/completions", "/models")
                 else if (url.endsWith("/")) "${url}models"
                 else "$url/models"
@@ -498,6 +522,7 @@ class AuditorAIService @Inject constructor(
         try {
             val url = URL(baseUrl)
             val connection = (url.openConnection() as HttpURLConnection).apply {
+                instanceFollowRedirects = false
                 requestMethod = "GET"
                 if (apiKey.isNotBlank()) setRequestProperty("Authorization", "Bearer $apiKey")
                 connectTimeout = 8000

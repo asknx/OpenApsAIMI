@@ -53,7 +53,12 @@ class AiCoachingService @Inject constructor() {
 
         fun normalizeEndpointUrl(rawUrl: String): String {
             val trimmed = rawUrl.trim().trimEnd('/')
-            if (trimmed.isBlank()) return OPENAI_URL
+            if (trimmed.isBlank()) {
+                throw IllegalArgumentException("Кастомный Endpoint URL не задан в настройках AIMI")
+            }
+            if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                throw IllegalArgumentException("Кастомный Endpoint URL должен начинаться с http:// или https://: $trimmed")
+            }
             return when {
                 trimmed.endsWith("/chat/completions") -> trimmed
                 trimmed.endsWith("/v1") -> "$trimmed/chat/completions"
@@ -79,6 +84,12 @@ class AiCoachingService @Inject constructor() {
     ): String = withContext(Dispatchers.IO) {
         val tokenToUse = if (useOAuth) oauthToken else null
         if (apiKey.isBlank() && tokenToUse == null && provider != Provider.CUSTOM) return@withContext "API Key or OAuth token missing."
+        if (provider == Provider.CUSTOM) {
+            val urlTrimmed = customUrl?.trim() ?: ""
+            if (urlTrimmed.isBlank() || (!urlTrimmed.startsWith("http://") && !urlTrimmed.startsWith("https://"))) {
+                return@withContext "Ошибка конфигурации: Кастомный Endpoint URL не задан в настройках AIMI"
+            }
+        }
 
         try {
             val prompt = buildPrompt(androidContext, context, report, history)
@@ -121,6 +132,12 @@ class AiCoachingService @Inject constructor() {
         val tokenToUse = if (useOAuth) oauthToken else null
         if (apiKey.isBlank() && tokenToUse == null && provider != Provider.CUSTOM) return@withContext "API Key missing."
         if (prompt.isBlank()) return@withContext "Empty prompt."
+        if (provider == Provider.CUSTOM) {
+            val urlTrimmed = customUrl?.trim() ?: ""
+            if (urlTrimmed.isBlank() || (!urlTrimmed.startsWith("http://") && !urlTrimmed.startsWith("https://"))) {
+                return@withContext "Ошибка конфигурации: Кастомный Endpoint URL не задан в настройках AIMI"
+            }
+        }
         
         try {
             return@withContext when (provider) {
@@ -165,6 +182,7 @@ class AiCoachingService @Inject constructor() {
         val url = URL(urlStr)
         val connection = url.openConnection() as HttpURLConnection
         connection.apply {
+            instanceFollowRedirects = false
             requestMethod = "POST"
             setRequestProperty("Content-Type", "application/json")
             if (apiKey.isNotBlank()) {
@@ -228,6 +246,7 @@ class AiCoachingService @Inject constructor() {
         
         val url = URL(urlStr)
         val connection = url.openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         if (oauthToken != null) {
             connection.setRequestProperty("Authorization", "Bearer $oauthToken")
         }
@@ -409,6 +428,7 @@ class AiCoachingService @Inject constructor() {
     private fun callClaude(apiKey: String, prompt: String, customModel: String? = null): String {
         val url = URL(CLAUDE_URL)
         val connection = url.openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         
         val jsonBody = JSONObject()
         jsonBody.put("model", customModel?.ifBlank { null } ?: CLAUDE_MODEL)
