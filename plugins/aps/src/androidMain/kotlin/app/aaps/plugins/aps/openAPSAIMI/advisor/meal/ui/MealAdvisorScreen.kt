@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -91,10 +92,10 @@ fun MealAdvisorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("AIMI Meal Advisor") },
+                title = { Text("AIMI Помощник питания") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -114,35 +115,6 @@ fun MealAdvisorScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            // --- AI Provider Badge with Switch ---
-            androidx.compose.material3.Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onSwitchProviderClick() }
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "AI Engine: $activeProviderName",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        text = "SWITCH",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
             // --- Image Card / Preview ---
             ElevatedCard(
                 shape = RoundedCornerShape(20.dp),
@@ -160,7 +132,7 @@ fun MealAdvisorScreen(
                     if (selectedBitmap != null) {
                         Image(
                             bitmap = selectedBitmap.asImageBitmap(),
-                            contentDescription = "Meal photo",
+                            contentDescription = "Фото еды",
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(20.dp)),
@@ -179,7 +151,7 @@ fun MealAdvisorScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Take a photo or pick from gallery",
+                                text = "Сделайте фото или выберите из галереи",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
@@ -192,8 +164,8 @@ fun MealAdvisorScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = onDescriptionChange,
-                label = { Text("Context / Notes (optional)") },
-                placeholder = { Text("e.g. 'Half portion' or custom details") },
+                label = { Text("Контекст / примечания (необязательно)") },
+                placeholder = { Text("например: 'половина порции' или название блюда") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = false,
                 maxLines = 3,
@@ -208,29 +180,32 @@ fun MealAdvisorScreen(
                 FilledTonalButton(
                     onClick = onCameraClick,
                     modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("CAMERA")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Камера", maxLines = 1, style = MaterialTheme.typography.labelMedium)
                 }
                 FilledTonalButton(
                     onClick = onBarcodeClick,
                     modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("BARCODE")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Штрихкод", maxLines = 1, style = MaterialTheme.typography.labelMedium)
                 }
                 FilledTonalButton(
                     onClick = onGalleryClick,
                     modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("GALLERY")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Галерея", maxLines = 1, style = MaterialTheme.typography.labelMedium)
                 }
             }
 
@@ -250,9 +225,9 @@ fun MealAdvisorScreen(
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text("PROCESSING...")
+                        Text("АНАЛИЗ...")
                     } else {
-                        Text("✨ ANALYZE MEAL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("✨ ОЦЕНИТЬ БЛЮДО", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                 }
             }

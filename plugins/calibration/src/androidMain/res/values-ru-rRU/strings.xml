@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Calibration management screen -->
+    <string name="no_calibration_name">Без калибровки</string>
+    <string name="description_no_calibration">Калибровка не применяется. Значения сенсора используются напрямую.</string>
 </resources>

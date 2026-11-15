@@ -46,6 +46,10 @@ import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.round
 
@@ -59,7 +63,8 @@ class XdripSourcePlugin(
     aapsLogger: AAPSLogger,
     preferences: Preferences,
     config: Config,
-    notificationManager: NotificationManager
+    notificationManager: NotificationManager,
+    private val persistenceLayer: PersistenceLayer
 ) : AbstractBgSourceWithSensorInsertLogPlugin(
     pluginDescription = PluginDescription()
         .mainType(PluginType.BGSOURCE)
@@ -79,6 +84,82 @@ class XdripSourcePlugin(
 ), BgSource, XDripSource {
 
     override var sensorBatteryLevel = -1
+
+    private var pollingJob: Job? = null
+    private var lastPolledTimestamp: Long = 0L
+
+    override suspend fun onStart() {
+        super.onStart()
+        startPollingIfEnabled()
+    }
+
+    override suspend fun onStop() {
+        super.onStop()
+        stopPolling()
+    }
+
+    fun startPollingIfEnabled() {
+        stopPolling()
+        if (isEnabled() && preferences.get(BooleanKey.OApsxdriponeminute)) {
+            aapsLogger.info(LTag.BGSOURCE, "Starting xDrip 1-min local web server poller (127.0.0.1:17580)")
+            pollingJob = pluginScope.launch(Dispatchers.IO) {
+                while (isActive) {
+                    try {
+                        pollXdripWebServer()
+                    } catch (e: Exception) {
+                        aapsLogger.debug(LTag.BGSOURCE, "xDrip 1-min poller check failed: ${e.message}")
+                    }
+                    delay(60_000L)
+                }
+            }
+        }
+    }
+
+    fun stopPolling() {
+        pollingJob?.cancel()
+        pollingJob = null
+    }
+
+    private suspend fun pollXdripWebServer() {
+        val url = java.net.URL("http://127.0.0.1:17580/sgv.json?count=1")
+        val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 5000
+            readTimeout = 5000
+        }
+        if (conn.responseCode == java.net.HttpURLConnection.HTTP_OK) {
+            val jsonText = conn.inputStream.bufferedReader().use { it.readText() }
+            val array = org.json.JSONArray(jsonText)
+            if (array.length() > 0) {
+                val item = array.getJSONObject(0)
+                val timestamp = item.optLong("date", 0L)
+                val sgv = item.optDouble("sgv", 0.0)
+                val direction = item.optString("direction", "")
+                val device = item.optString("device", "xDrip")
+
+                if (timestamp > 0 && sgv > 0.0) {
+                    val now = System.currentTimeMillis()
+                    if (now - timestamp > 600_000L) return
+
+                    if (timestamp > lastPolledTimestamp && timestamp > XdripSourceWorker.lastDataTimestamp) {
+                        lastPolledTimestamp = timestamp
+                        XdripSourceWorker.lastDataTimestamp = timestamp
+
+                        val gv = GV(
+                            timestamp = timestamp,
+                            value = round(sgv),
+                            raw = round(item.optDouble("raw", 0.0)),
+                            noise = null,
+                            trendArrow = TrendArrow.fromString(direction),
+                            sourceSensor = SourceSensor.fromString(device)
+                        )
+                        persistenceLayer.insertCgmSourceData(Sources.Xdrip, listOf(gv), emptyList(), null)
+                        aapsLogger.info(LTag.BGSOURCE, "xDrip 1-min poller: inserted new SGV $sgv at $timestamp, loop triggered")
+                    }
+                }
+            }
+        }
+    }
 
     // cannot be inner class because of needed injection
 

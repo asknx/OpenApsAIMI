@@ -417,7 +417,9 @@ enum class TbrState {
 data class TbrDisplayData(
     val state: TbrState,
     val timestamp: Long,                 // When TBR started (0 if none)
-    val duration: Long                   // TBR duration in ms (0 if none)
+    val duration: Long,                  // TBR duration in ms (0 if none)
+    val rate: Double = 0.0,              // Current running basal rate (U/h)
+    val profileBasal: Double = 0.0       // Profile basal rate (U/h)
 )
 
 // ============================================================================

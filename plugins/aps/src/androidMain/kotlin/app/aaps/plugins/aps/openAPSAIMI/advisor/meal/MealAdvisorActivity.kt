@@ -240,19 +240,56 @@ class MealAdvisorActivity : MetroAppCompatActivity() {
     }
 
     private fun fetchBarcodeData(barcode: String) {
-        val useOFF = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIUseOpenFoodFacts)
-        val providerName = if (useOFF) "Open Food Facts" else "FatSecret"
+        val dbMode = preferences.get(app.aaps.core.keys.StringKey.AimiFoodDatabaseProvider)
+        val providerName = when (dbMode) {
+            "FATSECRET" -> "FatSecret"
+            "MIXED" -> "OpenFoodFacts + FatSecret"
+            else -> "Open Food Facts"
+        }
 
-        Toast.makeText(this, "Fetching $providerName info...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Поиск в базе $providerName...", Toast.LENGTH_SHORT).show()
 
         lifecycleScope.launch {
-            val product = if (useOFF) {
-                val offProduct = openFoodFactsService.findProductByBarcode(barcode)
-                offProduct?.let {
-                    FatSecretService.ProductInfo(it.name, it.carbs, it.protein, it.fat, it.calories, it.servingDescription)
+            var product: FatSecretService.ProductInfo? = null
+            var resolvedProvider = "Open Food Facts"
+
+            when (dbMode) {
+                "FATSECRET" -> {
+                    product = fatSecretService.findProductByBarcode(barcode)
+                    resolvedProvider = "FatSecret"
                 }
-            } else {
-                fatSecretService.findProductByBarcode(barcode)
+                "MIXED" -> {
+                    // Sequential lookup: try OpenFoodFacts first; if not found, fall back to FatSecret
+                    val offProduct = openFoodFactsService.findProductByBarcode(barcode)
+                    if (offProduct != null) {
+                        product = FatSecretService.ProductInfo(
+                            offProduct.name,
+                            offProduct.carbs,
+                            offProduct.protein,
+                            offProduct.fat,
+                            offProduct.calories,
+                            offProduct.servingDescription
+                        )
+                        resolvedProvider = "Open Food Facts"
+                    } else {
+                        product = fatSecretService.findProductByBarcode(barcode)
+                        resolvedProvider = "FatSecret"
+                    }
+                }
+                else -> { // "OPENFOODFACTS"
+                    val offProduct = openFoodFactsService.findProductByBarcode(barcode)
+                    if (offProduct != null) {
+                        product = FatSecretService.ProductInfo(
+                            offProduct.name,
+                            offProduct.carbs,
+                            offProduct.protein,
+                            offProduct.fat,
+                            offProduct.calories,
+                            offProduct.servingDescription
+                        )
+                    }
+                    resolvedProvider = "Open Food Facts"
+                }
             }
 
             if (product != null) {
@@ -261,23 +298,23 @@ class MealAdvisorActivity : MetroAppCompatActivity() {
                     return@launch
                 }
 
-                val barcodeInfo = "$providerName Data: ${product.name} " +
+                val barcodeInfo = "$resolvedProvider Data: ${product.name} " +
                         "(${product.carbs}g C, ${product.protein}g P, ${product.fat}g F, ${product.calories}kcal per ${product.servingDescription})."
 
                 val currentText = description.value.trim()
-                val newText = if (currentText.isEmpty()) "$providerName: ${product.name}" else "$currentText ($providerName: ${product.name})"
+                val newText = if (currentText.isEmpty()) "$resolvedProvider: ${product.name}" else "$currentText ($resolvedProvider: ${product.name})"
                 description.value = newText
 
-                Toast.makeText(this@MealAdvisorActivity, "Product found: ${product.name}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MealAdvisorActivity, "Продукт найден: ${product.name}", Toast.LENGTH_LONG).show()
 
                 if (selectedBitmap.value != null) {
                     simulateAnalysis(selectedBitmap.value!!, barcodeInfo)
                 } else {
-                    updateUIWithBarcodeData(product, providerName)
-                    Toast.makeText(this@MealAdvisorActivity, "Nutritional data retrieved. You can now confirm or take a photo for AI sizing.", Toast.LENGTH_LONG).show()
+                    updateUIWithBarcodeData(product, resolvedProvider)
+                    Toast.makeText(this@MealAdvisorActivity, "Данные о пищевой ценности получены.", Toast.LENGTH_LONG).show()
                 }
             } else {
-                Toast.makeText(this@MealAdvisorActivity, "Product not found in $providerName database.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MealAdvisorActivity, "Продукт не найден в базе данных ($providerName).", Toast.LENGTH_LONG).show()
             }
         }
     }

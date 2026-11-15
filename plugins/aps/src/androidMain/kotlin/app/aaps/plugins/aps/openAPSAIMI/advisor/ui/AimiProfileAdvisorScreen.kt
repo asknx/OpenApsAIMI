@@ -81,13 +81,10 @@ fun AimiProfileAdvisorScreen(
                 },
                 actions = {
                     IconButton(onClick = onSupportClick) {
-                        Icon(Icons.Default.MedicalServices, contentDescription = "Support")
-                    }
-                    IconButton(onClick = onModelSelectorClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "Model")
+                        Icon(Icons.Default.MedicalServices, contentDescription = "Поддержка")
                     }
                     IconButton(onClick = onClinicalReportClick) {
-                        Icon(Icons.Default.Assignment, contentDescription = "Clinical Proposal")
+                        Icon(Icons.Default.Assignment, contentDescription = "Клиническое предложение")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

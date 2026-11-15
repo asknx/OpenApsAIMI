@@ -24,10 +24,7 @@ class GeminiVisionProvider(
     override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String, glucoseContext: String?): EstimationResult = withContext(Dispatchers.IO) {
         try {
             val base64Image = bitmapToBase64(bitmap)
-            val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth) && oauthManager.isOAuthEnabled()
-            val token = if (useOAuth) oauthManager.getValidAccessToken() else null
-            
-            val responseJson = callGeminiAPI(apiKey, token, base64Image, userDescription, glucoseContext)
+            val responseJson = callGeminiAPI(apiKey, null, base64Image, userDescription, glucoseContext)
             parseResponse(responseJson)
         } catch (e: Exception) {
             FoodAnalysisPrompt.emptyErrorResult("Gemini Error", e.message ?: "Unknown error")

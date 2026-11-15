@@ -126,18 +126,6 @@ class ConfigImpl(
                 return explicitBypass
             }
 
-            val devUnlocked = try {
-                prefs.getIfExists(app.aaps.core.keys.BooleanKey.AimiDeveloperOptionsUnlocked)
-            } catch (_: Exception) {
-                null
-            }
-            if (devUnlocked == true) {
-                try {
-                    prefs.put(app.aaps.core.keys.BooleanKey.AimiEngineeringBypassEnabled, true)
-                } catch (_: Exception) {}
-                return true
-            }
-
             // Upgrade preservation: if upgrading from an install where engineering features/SMB were active
             val hasPreviousEngineeringState = try {
                 prefs.getIfExists(app.aaps.core.keys.BooleanKey.ApsUseSmb) == true ||

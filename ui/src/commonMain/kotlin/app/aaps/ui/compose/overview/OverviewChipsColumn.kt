@@ -45,6 +45,7 @@ fun OverviewChipsColumn(
     tempTargetReason: TT.Reason?,
     tempTargetSceneManaged: Boolean = false,
     tbrState: TbrState,
+    tbrText: String = "",
     iobUiState: IobUiState,
     cobUiState: CobUiState,
     sensitivityUiState: SensitivityUiState,
@@ -77,6 +78,7 @@ fun OverviewChipsColumn(
             tempTargetReason = tempTargetReason,
             tempTargetSceneManaged = tempTargetSceneManaged,
             tbrState = tbrState,
+            tbrText = tbrText,
             onNavigate = onNavigate,
             onTbrChipClick = onTbrChipClick,
             commandsAllowed = commandsAllowed
@@ -111,6 +113,7 @@ private fun NarrowChips(
     tempTargetReason: TT.Reason?,
     tempTargetSceneManaged: Boolean,
     tbrState: TbrState,
+    tbrText: String = "",
     onNavigate: (NavigationRequest) -> Unit,
     onTbrChipClick: () -> Unit,
     commandsAllowed: Boolean
@@ -144,7 +147,8 @@ private fun NarrowChips(
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AapsSpacing.small)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
         if (tempTargetText.isNotEmpty()) {
             TempTargetChip(
@@ -152,7 +156,7 @@ private fun NarrowChips(
                 state = tempTargetState,
                 progress = tempTargetProgress,
                 reason = tempTargetReason,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f, fill = false),
                 onClick = { onNavigate(NavigationRequest.Element(ElementType.TEMP_TARGET_MANAGEMENT)) },
                 sceneManaged = tempTargetSceneManaged,
                 enabled = commandsAllowed && LocalClientRole.current.allows(ElementType.TEMP_TARGET_MANAGEMENT.role)
@@ -160,6 +164,7 @@ private fun NarrowChips(
         }
         TbrChip(
             state = tbrState,
+            rateText = tbrText,
             onClick = onTbrChipClick
         )
     }

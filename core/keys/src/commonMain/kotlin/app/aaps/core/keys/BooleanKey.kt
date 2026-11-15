@@ -286,67 +286,69 @@ enum class BooleanKey(
     SiteRotationManageCgm("site_rotation_manage_cgm", defaultValue = false, title = KeysStrings.pref_title_site_rotation_manage_cgm, sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)),
 
     // AIMI and custom keys
-    GeneralCompactMode("compact_mode", false, title = TextRef.Literal("Compact mode")),
-    OverviewUseDashboardLayout("overview_use_dashboard", true, title = TextRef.Literal("Use dashboard layout")),
+    GeneralCompactMode("compact_mode", false, title = TextRef.Literal("Компактный режим")),
+    OverviewUseDashboardLayout("overview_use_dashboard", true, title = TextRef.Literal("Использовать дашборд-разметку")),
 
-    OApsAIMIMLtraining("key_enable_ML_training", false, title = TextRef.Literal("AIMI ML training")),
-    OApsAIMIEnableBasal("key_enable_basal", false, title = TextRef.Literal("AIMI Enable basal")),
-    OApsAIMIEnableStepsFromWatch("count_steps_watch", false, title = TextRef.Literal("Count steps from watch")),
-    OApsAIMIpregnancy("key_use_AimiPregnancy", false, title = TextRef.Literal("AIMI Pregnancy mode")),
-    OApsAIMIforcelimits("key_use_AimiForceLimits", false, title = TextRef.Literal("AIMI Force limits")),
-    OApsAIMInight("OApsAIMI_Enable_night", false, title = TextRef.Literal("AIMI Night mode")),
-    OApsAIMIhoneymoon("key_use_Aimi_honeymoon", false, title = TextRef.Literal("AIMI Honeymoon mode")),
-    OApsxdriponeminute(key = "key_use_Aimi_xdripOM", defaultValue = false, title = TextRef.Literal("xDrip 1-minute")),
-    OApsAIMIautoDrive(key = "key_use_Aimi_autoDrive", defaultValue = false, title = TextRef.Literal("AIMI Autodrive")),
-    OApsAIMIT3cAdaptiveBasalEnabled("key_use_aimi_t3c_adaptive_basal", false, title = TextRef.Literal("AIMI T3c Adaptive Basal")),
-    OApsAIMIAutodriveV3EnhancedGater("key_use_aimi_autodrive_v3_enhanced_gater", false, title = TextRef.Literal("AIMI Autodrive v3 Enhanced Gater")),
-    OApsAIMIautoDriveActive(key = "key_use_aimi_autodrive_active", defaultValue = false, title = TextRef.Literal("AIMI Autodrive Active")),
-    OApsAIMIwcycle(key = "key_use_Aimi_wcycle", defaultValue = false, title = TextRef.Literal("AIMI WCycle")),
-    OApsAIMIWCycleShadow("key_use_Aimi_wcycle_shadow", false, title = TextRef.Literal("AIMI WCycle Shadow")),
-    OApsAIMIWCycleRequireConfirm("key_use_Aimi_wcycle_require_confirm", false, title = TextRef.Literal("AIMI WCycle Require Confirm")),
-    OApsAIMINightGrowthEnabled("key_oaps_aimi_ngr_enabled", true, title = TextRef.Literal("AIMI Night Growth Enabled")),
-    OApsAIMIPkpdEnabled("key_aimi_pkpd_enabled", false, title = TextRef.Literal("AIMI PKPD Enabled")),
-    OApsAIMIPkpdPragmaticReliefEnabled("key_aimi_pkpd_pragmatic_relief_enabled", true, title = TextRef.Literal("AIMI PKPD Pragmatic Relief")),
-    OApsAIMIUnifiedReactivityEnabled("key_use_unified_reactivity", true, title = TextRef.Literal("AIMI Unified Reactivity")),
-    AimiAuditorEnabled("aimi_auditor_enabled", false, title = TextRef.Literal("AIMI Decision Auditor")),
-    OApsAIMITrajectoryGuardEnabled("key_aimi_trajectory_guard_enabled", false, title = TextRef.Literal("AIMI Trajectory Guard")),
-    OApsAIMIContextEnabled("key_aimi_context_enabled", false, title = TextRef.Literal("AIMI Context Enabled")),
-    OApsAIMIContextLLMEnabled("key_aimi_context_llm_enabled", false, title = TextRef.Literal("AIMI Context LLM Enabled")),
-    OApsAIMIT3cBrittleMode("key_aimi_t3c_brittle_mode", false, title = TextRef.Literal("AIMI T3c Brittle Mode")),
+    OApsAIMIMLtraining("key_enable_ML_training", false, title = TextRef.Literal("AIMI ML обучение")),
+    OApsAIMIEnableBasal("key_enable_basal", false, title = TextRef.Literal("Включить базал AIMI")),
+    OApsAIMIEnableStepsFromWatch("count_steps_watch", false, title = TextRef.Literal("Учитывать шаги с часов")),
+    OApsAIMIpregnancy("key_use_AimiPregnancy", false, title = TextRef.Literal("Режим беременности AIMI")),
+    OApsAIMIforcelimits("key_use_AimiForceLimits", false, title = TextRef.Literal("Принудительные ограничения AIMI")),
+    OApsAIMInight("OApsAIMI_Enable_night", false, title = TextRef.Literal("Ночной режим AIMI")),
+    OApsAIMIhoneymoon("key_use_Aimi_honeymoon", false, title = TextRef.Literal("Режим ремиссии (медовый месяц) AIMI")),
+    OApsxdriponeminute(key = "key_use_Aimi_xdripOM", defaultValue = false, title = TextRef.Literal("1-минутный опрос xDrip+")),
+    OApsAIMIautoDrive(key = "key_use_Aimi_autoDrive", defaultValue = false, title = TextRef.Literal("Автопилот AIMI (AutoDrive)")),
+    OApsAIMIT3cAdaptiveBasalEnabled("key_use_aimi_t3c_adaptive_basal", false, title = TextRef.Literal("Адаптивный базал T3c AIMI")),
+    OApsAIMIAutodriveV3EnhancedGater("key_use_aimi_autodrive_v3_enhanced_gater", false, title = TextRef.Literal("Улучшенный гейтер AutoDrive v3")),
+    OApsAIMIautoDriveActive(key = "key_use_aimi_autodrive_active", defaultValue = false, title = TextRef.Literal("Активный автопилот AIMI")),
+    OApsAIMIwcycle(key = "key_use_Aimi_wcycle", defaultValue = false, title = TextRef.Literal("Учет женского цикла AIMI (WCycle)")),
+    OApsAIMIWCycleShadow("key_use_Aimi_wcycle_shadow", false, title = TextRef.Literal("Теневой режим WCycle")),
+    OApsAIMIWCycleRequireConfirm("key_use_Aimi_wcycle_require_confirm", false, title = TextRef.Literal("Требовать подтверждения WCycle")),
+    OApsAIMINightGrowthEnabled("key_oaps_aimi_ngr_enabled", true, title = TextRef.Literal("Гормон роста ночью (Night Growth)")),
+    OApsAIMIPkpdEnabled("key_aimi_pkpd_enabled", false, title = TextRef.Literal("Фармакокинетика PK/PD AIMI")),
+    OApsAIMIPkpdPragmaticReliefEnabled("key_aimi_pkpd_pragmatic_relief_enabled", true, title = TextRef.Literal("Прагматическая разгрузка PK/PD")),
+    OApsAIMIUnifiedReactivityEnabled("key_use_unified_reactivity", true, title = TextRef.Literal("Единая реактивность AIMI")),
+    AimiAuditorEnabled("aimi_auditor_enabled", false, title = TextRef.Literal("Аудитор решений AI")),
+    OApsAIMITrajectoryGuardEnabled("key_aimi_trajectory_guard_enabled", false, title = TextRef.Literal("Защита траектории AIMI")),
+    OApsAIMIContextEnabled("key_aimi_context_enabled", false, title = TextRef.Literal("Контекстный модуль AIMI")),
+    OApsAIMIContextLLMEnabled("key_aimi_context_llm_enabled", false, title = TextRef.Literal("Анализ контекста через LLM")),
+    OApsAIMIT3cBrittleMode("key_aimi_t3c_brittle_mode", false, title = TextRef.Literal("Лабильный диабет T3c (Brittle mode)")),
 
     // Thyroid / Basedow Module (MTR)
-    OApsAIMIThyroidEnabled("key_aimi_thyroid_enabled", false, title = TextRef.Literal("AIMI Thyroid Enabled")),
-    OApsAIMIThyroidLogVerbosity("key_aimi_thyroid_debug", false, title = TextRef.Literal("AIMI Thyroid Debug")),
+    OApsAIMIThyroidEnabled("key_aimi_thyroid_enabled", false, title = TextRef.Literal("Учет щитовидной железы AIMI")),
+    OApsAIMIThyroidLogVerbosity("key_aimi_thyroid_debug", false, title = TextRef.Literal("Подробные логи щитовидной железы")),
 
     // AIMI Physiological Assistant (MTR)
-    AimiPhysioAssistantEnable("aimi_physio_assistant_enable", false, title = TextRef.Literal("AIMI Physio Assistant")),
-    AimiPhysioSleepDataEnable("aimi_physio_sleep_enable", true, title = TextRef.Literal("AIMI Physio Sleep Data")),
-    AimiPhysioHRVDataEnable("aimi_physio_hrv_enable", true, title = TextRef.Literal("AIMI Physio HRV Data")),
-    AimiPhysioLLMAnalysisEnable("aimi_physio_llm_enable", false, title = TextRef.Literal("AIMI Physio LLM Analysis")),
-    AimiPhysioDebugLogs("aimi_physio_debug_logs", false, title = TextRef.Literal("AIMI Physio Debug Logs")),
+    AimiPhysioAssistantEnable("aimi_physio_assistant_enable", false, title = TextRef.Literal("Физиологический ассистент AIMI")),
+    AimiPhysioSleepDataEnable("aimi_physio_sleep_enable", true, title = TextRef.Literal("Учет фаз сна (Physio Sleep)")),
+    AimiPhysioHRVDataEnable("aimi_physio_hrv_enable", true, title = TextRef.Literal("Учет вариабельности пульса (HRV)")),
+    AimiPhysioLLMAnalysisEnable("aimi_physio_llm_enable", false, title = TextRef.Literal("LLM анализ физиологии")),
+    AimiPhysioDebugLogs("aimi_physio_debug_logs", false, title = TextRef.Literal("Отладочные логи Physio")),
 
     // Endometriosis & Cycle Management (MTR)
-    AimiEndometriosisEnable("aimi_endo_enable", false, title = TextRef.Literal("AIMI Endometriosis Enable")),
-    AimiEndometriosisHormonalSuppression("aimi_endo_suppression", false, title = TextRef.Literal("AIMI Endo Suppression")),
-    AimiEndometriosisPainFlare("aimi_endo_flare", false, title = TextRef.Literal("AIMI Endo Pain Flare")),
-    OApsAIMIMealAdvisorTrigger("aimi_meal_advisor_trigger", false, title = TextRef.Literal("AIMI Meal Advisor Trigger")),
-    AimiMealAdvisorEnable("aimi_meal_advisor_enable", false, title = TextRef.Literal("AIMI Meal Advisor Enable")),
+    AimiEndometriosisEnable("aimi_endo_enable", false, title = TextRef.Literal("Учет эндометриоза AIMI")),
+    AimiEndometriosisHormonalSuppression("aimi_endo_suppression", false, title = TextRef.Literal("Гормональная супрессия (эндометриоз)")),
+    AimiEndometriosisPainFlare("aimi_endo_flare", false, title = TextRef.Literal("Болевой криз (эндометриоз)")),
+    OApsAIMIMealAdvisorTrigger("aimi_meal_advisor_trigger", false, title = TextRef.Literal("Авто-триггер советника по еде")),
 
     // Adaptive Kernel Bank (Cosine Gate)
-    AimiCosineGateEnabled("aimi_cosine_gate_enabled", true, title = TextRef.Literal("AIMI Cosine Gate Enabled")),
+    AimiCosineGateEnabled("aimi_cosine_gate_enabled", true, title = TextRef.Literal("Косинусный гейтер AIMI")),
 
     // Emergency SOS (Hypo)
-    AimiEmergencySosEnable("aimi_emergency_sos_enable", false, title = TextRef.Literal("AIMI Emergency SOS")),
-
-    // Gemini Auth Switch
-    OApsAIMIGeminiUseOAuth("aimi_gemini_use_oauth", false, title = TextRef.Literal("AIMI Gemini Use OAuth")),
+    AimiEmergencySosEnable("aimi_emergency_sos_enable", false, title = TextRef.Literal("Экстренный SOS при гипогликемии")),
 
     // Barcode Provider
-    OApsAIMIUseOpenFoodFacts("aimi_use_openfoodfacts", false, title = TextRef.Literal("AIMI Use OpenFoodFacts")),
+    OApsAIMIUseOpenFoodFacts("aimi_use_openfoodfacts", false, title = TextRef.Literal("Использовать OpenFoodFacts")),
 
     // Engineering Mode & Developer Options
-    AimiDeveloperOptionsUnlocked("aimi_dev_options_unlocked", false, title = TextRef.Literal("AIMI Developer Options Unlocked")),
-    AimiEngineeringBypassEnabled("aimi_engineering_bypass_enabled", false, title = TextRef.Literal("AIMI Engineering Bypass (Objectives & Restrictions)"), summary = TextRef.Literal("Bypasses objectives and restrictions for advanced users")),
+    AimiDeveloperOptionsUnlocked("aimi_dev_options_unlocked", false, title = TextRef.Literal("Опции разработчика разблокированы")),
+    AimiEngineeringBypassEnabled(
+        key = "aimi_engineering_bypass_enabled",
+        defaultValue = false,
+        title = TextRef.Literal("Инженерный режим AIMI (обход целей)"),
+        summary = TextRef.Literal("Отключает обязательные цели и ограничения для опытных пользователей"),
+        dependency = AimiDeveloperOptionsUnlocked
+    ),
 
     ;
 

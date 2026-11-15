@@ -13,7 +13,7 @@ class XdripSourcePluginTest : TestBaseWithProfile() {
 
     @BeforeEach
     fun setup() {
-        xdripSourcePlugin = XdripSourcePlugin(rh, aapsLogger, preferences, config, mock())
+        xdripSourcePlugin = XdripSourcePlugin(rh, aapsLogger, preferences, config, mock(), mock())
     }
 
     @Test

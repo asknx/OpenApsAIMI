@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import app.aaps.core.interfaces.navigation.ElementType
 import app.aaps.core.interfaces.overview.graph.TbrState
 import app.aaps.core.keys.interfaces.TextRef
@@ -37,9 +38,17 @@ import app.aaps.core.ui.compose.stringResourceOrNull
  * @see TbrChipLowPreview
  * @see TbrChipNonePreview
  */
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+
 @Composable
 fun TbrChip(
     state: TbrState,
+    rateText: String = "",
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -47,13 +56,7 @@ fun TbrChip(
     val containerColor = iconColor.copy(alpha = 0.2f)
     val haptic = LocalHapticFeedback.current
 
-    // Disable the clickable Surface's 48dp minimum interactive size so this content-width chip
-    // isn't padded to 48dp and centered, which would inset it from the row's right edge
-    // (same guard IobChip uses).
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
-        // Whether a temp basal is running, and which way it goes, was carried ONLY by which of the
-        // three icons was drawn - this chip has no text at all. So it announced "Temp basal" in
-        // every state and a blind user could not tell a running temp basal from none.
         val tbrState = stringResource(state.toDescription())
         Surface(
             onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
@@ -63,9 +66,9 @@ fun TbrChip(
                 .height(AapsSpacing.chipHeight * LocalAapsScale.current)
                 .semantics { stateDescription = tbrState }
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.padding(horizontal = AapsSpacing.medium)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 8.dp)
             ) {
                 Icon(
                     imageVector = state.toIcon(),
@@ -73,6 +76,17 @@ fun TbrChip(
                     tint = iconColor,
                     modifier = Modifier.size(AapsSpacing.chipIconSize)
                 )
+                if (rateText.isNotEmpty()) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = rateText,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = iconColor,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
         }
     }

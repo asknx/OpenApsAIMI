@@ -122,8 +122,7 @@ fun UserManualScreen(
                                 Toast.makeText(context, "Осталось 1 нажатие до разблокировки инженерного режима AIMI", Toast.LENGTH_SHORT).show()
                             } else if (tapCount >= 7) {
                                 preferences?.put(BooleanKey.AimiDeveloperOptionsUnlocked, true)
-                                preferences?.put(BooleanKey.AimiEngineeringBypassEnabled, true)
-                                Toast.makeText(context, "Инженерный режим AIMI разблокирован и активирован!", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Переключатель инженерного режима разблокирован в меню", Toast.LENGTH_LONG).show()
                                 tapCount = 0
                             }
                         }

@@ -251,21 +251,17 @@ Output:
                 sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorCustomUrl.key, "")
             } else null
             val customModel = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorModel.key, "").ifBlank { null }
-            
-            val useOAuth = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth.key, false)
-            val token = if (provider == AiCoachingService.Provider.GEMINI && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
-                geminiOAuthManager.getValidAccessToken()
-            } else null
+            val token: String? = null
 
-            if (apiKey.isBlank() && token == null && provider != AiCoachingService.Provider.CUSTOM) {
-                val err = "API key or OAuth token not configured for $provider"
+            if (apiKey.isBlank() && provider != AiCoachingService.Provider.CUSTOM) {
+                val err = "API key not configured for $provider"
                 aapsLogger.error(LTag.APS, "[ContextLLM] $err")
                 lastError = err
                 return emptyList()
             }
             
             // Call LLM service
-            val llmResponse = aiCoachingService.fetchText(context, prompt, apiKey, token, useOAuth, provider, customUrl, customModel)
+            val llmResponse = aiCoachingService.fetchText(context, prompt, apiKey, token, false, provider, customUrl, customModel)
             
             // Check for service errors
             if (llmResponse.startsWith("Erreur") || llmResponse.startsWith("[Provider:")) {

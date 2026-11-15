@@ -19,26 +19,43 @@ enum class AimiStringKey(
     override val isPin: Boolean = false,
     override val exportable: Boolean = true,
     override val preferenceType: app.aaps.core.keys.PreferenceType = app.aaps.core.keys.PreferenceType.TEXT_FIELD,
+    override val visibility: app.aaps.core.keys.interfaces.ElementVisibility = app.aaps.core.keys.interfaces.ElementVisibility.ALWAYS,
     val entriesLiterals: Map<String, String>? = null
 ) : StringPreferenceKey {
-    PregnancyDueDateString("aimi_pregnancy_due_date_string", "", TextRef.Literal("Pregnancy Due Date")),
-    RemoteControlPin("aimi_remote_control_pin", "", TextRef.Literal("Remote Control PIN"), isPin = true, isPassword = true),
-    FatSecretClientId("aimi_fatsecret_client_id", "", TextRef.Literal("FatSecret Client ID"), negativeDependency = BooleanKey.OApsAIMIUseOpenFoodFacts),
-    FatSecretClientSecret("aimi_fatsecret_client_secret", "", TextRef.Literal("FatSecret Client Secret"), negativeDependency = BooleanKey.OApsAIMIUseOpenFoodFacts),
+    PregnancyDueDateString("aimi_pregnancy_due_date_string", "", TextRef.Literal("Ожидаемая дата родов (ПДР)")),
+    RemoteControlPin("aimi_remote_control_pin", "", TextRef.Literal("PIN-код удаленного управления"), isPin = true, isPassword = true),
+    FatSecretClientId(
+        key = "aimi_fatsecret_client_id",
+        defaultValue = "",
+        title = TextRef.Literal("FatSecret Client ID"),
+        visibility = app.aaps.core.keys.interfaces.ElementVisibility {
+            it.preferences.get(app.aaps.core.keys.StringKey.AimiFoodDatabaseProvider) in listOf("FATSECRET", "MIXED")
+        }
+    ),
+    FatSecretClientSecret(
+        key = "aimi_fatsecret_client_secret",
+        defaultValue = "",
+        title = TextRef.Literal("FatSecret Client Secret"),
+        visibility = app.aaps.core.keys.interfaces.ElementVisibility {
+            it.preferences.get(app.aaps.core.keys.StringKey.AimiFoodDatabaseProvider) in listOf("FATSECRET", "MIXED")
+        }
+    ),
     FatSecretRegion(
         key = "aimi_fatsecret_region",
         defaultValue = "RU",
-        title = TextRef.Literal("FatSecret Region"),
-        negativeDependency = BooleanKey.OApsAIMIUseOpenFoodFacts,
+        title = TextRef.Literal("Регион базы FatSecret"),
+        visibility = app.aaps.core.keys.interfaces.ElementVisibility {
+            it.preferences.get(app.aaps.core.keys.StringKey.AimiFoodDatabaseProvider) in listOf("FATSECRET", "MIXED")
+        },
         preferenceType = app.aaps.core.keys.PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "RU" to "Russia (RU)",
-            "US" to "United States (US)",
-            "FR" to "France (FR)",
-            "DE" to "Germany (DE)",
-            "GB" to "United Kingdom (GB)",
-            "IT" to "Italy (IT)",
-            "ES" to "Spain (ES)"
+            "RU" to "Россия (RU)",
+            "US" to "США (US)",
+            "FR" to "Франция (FR)",
+            "DE" to "Германия (DE)",
+            "GB" to "Великобритания (GB)",
+            "IT" to "Италия (IT)",
+            "ES" to "Испания (ES)"
         )
     ),
     StepsSourceMode(

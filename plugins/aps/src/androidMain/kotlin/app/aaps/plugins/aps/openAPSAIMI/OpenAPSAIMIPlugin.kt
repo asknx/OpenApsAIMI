@@ -105,6 +105,8 @@ import androidx.core.util.isEmpty
 import androidx.core.util.size
 import androidx.core.net.toUri
 import app.aaps.core.keys.interfaces.withClick
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.exp
 import app.aaps.plugins.aps.openAPSAIMI.utils.AimiBackupManager
@@ -1140,38 +1142,48 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
         key = "openapsaimi_settings",
         title = TextRef.AndroidRes(R.string.openapsaimi),
         items = listOf(
-            // 1. AI Assistant SubScreen (Matches Screenshot 3 & 4)
+            BooleanKey.AimiEngineeringBypassEnabled,
+
+            // 1. AI Assistant SubScreen
             PreferenceSubScreenDef(
                 key = "AIMI_AI",
                 title = TextRef.AndroidRes(R.string.aimi_prefs_ai_title),
                 items = listOf(
                     StringKey.AimiAdvisorProvider,
-                    StringKey.AimiAdvisorOpenAIKey,
-                    StringKey.AimiAdvisorGeminiKey,
-                    BooleanKey.OApsAIMIGeminiUseOAuth,
-                    StringKey.AimiGeminiOAuthClientId,
-                    StringKey.AimiGeminiOAuthClientSecret,
-                    StringKey.AimiGeminiOAuthProjectId,
-                    IntentKey.AimiGoogleLogin.withClick {
+                    StringKey.AimiAdvisorModel,
+                    IntentKey.AimiFetchModels.withClick {
                         pluginScope.launch {
                             try {
-                                val url = geminiOAuthManager.startPKCEAuth()
-                                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                })
-                                val code = geminiOAuthManager.waitForAuthCode()
-                                if (code != null && geminiOAuthManager.exchangeCodeForTokens(code)) {
-                                    android.widget.Toast.makeText(context, "Gemini Login Success", android.widget.Toast.LENGTH_SHORT).show()
+                                val providerStr = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
+                                val provider = auditorOrchestrator.getProvider()
+                                withContext(Dispatchers.Main) {
+                                    android.widget.Toast.makeText(context, "Запрос списка моделей для $providerStr...", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                                val models = auditorAIService.fetchAvailableModels(provider)
+                                withContext(Dispatchers.Main) {
+                                    if (models.isNotEmpty()) {
+                                        val current = preferences.get(StringKey.AimiAdvisorModel)
+                                        val nextIndex = (models.indexOf(current) + 1).takeIf { it in models.indices } ?: 0
+                                        val chosenModel = models[nextIndex]
+                                        preferences.put(StringKey.AimiAdvisorModel, chosenModel)
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Выбрана модель [${nextIndex + 1}/${models.size}]: $chosenModel",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    } else {
+                                        android.widget.Toast.makeText(context, "Не удалось получить модели от $providerStr", android.widget.Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             } catch (e: Exception) {
-                                android.widget.Toast.makeText(context, "Login Failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                withContext(Dispatchers.Main) {
+                                    android.widget.Toast.makeText(context, "Ошибка: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                }
                             }
                         }
                     },
-                    IntentKey.AimiGoogleLogout.withClick {
-                        geminiOAuthManager.logout()
-                        android.widget.Toast.makeText(context, "Logged out from Google", android.widget.Toast.LENGTH_SHORT).show()
-                    },
+                    StringKey.AimiAdvisorGeminiKey,
+                    StringKey.AimiAdvisorOpenAIKey,
                     StringKey.AimiAdvisorDeepSeekKey,
                     StringKey.AimiAdvisorClaudeKey,
                     StringKey.AimiAdvisorGlmKey,
@@ -1180,41 +1192,6 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     StringKey.AimiAdvisorGroqKey,
                     StringKey.AimiAdvisorCustomUrl,
                     StringKey.AimiAdvisorCustomKey,
-                    StringKey.AimiAdvisorModel,
-                    IntentKey.AimiFetchModels.withClick {
-                        pluginScope.launch {
-                            try {
-                                val providerStr = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
-                                val provider = auditorOrchestrator.getProvider()
-                                android.widget.Toast.makeText(context, "Fetching available models for $providerStr...", android.widget.Toast.LENGTH_SHORT).show()
-                                val models = auditorAIService.fetchAvailableModels(provider)
-                                if (models.isNotEmpty()) {
-                                    val modelsArray = models.toTypedArray()
-                                    val currentModel = preferences.get(StringKey.AimiAdvisorModel)
-                                    val selectedIndex = models.indexOf(currentModel).coerceAtLeast(0)
-                                    androidx.appcompat.app.AlertDialog.Builder(context)
-                                        .setTitle("Select Model ($providerStr)")
-                                        .setSingleChoiceItems(modelsArray, selectedIndex) { dialog, which ->
-                                            val chosenModel = modelsArray[which]
-                                            preferences.put(StringKey.AimiAdvisorModel, chosenModel)
-                                            android.widget.Toast.makeText(context, "Model set to: $chosenModel", android.widget.Toast.LENGTH_SHORT).show()
-                                            dialog.dismiss()
-                                        }
-                                        .setNegativeButton(android.R.string.cancel, null)
-                                        .show()
-                                } else {
-                                    android.widget.Toast.makeText(context, "Failed to fetch models from $providerStr", android.widget.Toast.LENGTH_LONG).show()
-                                }
-                            } catch (e: Exception) {
-                                android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    },
-                    BooleanKey.OApsAIMIUseOpenFoodFacts,
-                    AimiStringKey.FatSecretClientId,
-                    AimiStringKey.FatSecretClientSecret,
-                    AimiStringKey.FatSecretRegion,
-                    BooleanKey.AimiMealAdvisorEnable,
                     IntentKey.OApsAIMIProfileAdvisor.withClick {
                         context.startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiProfileAdvisorActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1237,12 +1214,12 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     },
                     IntentKey.AimiLogExport.withClick {
                         pluginScope.launch {
-                            android.widget.Toast.makeText(context, "Exporting logs (15 min)...", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, "Экспорт логов (15 мин)...", android.widget.Toast.LENGTH_SHORT).show()
                             val file = logcatExporter.exportLogs(context, 15)
                             if (file != null) {
-                                android.widget.Toast.makeText(context, "Exported: ${file.name}", android.widget.Toast.LENGTH_LONG).show()
+                                android.widget.Toast.makeText(context, "Экспортировано: ${file.name}", android.widget.Toast.LENGTH_LONG).show()
                             } else {
-                                android.widget.Toast.makeText(context, "Export Failed!", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, "Ошибка экспорта!", android.widget.Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
@@ -1291,11 +1268,14 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
             DoubleKey.OApsAIMIweight,
             DoubleKey.OApsAIMICHO,
             DoubleKey.OApsAIMITDD7,
-            BooleanKey.AimiEngineeringBypassEnabled,
             BooleanKey.OApsxdriponeminute,
             BooleanKey.OApsAIMIhoneymoon,
             BooleanKey.OApsAIMInight,
             BooleanKey.OApsAIMIUnifiedReactivityEnabled,
+            StringKey.AimiFoodDatabaseProvider,
+            AimiStringKey.FatSecretClientId,
+            AimiStringKey.FatSecretClientSecret,
+            AimiStringKey.FatSecretRegion,
 
             // 5. PK/PD Adaptive Models SubScreen
             PreferenceSubScreenDef(

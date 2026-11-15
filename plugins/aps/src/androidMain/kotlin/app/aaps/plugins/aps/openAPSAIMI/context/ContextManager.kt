@@ -371,8 +371,6 @@ class ContextManager @Inject constructor(
         
         // CHECK SHARED/ADVISOR KEYS instead of legacy Context Keys
         val provider = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "GEMINI")
-        val useOAuth = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth.key, false)
-        if (provider.startsWith("GEMINI") && useOAuth) return true
 
         val apiKey = when (provider) {
             "OPENAI" -> sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorOpenAIKey.key, "")

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,11 +27,11 @@ import app.aaps.core.ui.compose.AapsSpacing
 import app.aaps.core.ui.compose.stringResource
 
 /**
- * FAB indicating active pump communication.
+ * FAB indicating active pump communication or disconnected status.
  *
- * Visible when pump is communicating or bolus is in progress.
- * Shows a Bluetooth icon normally, or delivery percentage during SMB. A turning ring around the
- * content shows that the exchange is running right now, which a still icon cannot say.
+ * Visible when pump is communicating, bolus is in progress, or pump is disconnected.
+ * When disconnected, shown in red without a spinning ring.
+ * When communicating, a turning ring around the content shows that the exchange is running.
  * Tap opens the PumpActivityDialog.
  *
  * @see PreviewPumpFabIcon
@@ -41,7 +42,8 @@ fun PumpActivityFab(
     visible: Boolean,
     bolusState: BolusProgressState?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDisconnected: Boolean = false
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -49,34 +51,50 @@ fun PumpActivityFab(
         exit = fadeOut() + scaleOut(),
         modifier = modifier
     ) {
-        // Name the Fab itself, not its content. It has two branches - a percent Text and an icon -
-        // and only one of them could ever carry a description, so a screen reader announced either
-        // a bare "42%" or nothing at all. Naming the Fab covers both: a description on a merging
-        // node is added beside the children rather than replacing them, so the percent branch
-        // reads "Pump, 42%" and the icon branch simply "Pump".
         val fabDescription = stringResource(CoreUiStrings.pump)
+        val containerColor = if (isDisconnected) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.primaryContainer
+        }
+        val contentColor = if (isDisconnected) {
+            MaterialTheme.colorScheme.onErrorContainer
+        } else {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        }
+
         AapsSmallFab(
             onClick = onClick,
-            modifier = Modifier.semantics { contentDescription = fabDescription }
+            modifier = Modifier.semantics { contentDescription = fabDescription },
+            containerColor = containerColor,
+            contentColor = contentColor
         ) {
             Box(contentAlignment = Alignment.Center) {
-                // The ring is given a fixed size on purpose. The content slot of the button is not
-                // bounded by the button itself, so fillMaxSize() here would grow to the whole screen.
-                CircularProgressIndicator(
-                    modifier = Modifier.size(AapsSpacing.pumpFabRingSize),
-                    strokeWidth = AapsSpacing.pumpFabRingStrokeWidth,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                if (bolusState != null && bolusState.isSMB && bolusState.percent in 1..99) {
+                if (!isDisconnected) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(AapsSpacing.pumpFabRingSize),
+                        strokeWidth = AapsSpacing.pumpFabRingStrokeWidth,
+                        color = contentColor
+                    )
+                }
+                if (isDisconnected) {
+                    Icon(
+                        imageVector = Icons.Default.BluetoothDisabled,
+                        contentDescription = null,
+                        tint = contentColor
+                    )
+                } else if (bolusState != null && bolusState.isSMB && bolusState.percent in 1..99) {
                     Text(
                         text = stringResource(CoreUiStrings.units_format_percent, bolusState.percent),
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Default.Bluetooth,
-                        contentDescription = null
+                        contentDescription = null,
+                        tint = contentColor
                     )
                 }
             }

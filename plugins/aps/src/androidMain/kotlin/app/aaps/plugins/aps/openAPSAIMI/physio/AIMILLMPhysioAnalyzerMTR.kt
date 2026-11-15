@@ -43,14 +43,10 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
     ): String {
         val provider = sp.getString(StringKey.AimiAdvisorProvider.key, "GEMINI")
         val apiKey = getAPIKey(provider)
-        
-        val useOAuth = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth.key, false)
-        val oauthToken = if (provider.contains("gemini", ignoreCase = true) && useOAuth && geminiOAuthManager.isOAuthEnabled()) {
-            runBlocking { geminiOAuthManager.getValidAccessToken() }
-        } else null
+        val oauthToken: String? = null
 
-        if (apiKey.isBlank() && oauthToken == null && !provider.contains("custom", ignoreCase = true)) {
-            aapsLogger.warn(LTag.APS, "[$TAG] No API key or token configured for $provider")
+        if (apiKey.isBlank() && !provider.contains("custom", ignoreCase = true)) {
+            aapsLogger.warn(LTag.APS, "[$TAG] No API key configured for $provider")
             return ""
         }
         

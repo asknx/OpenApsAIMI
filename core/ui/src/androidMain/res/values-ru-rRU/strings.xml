@@ -31,9 +31,12 @@
     <string name="configbuilder_insulin">Инсулин</string>
     <string name="configbuilder_bgsource">Источник СК</string>
     <string name="configbuilder_smoothing">Сглаживание</string>
+    <string name="configbuilder_calibration">Калибровка</string>
     <string name="configbuilder_pump">Помпа</string>
+    <string name="configbuilder_sensitivity">Определение чувствительности</string>
     <string name="configbuilder_aps">система ИПЖ</string>
     <string name="configbuilder_loop">Замкнутый цикл</string>
+    <string name="configbuilder_sync">Связь</string>
     <string name="configbuilder_general">Общее</string>
     <string name="protection">Защита</string>
     <string name="value_unavailable_short">н/д</string>
@@ -632,4 +635,47 @@
     <!-- Graph series short names (used as graph labels, keep very short) -->
     <!-- Graph series full names (used in the graph settings, where there is room) -->
     <string name="prefs_range_title">Диапазон для визуализации</string>
+
+    <!-- Navigation & Drawer Descriptions -->
+    <string name="nav_configuration">Конфигурация</string>
+    <string name="nav_configuration_desc">Настройка компонентов (НМГ, помпа&#8230;) и включение функций</string>
+    <string name="nav_about">О программе</string>
+    <string name="nav_about_desc">Просмотр версии приложения и информации</string>
+    <string name="nav_history_browser_desc">Просмотр истории графиков</string>
+    <string name="nav_setupwizard_desc">Пошаговая настройка AAPS</string>
+    <string name="nav_profile_helper_desc">Создание профиля по весу или TDD</string>
+    <string name="statistics_desc">Просмотр статистики и отчетов</string>
+    <string name="tdd_cycle_pattern">Шаблоны циклов TDD</string>
+    <string name="tdd_cycle_pattern_desc">Наложение суточных доз инсулина по 28-дневным циклам для выявления закономерностей</string>
+    <string name="quick_launch_configure">Настройка быстрого запуска</string>
+    <string name="quick_launch_configure_desc">Настройка кнопок быстрых действий на главном экране</string>
+
+    <!-- Manage & Treatment Descriptions -->
+    <string name="treatment_desc">Запись инсулина и углеводов</string>
+    <string name="treatment_insulin_desc">Ввести болюс вручную</string>
+    <string name="treatment_carbs_desc">Записать углеводы без инсулина</string>
+    <string name="treatment_calculator_desc">Рассчитать болюс</string>
+    <string name="manage_insulin_desc">Управление и активация конфигураций инсулина</string>
+    <string name="manage_profile_desc">Управление и активация профилей</string>
+    <string name="manage_temp_target_desc">Управление и установка временных целей</string>
+    <string name="manage_temp_basal_desc">Запуск временного базала</string>
+    <string name="manage_extended_bolus_desc">Запуск введения расширенного болюса</string>
+    <string name="manage_site_rotation_desc">Отслеживание и ротация мест инфузии</string>
+    <string name="manage_quickwizard_desc">Управление шаблонами мастера болюса</string>
+    <string name="manage_food_desc">Управление записями базы продуктов</string>
+    <string name="treatment_note_desc">Добавить примечание в журнал</string>
+    <string name="treatment_question_desc">Задать вопрос медицинской команде</string>
+    <string name="treatment_cgm_desc">Открыть приложение НМГ</string>
+    <string name="treatment_calibration_desc">Калибровка сенсора НМГ</string>
+    <string name="treatment_bg_check_desc">Запись проверки уровня глюкозы</string>
+    <string name="treatment_exercise_desc">Запись физической активности</string>
+    <string name="treatment_announcement_desc">Создать объявление</string>
+    <string name="treatment_sensor_insert_desc">Запись установки сенсора НМГ</string>
+    <string name="treatment_battery_change_desc">Запись замены батареи помпы</string>
+    <string name="treatment_cannula_change_desc">Запись замены канюли/инфузионного набора</string>
+    <string name="treatment_fill_desc">Заполнение и промывка канюли</string>
+    <string name="authorized_clients_manage_label">Авторизованные клиенты</string>
+    <string name="authorized_clients_manage_desc">Управление сопряженными устройствами, управляющими этим мастером</string>
+    <string name="pair_with_master_manage_label">Сопряжение с мастером</string>
+    <string name="pair_with_master_manage_desc">Введите PIN-код сопряжения мастера для отправки сигналов</string>
 </resources>

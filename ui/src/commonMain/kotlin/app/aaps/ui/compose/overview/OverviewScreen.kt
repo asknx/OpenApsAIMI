@@ -65,6 +65,7 @@ fun OverviewScreen(
     runningModeProgress: Float,
     runningModeRecordId: Long = 0,
     tbrState: TbrState,
+    tbrText: String = "",
     smbEnabled: Boolean,
     isSimpleMode: Boolean,
     calcProgress: Int,
@@ -104,12 +105,13 @@ fun OverviewScreen(
     pumpStatusText: String = "",
     queueStatusText: AnnotatedString? = null,
     isPumpCommunicating: Boolean = false,
+    isPumpDisconnected: Boolean = false,
     onStopBolus: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showNotificationSheet by remember { mutableStateOf(false) }
     var showPumpActivityDialog by remember { mutableStateOf(false) }
-    val showPumpFab = isPumpCommunicating || (bolusState != null && bolusState.isSMB)
+    val showPumpFab = isPumpCommunicating || (bolusState != null && bolusState.isSMB) || isPumpDisconnected
 
     // Three seconds is enough to glance at the card, but not to hear it read out. Ask the platform
     // how long this content needs instead: with a screen reader on it stretches the timeout, and
@@ -169,6 +171,7 @@ fun OverviewScreen(
                     runningModeProgress = runningModeProgress,
                     runningModeSceneManaged = runningModeSceneManaged,
                     tbrState = tbrState,
+                    tbrText = tbrText,
                     smbEnabled = smbEnabled,
                     isSimpleMode = isSimpleMode,
                     graphViewModel = graphViewModel,
@@ -209,6 +212,7 @@ fun OverviewScreen(
                     runningModeProgress = runningModeProgress,
                     runningModeSceneManaged = runningModeSceneManaged,
                     tbrState = tbrState,
+                    tbrText = tbrText,
                     smbEnabled = smbEnabled,
                     isSimpleMode = isSimpleMode,
                     graphViewModel = graphViewModel,
@@ -249,6 +253,7 @@ fun OverviewScreen(
                     runningModeProgress = runningModeProgress,
                     runningModeSceneManaged = runningModeSceneManaged,
                     tbrState = tbrState,
+                    tbrText = tbrText,
                     smbEnabled = smbEnabled,
                     isSimpleMode = isSimpleMode,
                     graphViewModel = graphViewModel,
@@ -297,6 +302,7 @@ fun OverviewScreen(
         PumpActivityFab(
             visible = showPumpFab,
             bolusState = bolusState,
+            isDisconnected = isPumpDisconnected && !isPumpCommunicating && (bolusState == null || !bolusState.isSMB),
             onClick = { showPumpActivityDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)

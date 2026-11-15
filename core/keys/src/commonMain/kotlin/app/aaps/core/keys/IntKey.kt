@@ -450,43 +450,43 @@ enum class IntKey(
     ),
 
     // AIMI and custom keys
-    GarminLocalHttpPort("communication_http_port", 28891, 1001, 65535, title = TextRef.Literal("Garmin local HTTP port"), defaultedBySM = true),
-    OApsAIMIHighBGinterval("key_oaps_aimi_highBG_interval", 3, 1, 20, title = TextRef.Literal("AIMI High BG Interval"), defaultedBySM = true),
-    OApsAIMImealinterval("key_oaps_aimi_meal_interval", 3, 1, 20, title = TextRef.Literal("AIMI Meal Interval"), defaultedBySM = true),
-    OApsAIMILunchinterval("key_oaps_aimi_lunch_interval", 3, 1, 20, title = TextRef.Literal("AIMI Lunch Interval"), defaultedBySM = true),
-    OApsAIMIDinnerinterval("key_oaps_aimi_dinner_interval", 3, 1, 20, title = TextRef.Literal("AIMI Dinner Interval"), defaultedBySM = true),
-    OApsAIMIHCinterval("key_oaps_aimi_HC_interval", 3, 1, 20, title = TextRef.Literal("AIMI HC Interval"), defaultedBySM = true),
-    OApsAIMISnackinterval("key_oaps_aimi_snack_interval", 3, 1, 20, title = TextRef.Literal("AIMI Snack Interval"), defaultedBySM = true),
-    OApsAIMIBFinterval("key_oaps_aimi_BF_interval", 3, 1, 20, title = TextRef.Literal("AIMI BF Interval"), defaultedBySM = true),
-    OApsAIMISleepinterval("key_oaps_aimi_sleep_interval", 3, 1, 20, title = TextRef.Literal("AIMI Sleep Interval"), defaultedBySM = true),
-    OApsAIMIAutodriveTarget("key_oaps_aimi_autodriveTarget", 70, 1, 160, title = TextRef.Literal("AIMI Autodrive Target")),
-    OApsAIMIAutodriveBG("key_oaps_aimi_autodriveBG", 90, 1, 160, title = TextRef.Literal("AIMI Autodrive BG")),
-    OApsAIMIWCycleAvgLength("key_wcycle_avg_length", 28, 20, 90, title = TextRef.Literal("AIMI WCycle Avg Length")),
-    OApsAIMINightGrowthAgeYears("key_oaps_aimi_ngr_age_years", 14, 1, 25, title = TextRef.Literal("AIMI Night Growth Age (Years)")),
-    OApsAIMINightGrowthMinDurationMin("key_oaps_aimi_ngr_min_duration", 30, 5, 240, title = TextRef.Literal("AIMI Night Growth Min Duration")),
-    OApsAIMINightGrowthMinEventualOverTarget("key_oaps_aimi_ngr_min_eventual_over_target", 15, 0, 120, title = TextRef.Literal("AIMI Night Growth Min Eventual Over Target")),
-    OApsAIMINightGrowthDecayMinutes("key_oaps_aimi_ngr_decay_minutes", 20, 0, 120, title = TextRef.Literal("AIMI Night Growth Decay Minutes")),
-    OApsAIMIlogsize("key_oaps_aimi_logsize", 25, 1, 50, title = TextRef.Literal("AIMI Log Size")),
+    GarminLocalHttpPort("communication_http_port", 28891, 1001, 65535, title = TextRef.Literal("Локальный HTTP порт Garmin"), defaultedBySM = true),
+    OApsAIMIHighBGinterval("key_oaps_aimi_highBG_interval", 3, 1, 20, title = TextRef.Literal("Интервал при высокой ГК (мин)"), defaultedBySM = true),
+    OApsAIMImealinterval("key_oaps_aimi_meal_interval", 3, 1, 20, title = TextRef.Literal("Интервал режима еды (мин)"), defaultedBySM = true),
+    OApsAIMILunchinterval("key_oaps_aimi_lunch_interval", 3, 1, 20, title = TextRef.Literal("Интервал режима обеда (мин)"), defaultedBySM = true),
+    OApsAIMIDinnerinterval("key_oaps_aimi_dinner_interval", 3, 1, 20, title = TextRef.Literal("Интервал режима ужина (мин)"), defaultedBySM = true),
+    OApsAIMIHCinterval("key_oaps_aimi_HC_interval", 3, 1, 20, title = TextRef.Literal("Интервал режима быстрых углев. (мин)"), defaultedBySM = true),
+    OApsAIMISnackinterval("key_oaps_aimi_snack_interval", 3, 1, 20, title = TextRef.Literal("Интервал режима перекуса (мин)"), defaultedBySM = true),
+    OApsAIMIBFinterval("key_oaps_aimi_BF_interval", 3, 1, 20, title = TextRef.Literal("Интервал режима завтрака (мин)"), defaultedBySM = true),
+    OApsAIMISleepinterval("key_oaps_aimi_sleep_interval", 3, 1, 20, title = TextRef.Literal("Интервал режима сна (мин)"), defaultedBySM = true),
+    OApsAIMIAutodriveTarget("key_oaps_aimi_autodriveTarget", 70, 1, 160, title = TextRef.Literal("Целевая ГК Autodrive")),
+    OApsAIMIAutodriveBG("key_oaps_aimi_autodriveBG", 90, 1, 160, title = TextRef.Literal("Порог ГК Autodrive")),
+    OApsAIMIWCycleAvgLength("key_wcycle_avg_length", 28, 20, 90, title = TextRef.Literal("Средняя длина цикла WCycle (дней)")),
+    OApsAIMINightGrowthAgeYears("key_oaps_aimi_ngr_age_years", 14, 1, 25, title = TextRef.Literal("Ночной рост: Возраст (лет)")),
+    OApsAIMINightGrowthMinDurationMin("key_oaps_aimi_ngr_min_duration", 30, 5, 240, title = TextRef.Literal("Ночной рост: Мин. длительность (мин)")),
+    OApsAIMINightGrowthMinEventualOverTarget("key_oaps_aimi_ngr_min_eventual_over_target", 15, 0, 120, title = TextRef.Literal("Ночной рост: Превышение целевой ГК")),
+    OApsAIMINightGrowthDecayMinutes("key_oaps_aimi_ngr_decay_minutes", 20, 0, 120, title = TextRef.Literal("Ночной рост: Время затухания (мин)")),
+    OApsAIMIlogsize("key_oaps_aimi_logsize", 25, 1, 50, title = TextRef.Literal("Размер журнала AIMI (строк)")),
 
     // --- AIMI Adaptive Basal ---
-    OApsAIMIKickerStartMin(key = "OApsAIMIKickerStartMin", defaultValue = 10, min = 5, max = 30, title = TextRef.Literal("AIMI Kicker Start Min")),
-    OApsAIMIKickerMaxMin(key = "OApsAIMIKickerMaxMin", defaultValue = 30, min = 10, max = 60, title = TextRef.Literal("AIMI Kicker Max Min")),
-    OApsAIMIZeroResumeMin(key = "OApsAIMIZeroResumeMin", defaultValue = 10, min = 5, max = 30, title = TextRef.Literal("AIMI Zero Resume Min")),
-    OApsAIMIZeroResumeMax(key = "OApsAIMIZeroResumeMax", defaultValue = 30, min = 10, max = 60, title = TextRef.Literal("AIMI Zero Resume Max")),
+    OApsAIMIKickerStartMin(key = "OApsAIMIKickerStartMin", defaultValue = 10, min = 5, max = 30, title = TextRef.Literal("Адаптивный базал: Задержка старта кикера (мин)")),
+    OApsAIMIKickerMaxMin(key = "OApsAIMIKickerMaxMin", defaultValue = 30, min = 10, max = 60, title = TextRef.Literal("Адаптивный базал: Макс. время кикера (мин)")),
+    OApsAIMIZeroResumeMin(key = "OApsAIMIZeroResumeMin", defaultValue = 10, min = 5, max = 30, title = TextRef.Literal("Адаптивный базал: Мин. время нулевого базала (мин)")),
+    OApsAIMIZeroResumeMax(key = "OApsAIMIZeroResumeMax", defaultValue = 30, min = 10, max = 60, title = TextRef.Literal("Адаптивный базал: Макс. время нулевого базала (мин)")),
 
     // --- AI Decision Auditor ---
-    AimiAuditorMaxPerHour("aimi_auditor_max_per_hour", 12, 1, 30, title = TextRef.Literal("AIMI Auditor Max Per Hour")),
-    AimiAuditorTimeoutSeconds("aimi_auditor_timeout_seconds", 120, 30, 300, title = TextRef.Literal("AIMI Auditor Timeout Seconds")),
-    AimiAuditorMinConfidence("aimi_auditor_min_confidence", 65, 50, 95, title = TextRef.Literal("AIMI Auditor Min Confidence")),
+    AimiAuditorMaxPerHour("aimi_auditor_max_per_hour", 12, 1, 30, title = TextRef.Literal("AI Аудитор: Макс. запросов в час")),
+    AimiAuditorTimeoutSeconds("aimi_auditor_timeout_seconds", 120, 30, 300, title = TextRef.Literal("AI Аудитор: Таймаут (сек)")),
+    AimiAuditorMinConfidence("aimi_auditor_min_confidence", 65, 50, 95, title = TextRef.Literal("AI Аудитор: Мин. достоверность (%)")),
 
     // Endometriosis & Cycle Management (MTR)
-    AimiEndometriosisFlareDuration("aimi_endo_flare_duration", 4, 1, 24, title = TextRef.Literal("AIMI Endo Flare Duration")),
+    AimiEndometriosisFlareDuration("aimi_endo_flare_duration", 4, 1, 24, title = TextRef.Literal("Эндометриоз: Длительность вспышки (ч)")),
 
     // Adaptive Kernel Bank (Cosine Gate)
-    AimiCosineGateMaxPeakShift("aimi_cosine_gate_max_shift", 15, 0, 60, title = TextRef.Literal("AIMI Cosine Gate Max Shift")),
+    AimiCosineGateMaxPeakShift("aimi_cosine_gate_max_shift", 15, 0, 60, title = TextRef.Literal("Косинусный гейт: Макс. сдвиг пика (мин)")),
 
     // Emergency SOS (Hypo)
-    AimiEmergencySosThreshold("aimi_emergency_sos_threshold", 55, 40, 100, title = TextRef.Literal("AIMI Emergency SOS Threshold")),
+    AimiEmergencySosThreshold("aimi_emergency_sos_threshold", 55, 40, 100, title = TextRef.Literal("Порог срабатывания экстренного SOS (мг/дл)")),
 
     ;
 

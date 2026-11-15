@@ -52,6 +52,7 @@ fun OverviewScreenStacked(
     runningModeProgress: Float,
     runningModeSceneManaged: Boolean = false,
     tbrState: TbrState,
+    tbrText: String = "",
     smbEnabled: Boolean,
     isSimpleMode: Boolean,
     graphViewModel: GraphViewModel,
@@ -86,12 +87,14 @@ fun OverviewScreenStacked(
     val statusState by statusViewModel.uiState.collectAsStateWithLifecycle()
 
     var statusExpanded by rememberSaveable { mutableStateOf(false) }
+    val graphConfig by graphViewModel.graphConfigFlow.collectAsStateWithLifecycle()
+    val hasExtraGraphs = graphConfig.secondaryGraphs.isNotEmpty()
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState(), enabled = hasExtraGraphs)
     ) {
         ActiveSceneBanner(
             activeState = activeSceneState,
@@ -135,6 +138,7 @@ fun OverviewScreenStacked(
                 tempTargetReason = tempTargetReason,
                 tempTargetSceneManaged = tempTargetSceneManaged,
                 tbrState = tbrState,
+                tbrText = tbrText,
                 iobUiState = iobUiState,
                 cobUiState = cobUiState,
                 sensitivityUiState = sensitivityUiState,

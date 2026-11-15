@@ -35,12 +35,16 @@ class PumpCommunicationStatus(
     private val _queueStatus = MutableStateFlow<AnnotatedString?>(null)
     val queueStatusFlow: StateFlow<AnnotatedString?> = _queueStatus.asStateFlow()
 
+    private val _currentStatus = MutableStateFlow(EventPumpStatusChanged.Status.DISCONNECTED)
+    val currentStatusFlow: StateFlow<EventPumpStatusChanged.Status> = _currentStatus.asStateFlow()
+
     /** Emits whenever communication status or queue changes. */
     val refreshTrigger: MutableStateFlow<Long> = MutableStateFlow(0L)
 
     init {
         rxBus.toFlow(EventPumpStatusChanged::class)
             .onEach { event ->
+                _currentStatus.value = event.status
                 val text = rh.gs(event.getStatus())
                 _statusBanner.value = if (text.isEmpty()) null else StatusBanner(text = text, level = StatusLevel.UNSPECIFIED)
                 refreshTrigger.value = Clock.System.now().toEpochMilliseconds()

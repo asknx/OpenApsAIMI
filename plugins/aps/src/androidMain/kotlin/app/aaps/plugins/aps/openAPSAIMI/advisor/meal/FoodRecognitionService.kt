@@ -89,13 +89,11 @@ class FoodRecognitionService(
     suspend fun estimateCarbsFromImage(bitmap: Bitmap, userDescription: String = ""): EstimationResult = withContext(Dispatchers.IO) {
         val provider = getProvider()
         val apiKey = getApiKey(provider.providerId)
-        val isGemini = provider.providerId.startsWith("GEMINI")
-        val useOAuth = preferences.get(app.aaps.core.keys.BooleanKey.OApsAIMIGeminiUseOAuth) && oauthManager.isOAuthEnabled()
         
-        if (apiKey.isBlank() && !(isGemini && useOAuth) && provider.providerId != "CUSTOM") {
+        if (apiKey.isBlank() && provider.providerId != "CUSTOM") {
             return@withContext FoodAnalysisPrompt.emptyErrorResult(
                 "API Key Missing",
-                "Please configure ${provider.displayName} API key or Google OAuth in AIMI Preferences → Meal Advisor."
+                "Please configure ${provider.displayName} API key in AIMI Preferences."
             )
         }
 

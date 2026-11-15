@@ -26,8 +26,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -471,13 +473,20 @@ fun GraphsSection(
     // Set by the BG graph, read by every graph
     val inspect = remember { GraphInspectState() }
 
-    Column(
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .stopsBgFling(bgScrollForwarder)
-            .closesInspectPillOnTouch(inspect)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 8.dp)
+                .stopsBgFling(bgScrollForwarder)
+                .closesInspectPillOnTouch(inspect)
+        ) {
         // Treatment Belt Graph - running mode background + therapy events. A hold or a tap shows the pill.
         TreatmentBeltGraphCompose(
             viewModel = graphViewModel,
@@ -811,7 +820,8 @@ fun GraphsSection(
             )
         }
         // Spacer so the last graph / Add button isn't covered by QuickLaunch toolbar
-        Spacer(Modifier.height(48.dp + overlaidBarsHeight))
+        Spacer(Modifier.height(84.dp + overlaidBarsHeight))
+    }
     }
 }
 

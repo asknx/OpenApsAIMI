@@ -151,6 +151,7 @@ fun MainScreen(
     pumpStatusText: String = "",
     queueStatusText: AnnotatedString? = null,
     isPumpCommunicating: Boolean = false,
+    isPumpDisconnected: Boolean = false,
     onStopBolus: () -> Unit = {},
     aimiOverview: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -276,6 +277,7 @@ fun MainScreen(
                         runningModeProgress = uiState.runningModeProgress,
                         runningModeRecordId = uiState.runningModeRecordId,
                         tbrState = uiState.tbrState,
+                        tbrText = uiState.tbrText,
                         smbEnabled = uiState.smbEnabled,
                         isSimpleMode = uiState.isSimpleMode,
                         calcProgress = calcProgress,
@@ -320,6 +322,7 @@ fun MainScreen(
                         pumpStatusText = pumpStatusText,
                         queueStatusText = queueStatusText,
                         isPumpCommunicating = isPumpCommunicating,
+                        isPumpDisconnected = isPumpDisconnected,
                         onStopBolus = onStopBolus
                     )
 
@@ -605,9 +608,8 @@ fun MainScreen(
             },
             onUnlockEngineering = {
                 mainViewModel.preferences.put(app.aaps.core.keys.BooleanKey.AimiDeveloperOptionsUnlocked, true)
-                mainViewModel.preferences.put(app.aaps.core.keys.BooleanKey.AimiEngineeringBypassEnabled, true)
                 scope.launch {
-                    snackbarHostState.showSnackbar("Инженерный режим AIMI разблокирован и активирован!")
+                    snackbarHostState.showSnackbar("Переключатель инженерного режима разблокирован в меню")
                 }
             }
         )

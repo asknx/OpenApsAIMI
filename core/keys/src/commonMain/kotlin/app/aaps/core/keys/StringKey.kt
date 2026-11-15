@@ -231,69 +231,133 @@ enum class StringKey(
     OApsAIMIWCycleTrackingMode(
         key = "key_oaps_aimi_wcycle_tracking_mode",
         defaultValue = "FIXED_28",
-        title = TextRef.Literal("AIMI WCycle Tracking Mode"),
+        title = TextRef.Literal("Режим отслеживания WCycle"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "FIXED_28" to "Fixed 28-day",
-            "DYNAMIC" to "Dynamic / Rolling",
-            "MANUAL" to "Manual Phase",
-            "OFF" to "Off"
+            "FIXED_28" to "Фиксированный 28 дней",
+            "DYNAMIC" to "Динамический / Скользящий",
+            "MANUAL" to "Ручная фаза",
+            "OFF" to "Отключено"
         )
     ),
     OApsAIMIWCycleContraceptive(
         key = "key_oaps_aimi_wcycle_contraceptive",
         defaultValue = "NONE",
-        title = TextRef.Literal("AIMI WCycle Contraceptive"),
+        title = TextRef.Literal("Контрацепция WCycle"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "NONE" to "None",
-            "COMBINED_PILL" to "Combined Pill",
-            "PROGESTIN_ONLY" to "Progestin Only (Mini-pill)",
-            "IUD_HORMONAL" to "Hormonal IUD",
-            "IUD_COPPER" to "Copper IUD",
-            "IMPLANT" to "Implant / Injection"
+            "NONE" to "Нет",
+            "COMBINED_PILL" to "Комбинированные КОК",
+            "PROGESTIN_ONLY" to "Мини-пили (прогестин)",
+            "IUD_HORMONAL" to "Гормональная ВМС",
+            "IUD_COPPER" to "Медная ВМС",
+            "IMPLANT" to "Имплант / Инъекция"
         )
     ),
     OApsAIMIWCycleThyroid(
         key = "key_oaps_aimi_wcycle_thyroid",
         defaultValue = "EUTHYROID",
-        title = TextRef.Literal("AIMI WCycle Thyroid"),
+        title = TextRef.Literal("Щитовидная железа WCycle"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "EUTHYROID" to "Euthyroid (Normal)",
-            "HYPOTHYROID" to "Hypothyroid",
-            "HYPERTHYROID" to "Hyperthyroid"
+            "EUTHYROID" to "Эутиреоз (норма)",
+            "HYPOTHYROID" to "Гипотиреоз",
+            "HYPERTHYROID" to "Гипертиреоз"
         )
     ),
     OApsAIMIWCycleVerneuil(
         key = "key_oaps_aimi_wcycle_verneuil",
         defaultValue = "NONE",
-        title = TextRef.Literal("AIMI WCycle Verneuil"),
+        title = TextRef.Literal("Болезнь Вернейля WCycle"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "NONE" to "None",
-            "STAGE_1" to "Hurley Stage 1",
-            "STAGE_2" to "Hurley Stage 2",
-            "STAGE_3" to "Hurley Stage 3"
+            "NONE" to "Нет",
+            "STAGE_1" to "Стадия 1 (Hurley 1)",
+            "STAGE_2" to "Стадия 2 (Hurley 2)",
+            "STAGE_3" to "Стадия 3 (Hurley 3)"
         )
     ),
-    OApsAIMINightGrowthStart("key_oaps_aimi_ngr_night_start", "22:00", title = TextRef.Literal("AIMI Night Growth Start")),
-    OApsAIMINightGrowthEnd("key_oaps_aimi_ngr_night_end", "06:00", title = TextRef.Literal("AIMI Night Growth End")),
-    AimiAdvisorOpenAIKey("aimi_advisor_openai_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor OpenAI Key")),
-    AimiAdvisorGeminiKey("aimi_advisor_gemini_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Gemini Key")),
-    AimiAdvisorDeepSeekKey("aimi_advisor_deepseek_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor DeepSeek Key")),
-    AimiAdvisorClaudeKey("aimi_advisor_claude_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Claude Key")),
-    AimiAdvisorGlmKey("aimi_advisor_glm_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor GLM Key")),
-    AimiAdvisorGrokKey("aimi_advisor_grok_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Grok Key")),
-    AimiAdvisorOpenRouterKey("aimi_advisor_openrouter_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor OpenRouter Key")),
-    AimiAdvisorGroqKey("aimi_advisor_groq_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Groq Key")),
-    AimiAdvisorCustomUrl("aimi_advisor_custom_url", "", title = TextRef.Literal("AIMI Advisor Custom URL")),
-    AimiAdvisorCustomKey("aimi_advisor_custom_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Custom Key")),
-    AimiAdvisorModel("aimi_advisor_model", "", title = TextRef.Literal("AIMI Advisor Model")),
+    OApsAIMINightGrowthStart("key_oaps_aimi_ngr_night_start", "22:00", title = TextRef.Literal("Night Growth: Начало ночного интервала")),
+    OApsAIMINightGrowthEnd("key_oaps_aimi_ngr_night_end", "06:00", title = TextRef.Literal("Night Growth: Конец ночного интервала")),
+    AimiAdvisorOpenAIKey(
+        key = "aimi_advisor_openai_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("API ключ OpenAI"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "OPENAI" }
+    ),
+    AimiAdvisorGeminiKey(
+        key = "aimi_advisor_gemini_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("API ключ Gemini"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GEMINI" }
+    ),
+    AimiAdvisorDeepSeekKey(
+        key = "aimi_advisor_deepseek_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("API ключ DeepSeek"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "DEEPSEEK" }
+    ),
+    AimiAdvisorClaudeKey(
+        key = "aimi_advisor_claude_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("API ключ Claude"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "CLAUDE" }
+    ),
+    AimiAdvisorGlmKey(
+        key = "aimi_advisor_glm_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("API ключ GLM (Zhipu)"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GLM" }
+    ),
+    AimiAdvisorGrokKey(
+        key = "aimi_advisor_grok_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("API ключ Grok (xAI)"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GROK" }
+    ),
+    AimiAdvisorOpenRouterKey(
+        key = "aimi_advisor_openrouter_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("API ключ OpenRouter"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "OPENROUTER" }
+    ),
+    AimiAdvisorGroqKey(
+        key = "aimi_advisor_groq_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("API ключ Groq"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GROQ" }
+    ),
+    AimiAdvisorCustomUrl(
+        key = "aimi_advisor_custom_url",
+        defaultValue = "",
+        title = TextRef.Literal("URL кастомного API"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "CUSTOM" }
+    ),
+    AimiAdvisorCustomKey(
+        key = "aimi_advisor_custom_key",
+        defaultValue = "",
+        isPassword = true,
+        title = TextRef.Literal("Ключ кастомного API"),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "CUSTOM" }
+    ),
+    AimiAdvisorModel(
+        key = "aimi_advisor_model",
+        defaultValue = "",
+        title = TextRef.Literal("Модель AI"),
+        summary = TextRef.Literal("Активная модель нейросети (по умолчанию или выбор через каталог)")
+    ),
     AimiAdvisorProvider(
         key = "aimi_advisor_provider",
         defaultValue = "GEMINI",
-        title = TextRef.Literal("AIMI Advisor Provider"),
+        title = TextRef.Literal("AI Провайдер"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
             "GEMINI" to "Gemini (Google)",
@@ -304,18 +368,29 @@ enum class StringKey(
             "GROK" to "Grok (xAI)",
             "OPENROUTER" to "OpenRouter",
             "GROQ" to "Groq",
-            "CUSTOM" to "Custom Endpoint"
+            "CUSTOM" to "Кастомный Endpoint"
+        )
+    ),
+    AimiFoodDatabaseProvider(
+        key = "aimi_food_database_provider",
+        defaultValue = "OPENFOODFACTS",
+        title = TextRef.Literal("База данных продуктов"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "OPENFOODFACTS" to "OpenFoodFacts",
+            "FATSECRET" to "FatSecret",
+            "MIXED" to "Смешанный (OpenFoodFacts -> FatSecret)"
         )
     ),
     AimiAuditorMode(
         key = "aimi_auditor_mode",
         defaultValue = "AUDIT_ONLY",
-        title = TextRef.Literal("AIMI Auditor Mode"),
+        title = TextRef.Literal("Режим аудитора AIMI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "DISABLED" to "Disabled",
-            "AUDIT_ONLY" to "Audit Only",
-            "INTERVENE" to "Active Intervention"
+            "DISABLED" to "Отключен",
+            "AUDIT_ONLY" to "Только аудит",
+            "INTERVENE" to "Активное вмешательство"
         )
     ),
 
@@ -323,78 +398,78 @@ enum class StringKey(
     ContextMode(
         key = "aimi_context_mode",
         defaultValue = "BALANCED",
-        title = TextRef.Literal("AIMI Context Mode"),
+        title = TextRef.Literal("Режим контекста AIMI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "OFF" to "Off",
-            "PASSIVE" to "Passive / Keywords",
-            "BALANCED" to "Balanced (AI + Keywords)",
-            "AGGRESSIVE" to "Aggressive (High AI Sensitivity)"
+            "OFF" to "Отключен",
+            "PASSIVE" to "Пассивный (ключевые слова)",
+            "BALANCED" to "Сбалансированный (AI + слова)",
+            "AGGRESSIVE" to "Агрессивный (высокая чувствительность AI)"
         )
     ),
 
-    OApsAIMIUnstableModeState("key_oaps_aimi_mode_state", "", title = TextRef.Literal("AIMI Unstable Mode State")),
-    OApsAIMIContextStorage("aimi_context_storage", "", title = TextRef.Literal("AIMI Context Storage")),
+    OApsAIMIUnstableModeState("key_oaps_aimi_mode_state", "", title = TextRef.Literal("Состояние нестабильного режима AIMI")),
+    OApsAIMIContextStorage("aimi_context_storage", "", title = TextRef.Literal("Хранилище контекста AIMI")),
 
     // Thyroid / Basedow Module (MTR)
     OApsAIMIThyroidMode(
         key = "key_aimi_thyroid_mode",
         defaultValue = "MANUAL",
-        title = TextRef.Literal("AIMI Thyroid Mode"),
+        title = TextRef.Literal("Режим щитовидной железы AIMI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "OFF" to "Off",
-            "MANUAL" to "Manual",
-            "LABS" to "Lab Results",
-            "DYNAMIC" to "Dynamic Physio (MTR)"
+            "OFF" to "Отключен",
+            "MANUAL" to "Ручной ввод",
+            "LABS" to "Анализы крови",
+            "DYNAMIC" to "Динамическая физиология (MTR)"
         )
     ),
     OApsAIMIThyroidManualStatus(
         key = "key_aimi_thyroid_manual_status",
         defaultValue = "EUTHYROID",
-        title = TextRef.Literal("AIMI Thyroid Manual Status"),
+        title = TextRef.Literal("Статус щитовидной железы (вручную)"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "EUTHYROID" to "Euthyroid (Normal)",
-            "HYPOTHYROID" to "Hypothyroid",
-            "HYPERTHYROID" to "Hyperthyroid (Active Basedow)"
+            "EUTHYROID" to "Эутиреоз (норма)",
+            "HYPOTHYROID" to "Гипотиреоз",
+            "HYPERTHYROID" to "Гипертиреоз (активный Базедов)"
         )
     ),
     OApsAIMIThyroidTreatmentPhase(
         key = "key_aimi_thyroid_treatment_phase",
         defaultValue = "NONE",
-        title = TextRef.Literal("AIMI Thyroid Treatment Phase"),
+        title = TextRef.Literal("Фаза терапии щитовидной железы"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "NONE" to "None",
-            "ATTACK" to "Attack Phase (High Dose)",
-            "MAINTENANCE" to "Maintenance Phase",
-            "BLOCK_REPLACE" to "Block & Replace",
-            "REMISSION" to "Remission"
+            "NONE" to "Нет",
+            "ATTACK" to "Фаза атаки (высокая доза)",
+            "MAINTENANCE" to "Поддерживающая фаза",
+            "BLOCK_REPLACE" to "Блокируй и замещай",
+            "REMISSION" to "Ремиссия"
         )
     ),
     OApsAIMIThyroidGuardLevel(
         key = "key_aimi_thyroid_guard_level",
         defaultValue = "HIGH",
-        title = TextRef.Literal("AIMI Thyroid Guard Level"),
+        title = TextRef.Literal("Уровень защиты щитовидной железы"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "LOW" to "Low (Mild Limits)",
-            "STANDARD" to "Standard Guard",
-            "HIGH" to "High Guard (Hypo Protection)",
-            "MAX" to "Max Protection (Aggressive Block)"
+            "LOW" to "Низкий (мягкие лимиты)",
+            "STANDARD" to "Стандартная защита",
+            "HIGH" to "Высокая защита от гипо",
+            "MAX" to "Максимальная защита"
         )
     ),
 
     // Emergency SOS (Hypo)
-    AimiEmergencySosPhone("aimi_emergency_sos_phone", "", title = TextRef.Literal("AIMI Emergency SOS Phone")),
+    AimiEmergencySosPhone("aimi_emergency_sos_phone", "", title = TextRef.Literal("Номер телефона экстренного SOS")),
 
-    // Gemini OAuth Customization
-    AimiGeminiOAuthClientId("aimi_gemini_oauth_client_id", "", title = TextRef.Literal("AIMI Gemini OAuth Client ID")),
-    AimiGeminiOAuthClientSecret("aimi_gemini_oauth_client_secret", "", title = TextRef.Literal("AIMI Gemini OAuth Client Secret")),
-    AimiGeminiOAuthProjectId("aimi_gemini_oauth_project_id", "", title = TextRef.Literal("AIMI Gemini OAuth Project ID")),
-    AimiGeminiOAuthLoginButton("aimi_gemini_oauth_login_button", "", title = TextRef.Literal("AIMI Gemini OAuth Login Button")),
-    AimiGeminiOAuthLogoutButton("aimi_gemini_oauth_logout_button", "", title = TextRef.Literal("AIMI Gemini OAuth Logout Button")),
+    // Gemini OAuth Customization (hidden/deprecated)
+    AimiGeminiOAuthClientId("aimi_gemini_oauth_client_id", "", title = TextRef.Literal("AIMI Gemini OAuth Client ID"), visibility = ElementVisibility { false }),
+    AimiGeminiOAuthClientSecret("aimi_gemini_oauth_client_secret", "", title = TextRef.Literal("AIMI Gemini OAuth Client Secret"), visibility = ElementVisibility { false }),
+    AimiGeminiOAuthProjectId("aimi_gemini_oauth_project_id", "", title = TextRef.Literal("AIMI Gemini OAuth Project ID"), visibility = ElementVisibility { false }),
+    AimiGeminiOAuthLoginButton("aimi_gemini_oauth_login_button", "", title = TextRef.Literal("AIMI Gemini OAuth Login Button"), visibility = ElementVisibility { false }),
+    AimiGeminiOAuthLogoutButton("aimi_gemini_oauth_logout_button", "", title = TextRef.Literal("AIMI Gemini OAuth Logout Button"), visibility = ElementVisibility { false }),
 
     ;
 

@@ -19,7 +19,9 @@ import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.pump.BolusProgressData
+import app.aaps.core.interfaces.pump.VirtualPump
 import app.aaps.core.interfaces.queue.CommandQueue
+import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.dialogs.OkDialog
@@ -122,6 +124,21 @@ fun OverviewScreen(
     val bolusState by bolusProgressData.state.collectAsStateWithLifecycle()
     val pumpStatusBanner by pumpCommunicationStatus.statusBannerFlow.collectAsStateWithLifecycle()
     val pumpQueueStatus by pumpCommunicationStatus.queueStatusFlow.collectAsStateWithLifecycle()
+    val currentPumpStatus by pumpCommunicationStatus.currentStatusFlow.collectAsStateWithLifecycle()
+    val refreshTrigger by pumpCommunicationStatus.refreshTrigger.collectAsStateWithLifecycle()
+
+    val isVirtualPump = activePlugin.activePumpInternal is VirtualPump
+    val isRealPumpConfigured = !isVirtualPump && activePlugin.activePump.isConfigured()
+
+    // Active communication is when pump is performing a command, connecting, handshaking or disconnecting
+    val isPumpCommunicating = pumpStatusBanner != null &&
+        currentPumpStatus != EventPumpStatusChanged.Status.CONNECTED &&
+        currentPumpStatus != EventPumpStatusChanged.Status.DISCONNECTED
+
+    // Disconnected state: real pump configured, not connected, not connecting, not currently communicating
+    val isPumpDisconnected = (refreshTrigger >= 0L) && isRealPumpConfigured &&
+        (currentPumpStatus == EventPumpStatusChanged.Status.DISCONNECTED ||
+            (!activePlugin.activePump.isConnected() && !activePlugin.activePump.isConnecting()))
 
     // Pump setup button in bottom bar.
     // The three casts here and below are `as?`, not `as`. Each of them runs before the condition
@@ -137,7 +154,7 @@ fun OverviewScreen(
     val objectivesPlugin = objectives as? PluginBase
     val objectivesTotal = objectives.size
     val objectivesDone = objectives.accomplishedCount
-    val showObjectivesSetup = config.APS && objectivesPlugin != null && objectivesTotal > 0 &&
+    val showObjectivesSetup = !config.isEngineeringMode() && config.APS && objectivesPlugin != null && objectivesTotal > 0 &&
         objectivesDone < objectivesTotal && objectivesPlugin.isEnabled() && objectivesPlugin.hasComposeContent()
     val objectivesSetupPlugin = if (showObjectivesSetup) objectivesPlugin else null
     val objectivesProgressText = if (showObjectivesSetup) "$objectivesDone/$objectivesTotal" else null
@@ -251,7 +268,8 @@ fun OverviewScreen(
         bolusState = bolusState,
         pumpStatusText = pumpStatusBanner?.text ?: "",
         queueStatusText = pumpQueueStatus,
-        isPumpCommunicating = pumpStatusBanner != null,
+        isPumpCommunicating = isPumpCommunicating,
+        isPumpDisconnected = isPumpDisconnected,
         onStopBolus = {
             if (config.AAPSCLIENT) {
                 clientControlActionDispatcher.stopBolus()

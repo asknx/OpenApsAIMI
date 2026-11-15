@@ -41,6 +41,14 @@ import app.aaps.core.ui.compose.stringResourceOrNull
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.ui.text.font.FontWeight
+import app.aaps.core.keys.BooleanKey
+import app.aaps.core.ui.compose.LocalPreferences
+import app.aaps.core.ui.compose.preference.rememberPreferenceBooleanState
+
 @Composable
 fun MainDrawer(
     /**
@@ -55,6 +63,9 @@ fun MainDrawer(
     showExit: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val devUnlockedState = rememberPreferenceBooleanState(BooleanKey.AimiDeveloperOptionsUnlocked)
+    val engineeringState = rememberPreferenceBooleanState(BooleanKey.AimiEngineeringBypassEnabled)
+
     ModalDrawerSheet(
         drawerState = drawerState,
         modifier = modifier.width(320.dp)
@@ -83,6 +94,50 @@ fun MainDrawer(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
+            if (devUnlockedState.value) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clickable { engineeringState.value = !engineeringState.value }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Инженерный режим",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (engineeringState.value) "Включен (обход целей)" else "Выключен",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = engineeringState.value,
+                            onCheckedChange = { engineeringState.value = it }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            DrawerMenuItem(ElementType.LOOP) { onNavigate(NavigationRequest.Element(ElementType.LOOP)) }
             DrawerMenuItem(ElementType.TREATMENTS, enabled = isTreatmentsEnabled) { onNavigate(NavigationRequest.Element(ElementType.TREATMENTS)) }
             DrawerMenuItem(ElementType.HISTORY_BROWSER) { onNavigate(NavigationRequest.Element(ElementType.HISTORY_BROWSER)) }
             DrawerMenuItem(ElementType.STATISTICS) { onNavigate(NavigationRequest.Element(ElementType.STATISTICS)) }
