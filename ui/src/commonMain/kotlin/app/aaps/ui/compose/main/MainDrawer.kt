@@ -44,10 +44,11 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.font.FontWeight
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.ui.compose.LocalPreferences
-import app.aaps.core.ui.compose.preference.rememberPreferenceBooleanState
 
 @Composable
 fun MainDrawer(
@@ -63,8 +64,11 @@ fun MainDrawer(
     showExit: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val devUnlockedState = rememberPreferenceBooleanState(BooleanKey.AimiDeveloperOptionsUnlocked)
-    val engineeringState = rememberPreferenceBooleanState(BooleanKey.AimiEngineeringBypassEnabled)
+    val preferences = LocalPreferences.current
+    val devUnlocked by preferences.observe(BooleanKey.AimiDeveloperOptionsUnlocked)
+        .collectAsState(initial = preferences.get(BooleanKey.AimiDeveloperOptionsUnlocked))
+    val engineeringEnabled by preferences.observe(BooleanKey.AimiEngineeringBypassEnabled)
+        .collectAsState(initial = preferences.get(BooleanKey.AimiEngineeringBypassEnabled))
 
     ModalDrawerSheet(
         drawerState = drawerState,
@@ -94,7 +98,7 @@ fun MainDrawer(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (devUnlockedState.value) {
+            if (devUnlocked) {
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
                     shape = RoundedCornerShape(12.dp),
@@ -104,7 +108,9 @@ fun MainDrawer(
                 ) {
                     Row(
                         modifier = Modifier
-                            .clickable { engineeringState.value = !engineeringState.value }
+                            .clickable {
+                                preferences.put(BooleanKey.AimiEngineeringBypassEnabled, !engineeringEnabled)
+                            }
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -123,14 +129,16 @@ fun MainDrawer(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = if (engineeringState.value) "Включен (обход целей)" else "Выключен",
+                                text = if (engineeringEnabled) "Включен (обход целей)" else "Выключен",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Switch(
-                            checked = engineeringState.value,
-                            onCheckedChange = { engineeringState.value = it }
+                            checked = engineeringEnabled,
+                            onCheckedChange = { checked ->
+                                preferences.put(BooleanKey.AimiEngineeringBypassEnabled, checked)
+                            }
                         )
                     }
                 }
