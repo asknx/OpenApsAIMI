@@ -1215,6 +1215,26 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     AimiStringKey.FatSecretClientSecret,
                     AimiStringKey.FatSecretRegion,
                     BooleanKey.AimiMealAdvisorEnable,
+                    IntentKey.OApsAIMIProfileAdvisor.withClick {
+                        context.startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiProfileAdvisorActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    },
+                    IntentKey.OApsAIMIMealAdvisor.withClick {
+                        context.startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.meal.MealAdvisorActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    },
+                    IntentKey.OApsAIMIContext.withClick {
+                        context.startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.context.ui.ContextActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    },
+                    IntentKey.AimiModeSettings.withClick {
+                        context.startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiModeSettingsActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    },
                     IntentKey.AimiLogExport.withClick {
                         pluginScope.launch {
                             android.widget.Toast.makeText(context, "Exporting logs (15 min)...", android.widget.Toast.LENGTH_SHORT).show()
@@ -1272,6 +1292,10 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
             DoubleKey.OApsAIMICHO,
             DoubleKey.OApsAIMITDD7,
             BooleanKey.AimiEngineeringBypassEnabled,
+            BooleanKey.OApsxdriponeminute,
+            BooleanKey.OApsAIMIhoneymoon,
+            BooleanKey.OApsAIMInight,
+            BooleanKey.OApsAIMIUnifiedReactivityEnabled,
 
             // 5. PK/PD Adaptive Models SubScreen
             PreferenceSubScreenDef(
@@ -1365,7 +1389,17 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                 )
             ),
 
-            // 10. Thyroid Module
+            // 10. Inflammatory & Autoimmune Diseases (Decoupled from WCycle)
+            PreferenceSubScreenDef(
+                key = "Inflammatory_Diseases",
+                title = TextRef.Literal("Воспалительные и аутоиммунные заболевания"),
+                items = listOf(
+                    StringKey.OApsAIMIWCycleThyroid,
+                    StringKey.OApsAIMIWCycleVerneuil
+                )
+            ),
+
+            // 11. Thyroid Module
             PreferenceSubScreenDef(
                 key = "Thyroid_Module",
                 title = TextRef.Literal("Щитовидная железа / Базедова болезнь"),
@@ -1437,7 +1471,26 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                 )
             ),
 
-            // 15. Training ML Modes
+            // 15. Logcat Export SubScreen
+            PreferenceSubScreenDef(
+                key = "AIMI_LOG_EXPORT",
+                title = TextRef.Literal("📁 Logcat Export"),
+                items = listOf(
+                    IntentKey.AimiLogExport.withClick {
+                        pluginScope.launch {
+                            android.widget.Toast.makeText(context, "Exporting logs (15 min)...", android.widget.Toast.LENGTH_SHORT).show()
+                            val file = logcatExporter.exportLogs(context, 15)
+                            if (file != null) {
+                                android.widget.Toast.makeText(context, "Exported: ${file.name}", android.widget.Toast.LENGTH_LONG).show()
+                            } else {
+                                android.widget.Toast.makeText(context, "Export Failed!", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                )
+            ),
+
+            // 16. Training ML Modes
             PreferenceSubScreenDef(
                 key = "Training_ML_Modes",
                 title = TextRef.AndroidRes(R.string.training_ml_modes_preferences),

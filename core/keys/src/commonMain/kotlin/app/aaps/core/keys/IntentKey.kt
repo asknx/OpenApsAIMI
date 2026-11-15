@@ -34,6 +34,7 @@ enum class IntentKey(
     AimiGoogleLogin("AimiGoogleLogin", title = TextRef.Literal("Войти через Google (Gemini)"), summary = TextRef.Literal("Авторизация через OAuth аккаунт")),
     AimiGoogleLogout("AimiGoogleLogout", title = TextRef.Literal("Выйти из Google (Gemini)"), summary = TextRef.Literal("Сбросить авторизационный токен")),
     AimiLogExport("AimiLogExport", title = TextRef.Literal("Экспорт диагностических логов AIMI"), summary = TextRef.Literal("Сохранить логи в /Documents/AAPS/logs/")),
+    AimiModeSettings("AimiModeSettings", title = TextRef.Literal("Настройки режимов AIMI"), summary = TextRef.Literal("Управление кастомными режимами и профилями")),
     ;
 
 }
