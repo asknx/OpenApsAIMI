@@ -3,6 +3,7 @@ package app.aaps.di.metro
 import app.aaps.ComposeMainActivity
 import app.aaps.core.interfaces.di.FeatureMemberInjectors
 import app.aaps.plugins.main.general.dashboard.AdjustmentDetailsActivity
+import app.aaps.plugins.main.general.manual.UserManualActivity
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ClassKey
@@ -36,4 +37,10 @@ object AppMemberInjectors {
     @IntoMap
     @ClassKey(AdjustmentDetailsActivity::class)
     fun bindAdjustmentDetailsActivity(injector: MembersInjector<AdjustmentDetailsActivity>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(UserManualActivity::class)
+    fun bindUserManualActivity(injector: MembersInjector<UserManualActivity>): MembersInjector<*> = injector
 }

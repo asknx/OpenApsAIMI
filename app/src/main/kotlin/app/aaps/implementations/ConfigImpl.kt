@@ -32,7 +32,8 @@ import kotlinx.coroutines.flow.update
 @Inject
 class ConfigImpl(
     private val fileListProvider: () -> FileListProvider,
-    private val externalOptionsOverride: ExternalOptionsOverride
+    private val externalOptionsOverride: ExternalOptionsOverride,
+    private val preferences: () -> app.aaps.core.keys.interfaces.Preferences
 ) : Config {
 
     override val SUPPORTED_NS_VERSION = 150000 // 15.0.0
@@ -100,7 +101,8 @@ class ConfigImpl(
     private val enabledOptionsCache = mutableMapOf<ExternalOptions, Boolean>()
 
     override fun isEngineeringModeOrRelease(): Boolean = if (!APS) true else isEngineeringMode() || !isDev()
-    override fun isEngineeringMode(): Boolean = isEnabled(ExternalOptions.ENGINEERING_MODE)
+    override fun isEngineeringMode(): Boolean = isEnabled(ExternalOptions.ENGINEERING_MODE) ||
+        (try { preferences().get(app.aaps.core.keys.BooleanKey.AimiEngineeringBypassEnabled) } catch (_: Exception) { false })
     override fun isDev(): Boolean {
         if (BuildConfig.DEBUG) return true
         if (BuildConfig.FLAVOR == "fulldev") return true

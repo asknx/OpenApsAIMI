@@ -24,6 +24,7 @@ import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.interfaces.utils.Round
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.StringKey
@@ -76,7 +77,8 @@ class SafetyPlugin(
     }
 
     override suspend fun isClosedLoopAllowed(value: Constraint<Boolean>): Constraint<Boolean> {
-        if (!config.isEngineeringModeOrRelease()) {
+        val bypass = preferences.get(BooleanKey.AimiEngineeringBypassEnabled)
+        if (!config.isEngineeringModeOrRelease() && !bypass) {
             if (value.value()) {
                 notificationManager.post(NotificationId.TOAST_ALARM, ConstraintsStrings.closed_loop_disabled_on_dev_branch, level = NotificationLevel.NORMAL)
             }
@@ -96,7 +98,13 @@ class SafetyPlugin(
     }
 
     override suspend fun isAdvancedFilteringEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
-        if (!persistenceLayer.isAdvancedFilteringSupported()) value.set(false, rh.gs(ConstraintsStrings.smbalwaysdisabled), this)
+        if (!persistenceLayer.isAdvancedFilteringSupported()) {
+            if (preferences.get(BooleanKey.AimiEngineeringBypassEnabled)) {
+                value.set(true, "Libre/CGM SMB restrictions bypassed by AIMI", this)
+            } else {
+                value.set(false, rh.gs(ConstraintsStrings.smbalwaysdisabled), this)
+            }
+        }
         return value
     }
 

@@ -597,7 +597,19 @@ fun MainScreen(
         AboutAlertDialog(
             data = aboutDialogData,
             onDismiss = onAboutDialogDismiss,
-            onOpenBatteryHelp = onOpenBatteryHelp
+            onOpenBatteryHelp = onOpenBatteryHelp,
+            onTapProgress = { remaining ->
+                scope.launch {
+                    snackbarHostState.showSnackbar("Осталось $remaining нажатий до разблокировки инженерного режима AIMI")
+                }
+            },
+            onUnlockEngineering = {
+                mainViewModel.preferences.put(app.aaps.core.keys.BooleanKey.AimiDeveloperOptionsUnlocked, true)
+                mainViewModel.preferences.put(app.aaps.core.keys.BooleanKey.AimiEngineeringBypassEnabled, true)
+                scope.launch {
+                    snackbarHostState.showSnackbar("Инженерный режим AIMI разблокирован и активирован!")
+                }
+            }
         )
     }
 }

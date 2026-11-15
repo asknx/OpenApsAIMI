@@ -20,6 +20,7 @@ import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.plugin.PluginBaseWithPreferences
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.resources.TextResolver
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.IntNonKey
 import app.aaps.core.keys.interfaces.Preferences
@@ -90,10 +91,13 @@ class ObjectivesPlugin(
         return accomplished
     }
 
+    private fun isEngineeringBypass(): Boolean = preferences.get(BooleanKey.AimiEngineeringBypassEnabled)
+
     /**
      * Constraints interface
      */
     override fun isLoopInvocationAllowed(value: Constraint<Boolean>): Constraint<Boolean> {
+        if (isEngineeringBypass()) return value
         // Check if initialized
         if (objectives.isEmpty()) return value
         if (!objectives[FIRST_OBJECTIVE].isStarted)
@@ -102,6 +106,7 @@ class ObjectivesPlugin(
     }
 
     override fun isLgsForced(value: Constraint<Boolean>): Constraint<Boolean> {
+        if (isEngineeringBypass()) return value
         // Check if initialized
         if (objectives.isEmpty()) return value
         if (objectives[LGS_OBJECTIVE].isStarted && !objectives[LGS_OBJECTIVE].isAccomplished)
@@ -110,6 +115,7 @@ class ObjectivesPlugin(
     }
 
     override suspend fun isClosedLoopAllowed(value: Constraint<Boolean>): Constraint<Boolean> {
+        if (isEngineeringBypass()) return value
         // Check if initialized
         if (objectives.isEmpty()) return value
         if (!objectives[CLOSED_LOOP_OBJECTIVE].isStarted)
@@ -118,6 +124,7 @@ class ObjectivesPlugin(
     }
 
     override fun isAutosensModeEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
+        if (isEngineeringBypass()) return value
         // Check if initialized
         if (objectives.isEmpty()) return value
         if (!objectives[AUTOSENS_OBJECTIVE].isStarted)
@@ -126,6 +133,7 @@ class ObjectivesPlugin(
     }
 
     override suspend fun isSMBModeEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
+        if (isEngineeringBypass()) return value
         // Check if initialized
         if (objectives.isEmpty()) return value
         if (!objectives[SMB_OBJECTIVE].isStarted)
@@ -134,6 +142,7 @@ class ObjectivesPlugin(
     }
 
     override fun isAutomationEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
+        if (isEngineeringBypass()) return value
         // Check if initialized
         if (objectives.isEmpty()) return value
         if (!objectives[AUTO_OBJECTIVE].isStarted)
@@ -142,6 +151,7 @@ class ObjectivesPlugin(
     }
 
     override fun isConcentrationEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
+        if (isEngineeringBypass()) return value
         if (objectives.isEmpty()) return value
         if (!objectives[EXAM_OBJECTIVE].isAccomplished) {
             value.set(false, rh.gs(ConstraintsStrings.objectivenotfinished, EXAM_OBJECTIVE + 1), this)

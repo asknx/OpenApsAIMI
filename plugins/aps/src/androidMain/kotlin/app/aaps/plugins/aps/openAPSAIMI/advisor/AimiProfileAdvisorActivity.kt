@@ -273,7 +273,9 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
             appendLine()
             appendLine("КОЭФФИЦИЕНТЫ:")
             appendLine("IC (Carb Ratio): %.1f -> %.1f g/U".format(proposal.currentIc, proposal.proposedIc))
-            appendLine("ISF: %.1f -> %.1f mg/dL/U".format(proposal.currentIsf, proposal.proposedIsf))
+            val isfUnit = if (proposal.isMmol) "mmol/L/U" else "mg/dL/U"
+            val isfStr = if (proposal.isMmol) "%.2f -> %.2f %s".format(proposal.currentIsf, proposal.proposedIsf, isfUnit) else "%.1f -> %.1f %s".format(proposal.currentIsf, proposal.proposedIsf, isfUnit)
+            appendLine("ISF: $isfStr")
             appendLine()
             appendLine("НАСТРОЙКИ AIMI:")
             proposal.aimiSettings.forEach { s ->
@@ -380,8 +382,10 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = applyIsf, onCheckedChange = { applyIsf = it })
+                val isfUnit = if (proposal.isMmol) "ммоль/л/U" else "мг/дл/U"
+                val isfText = if (proposal.isMmol) "%.2f -> %.2f %s".format(proposal.currentIsf, proposal.proposedIsf, isfUnit) else "%.1f -> %.1f %s".format(proposal.currentIsf, proposal.proposedIsf, isfUnit)
                 Text(
-                    text = "Фактор чувствительности (ISF): %.1f -> %.1f".format(proposal.currentIsf, proposal.proposedIsf),
+                    text = "Фактор чувствительности (ISF): $isfText",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

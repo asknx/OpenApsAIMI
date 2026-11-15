@@ -120,7 +120,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
     private val activePlugin: ActivePlugin,
     private val iobCobCalculator: IobCobCalculator,
     private val hardLimits: HardLimits,
-    private val preferences: Preferences,
+    preferences: Preferences,
     protected val dateUtil: DateUtil,
     private val processedTbrEbData: ProcessedTbrEbData,
     private val persistenceLayer: PersistenceLayer,
@@ -146,7 +146,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
     private val aimiBackupManager: AimiBackupManager, // ☁️ Cloud Backup Manager (Force Init)
     private val geminiOAuthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager,
     private val logcatExporter: app.aaps.plugins.aps.openAPSAIMI.utils.LogcatExporter
-) : PluginBase(
+) : app.aaps.core.interfaces.plugin.PluginBaseWithPreferences(
     PluginDescription()
         .mainType(PluginType.APS)
         .composeContent { plugin ->
@@ -163,13 +163,34 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
         .showInList { config.APS }
         .description(TextRef.AndroidRes(R.string.description_openapsaimi))
         .setDefault(),
-    aapsLogger, rh, notificationManager
+    ownPreferences = app.aaps.plugins.aps.openAPSAIMI.keys.AimiLongKey.entries + app.aaps.plugins.aps.openAPSAIMI.keys.AimiStringKey.entries,
+    aapsLogger, rh, preferences, notificationManager
 ), APS, PluginConstraints {
 
     override suspend fun onStart() {
         super.onStart()
-        preferences.registerPreferences(app.aaps.plugins.aps.openAPSAIMI.keys.AimiLongKey.entries)
-        preferences.registerPreferences(app.aaps.plugins.aps.openAPSAIMI.keys.AimiStringKey.entries)
+
+        // 🛡️ Auto-migration of engineering mode for existing users
+        if (preferences.getIfExists(BooleanKey.AimiDeveloperOptionsUnlocked) == null) {
+            val externalDir = java.io.File(android.os.Environment.getExternalStorageDirectory().absolutePath + "/Documents/AAPS")
+            val engFileExists = java.io.File(externalDir, "engineering_mode").exists() ||
+                java.io.File(externalDir, "extra/engineering_mode").exists()
+            val legacyObjKey1 = object : app.aaps.core.keys.interfaces.BooleanNonPreferenceKey { override val key = "Objectives_2_started"; override val defaultValue = false; override val exportable = true }
+            val legacyObjKey2 = object : app.aaps.core.keys.interfaces.BooleanNonPreferenceKey { override val key = "Objectives_3_started"; override val defaultValue = false; override val exportable = true }
+            val legacyObjKey3 = object : app.aaps.core.keys.interfaces.LongNonPreferenceKey { override val key = "Objectives_started_2"; override val defaultValue = 0L; override val exportable = true }
+            val legacyObjKey4 = object : app.aaps.core.keys.interfaces.LongNonPreferenceKey { override val key = "Objectives_started_3"; override val defaultValue = 0L; override val exportable = true }
+            val objStarted = (preferences.getIfExists(legacyObjKey1) == true) ||
+                (preferences.getIfExists(legacyObjKey2) == true) ||
+                ((preferences.getIfExists(legacyObjKey3) ?: 0L) > 0L) ||
+                ((preferences.getIfExists(legacyObjKey4) ?: 0L) > 0L)
+            val smbUsed = preferences.get(BooleanKey.ApsUseSmb)
+
+            if (engFileExists || objStarted || smbUsed) {
+                preferences.put(BooleanKey.AimiDeveloperOptionsUnlocked, true)
+                preferences.put(BooleanKey.AimiEngineeringBypassEnabled, true)
+                aapsLogger.info(LTag.APS, "🔓 AIMI Engineering Bypass & Developer Options auto-migrated to enabled")
+            }
+        }
 
         // 🏃 Start AIMI Steps Manager (Health Connect + Phone Sensor sync)
         try {
@@ -1323,6 +1344,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     BooleanKey.OApsAIMIEnableBasal,
                     BooleanKey.OApsAIMIEnableStepsFromWatch,
                     BooleanKey.OApsAIMIforcelimits,
+                    BooleanKey.AimiEngineeringBypassEnabled,
                     IntKey.OApsAIMIlogsize,
                     DoubleKey.OApsAIMIFCLFactor,
                     DoubleKey.OApsAIMIHighBg,

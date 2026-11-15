@@ -344,6 +344,10 @@ enum class BooleanKey(
     // Barcode Provider
     OApsAIMIUseOpenFoodFacts("aimi_use_openfoodfacts", false, title = TextRef.Literal("AIMI Use OpenFoodFacts")),
 
+    // Engineering Mode & Developer Options
+    AimiDeveloperOptionsUnlocked("aimi_dev_options_unlocked", false, title = TextRef.Literal("AIMI Developer Options Unlocked")),
+    AimiEngineeringBypassEnabled("aimi_engineering_bypass_enabled", false, title = TextRef.Literal("AIMI Engineering Bypass (Objectives & Restrictions)"), summary = TextRef.Literal("Bypasses objectives and restrictions for advanced users")),
+
     ;
 
 }

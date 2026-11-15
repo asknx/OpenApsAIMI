@@ -1,5 +1,6 @@
 package app.aaps.ui.compose.aboutDialog
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -13,6 +14,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
@@ -51,19 +56,33 @@ fun AboutAlertDialog(
      * manufacturer the site has never heard of - see `Config.oemBackgroundKilling`.
      */
     onOpenBatteryHelp: (() -> Unit)?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onTapProgress: ((remaining: Int) -> Unit)? = null,
+    onUnlockEngineering: (() -> Unit)? = null
 ) {
     val annotatedMessage = buildClickableMessage(data.message)
+    var tapCount by remember { mutableStateOf(0) }
+    val onEasterEggTap: () -> Unit = {
+        tapCount++
+        if (tapCount == 5) {
+            onTapProgress?.invoke(2)
+        } else if (tapCount == 6) {
+            onTapProgress?.invoke(1)
+        } else if (tapCount >= 7) {
+            onUnlockEngineering?.invoke()
+            tapCount = 0
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
-            LocalAppIcon.current(Modifier.size(48.dp))
+            LocalAppIcon.current(Modifier.size(48.dp).clickable { onEasterEggTap() })
         },
         title = {
             Text(
                 text = data.title,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().clickable { onEasterEggTap() },
                 textAlign = TextAlign.Center
             )
         },

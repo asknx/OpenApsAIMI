@@ -1,8 +1,9 @@
 package app.aaps.plugins.main.general.manual
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,16 +24,25 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import app.aaps.core.keys.BooleanKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.compose.AapsTheme
+import app.aaps.core.ui.compose.MetroAppCompatActivity
 import app.aaps.plugins.main.R
+import dev.zacsweers.metro.Inject
 
-class UserManualActivity : AppCompatActivity() {
+class UserManualActivity : MetroAppCompatActivity() {
+
+    @Inject lateinit var preferences: Preferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             AapsTheme {
-                UserManualScreen(onBack = { onBackPressedDispatcher.onBackPressed() })
+                UserManualScreen(
+                    onBack = { onBackPressedDispatcher.onBackPressed() },
+                    preferences = preferences
+                )
             }
         }
     }
@@ -42,9 +52,13 @@ private data class ManualSection(val id: Int, val title: String, val content: St
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserManualScreen(onBack: () -> Unit) {
+fun UserManualScreen(
+    onBack: () -> Unit,
+    preferences: Preferences? = null
+) {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
+    var tapCount by remember { mutableStateOf(0) }
 
     val sections = remember {
         val list = mutableListOf<ManualSection>()
@@ -97,7 +111,24 @@ fun UserManualScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Руководство OpenAPS AIMI") },
+                title = {
+                    Text(
+                        text = "Руководство OpenAPS AIMI",
+                        modifier = Modifier.clickable {
+                            tapCount++
+                            if (tapCount == 5) {
+                                Toast.makeText(context, "Осталось 2 нажатия до разблокировки инженерного режима AIMI", Toast.LENGTH_SHORT).show()
+                            } else if (tapCount == 6) {
+                                Toast.makeText(context, "Осталось 1 нажатие до разблокировки инженерного режима AIMI", Toast.LENGTH_SHORT).show()
+                            } else if (tapCount >= 7) {
+                                preferences?.put(BooleanKey.AimiDeveloperOptionsUnlocked, true)
+                                preferences?.put(BooleanKey.AimiEngineeringBypassEnabled, true)
+                                Toast.makeText(context, "Инженерный режим AIMI разблокирован и активирован!", Toast.LENGTH_LONG).show()
+                                tapCount = 0
+                            }
+                        }
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")

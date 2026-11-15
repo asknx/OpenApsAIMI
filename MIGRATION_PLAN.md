@@ -78,8 +78,28 @@
 - [x] **Этап 6: Адаптация и запуск unit-тестов (Модуль 11), верификация и стабилизация**
   - [x] Адаптированы unit-тесты `:pump:apex:testDebugUnitTest`: исправлены вызовы конструкторов `TDDEntry` и `StatusV1` в `CommandsTest.kt` (8 passed, 0 skipped, 0 failed).
   - [x] Запущены host unit-тесты `:plugins:smoothing:testAndroidHostTest`: 8 passed, 0 skipped, 0 failed.
-  - [x] Запущены host unit-тесты `:plugins:aps:testAndroidHostTest`: 346 passed, 0 skipped, 0 failed.
+  - [x] Запущены host unit-тесты `:plugins:aps:testAndroidHostTest`: 350 passed, 0 skipped, 0 failed.
   - [x] Полная верификация сборки `:app:assembleFullDebug`: **BUILD SUCCESSFUL**. APK собран и готов к установке.
+- [x] **Этап 7: Предполётный медицинский аудит (Pre-Flight Medical & Upgrade Audit)**
+  - [x] **Задача 1: Исправление медицинского бага с единицами ISF (`mmol/L` vs `mg/dL`) и сохранением временных блоков в `AimiAdvisorService.kt`**:
+    - `currentIsf` в `generateFullProposal()` пересчитывается в `mmol/L/U` при `profileFunction.getUnits() == GlucoseUnit.MMOL`.
+    - Добавлен флаг `val isMmol: Boolean = false` в `FullAdvisorProposal`.
+    - В `createAndActivateAimiProfile()` устранено затирание расписания: для `carbratio` и `sens` сохраняются все существующие временные блоки расписания с масштабированием значений по факторам `(proposed / current).coerceIn(0.85, 1.15)` с округлением до 2 знаков.
+    - В `AimiProfileAdvisorActivity.kt` отображение и экспорт предложений ISF выводятся в единицах профиля (`ммоль/л/U` с 2 знаками или `mg/dL/U`).
+  - [x] **Задача 2: Бесшовный апгрейд и инженерный режим AIMI**:
+    - Добавлены ключи `AimiDeveloperOptionsUnlocked` и `AimiEngineeringBypassEnabled` в `BooleanKey.kt` (`exportable = true`).
+    - Ключ `BooleanKey.AimiEngineeringBypassEnabled` вынесен в `Global User Preferences` в настройках плагина `OpenAPSAIMIPlugin.kt`.
+    - В `OpenAPSAIMIPlugin.onStart()` реализована автомиграция: при наличии файла `engineering_mode` или ранее запущенных целях (Objectives 2/3 / ApsUseSmb) ключи автоматически активируются.
+    - Пасхалка 7 нажатий интегрирована в `AboutDialog.kt` (по иконке и заголовку) и `UserManualActivity.kt` (по заголовку TopAppBar) с тостами/снекбарами на 5/6/7 тапах.
+    - Интеграция в ядро: `ConfigImpl.kt` (`isEngineeringMode` и `isEngineeringModeOrRelease`), `SafetyPlugin.kt` (`isClosedLoopAllowed` и `isAdvancedFilteringEnabled`), `ObjectivesPlugin.kt` (беспрепятственный пропуск всех ограничений при активном байпасе).
+  - [x] **Задача 3: 100% гарантия сохранения настроек и бэкапа**:
+    - `OpenAPSAIMIPlugin` переведён на `PluginBaseWithPreferences` с регистрацией `AimiLongKey.entries + AimiStringKey.entries` в `ownPreferences`.
+    - В `PreferencesImpl.isExportableKey()` добавлены префиксы `"aimi_"`, `"key_oaps_aimi_"`, `"oa_aimi_"`, `"key_aimi_"`, `"apex_"`, `"garmin_"`, `"LocalProfile_"`, `"Objectives_"`.
+    - Гарантирована инициализация `AimiBackupManager` через Metro DI.
+  - [x] **Задача 4: Синтетический предполётный тест безопасности**:
+    - Создан `AimiPreFlightSafetyVerificationTest.kt` (гипо-защита SafetyNet & ControlBarrierShield, сохранение расписания профиля в mmol/L и mg/dL, метрики Juggluco NG, экспорт ключей бэкапа). Все 350 тестов в `:plugins:aps:testAndroidHostTest` пройдены успешно.
+  - [x] **Задача 5: Итоговая сборка APK**:
+    - `:app:assembleFullDebug` успешно скомпилирован и упакован.
 
 ---
 

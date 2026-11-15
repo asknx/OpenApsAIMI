@@ -142,7 +142,8 @@ data class FullAdvisorProposal(
     val currentIsf: Double,
     val proposedIsf: Double,
     val aimiSettings: List<AimiSettingProposal>,
-    val clinicalSummary: String
+    val clinicalSummary: String,
+    val isMmol: Boolean = false
 )
 
 /**

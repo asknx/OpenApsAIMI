@@ -946,9 +946,10 @@ class AimiAdvisorService {
     fun generateFullProposal(periodDays: Int = 7): FullAdvisorProposal {
         val metrics = calculateMetrics(periodDays)
         val profile = profileFunction?.let { runBlocking { it.getProfile() } }
-        val currentIc = profile?.getIc() ?: 10.0
-        val currentIsf = profile?.getProfileIsfMgdl() ?: 40.0
         val isMmol = metrics.isMmol
+        val currentIc = profile?.getIc() ?: 10.0
+        val isfMgdl = profile?.getProfileIsfMgdl() ?: 40.0
+        val currentIsf = if (isMmol) isfMgdl / 18.01559 else isfMgdl
 
         val hourlyProposals = (0..23).map { hour ->
             val curRate = profile?.getBasal((hour * 3600).toLong()) ?: 1.0
@@ -1044,7 +1045,8 @@ class AimiAdvisorService {
             currentIsf = currentIsf,
             proposedIsf = proposedIsf,
             aimiSettings = aimiSettings,
-            clinicalSummary = clinicalSummary
+            clinicalSummary = clinicalSummary,
+            isMmol = isMmol
         )
     }
 
@@ -1068,7 +1070,7 @@ class AimiAdvisorService {
                 proposal.hourlyBasal.forEach { row ->
                     put(JSONObject().apply {
                         put("time", String.format(Locale.US, "%02d:00", row.hour))
-                        put("value", row.proposedRate)
+                        put("value", kotlin.math.round(row.proposedRate * 100.0) / 100.0)
                         put("timeAsSeconds", row.hour * 3600)
                     })
                 }
@@ -1077,25 +1079,65 @@ class AimiAdvisorService {
             baseJson["basal"] as? JSONArray ?: JSONArray()
         }
 
+        val icRatioFactor = if (proposal.currentIc > 0.0) {
+            (proposal.proposedIc / proposal.currentIc).coerceIn(0.85, 1.15)
+        } else 1.0
+
+        val isfRatioFactor = if (proposal.currentIsf > 0.0) {
+            (proposal.proposedIsf / proposal.currentIsf).coerceIn(0.85, 1.15)
+        } else 1.0
+
         val icArray = if (applyIc && proposal.proposedIc > 0.0) {
-            JSONArray().apply {
-                put(JSONObject().apply {
-                    put("time", "00:00")
-                    put("value", proposal.proposedIc)
-                    put("timeAsSeconds", 0)
-                })
+            val existing = baseJson["carbratio"] as? JSONArray
+            if (existing != null && existing.length() > 0) {
+                JSONArray().apply {
+                    for (i in 0 until existing.length()) {
+                        val obj = existing.getJSONObject(i)
+                        val oldVal = obj.optDouble("value", proposal.currentIc)
+                        val scaledVal = kotlin.math.round(oldVal * icRatioFactor * 100.0) / 100.0
+                        put(JSONObject().apply {
+                            put("time", obj.optString("time", "00:00"))
+                            put("value", scaledVal)
+                            put("timeAsSeconds", obj.optInt("timeAsSeconds", 0))
+                        })
+                    }
+                }
+            } else {
+                JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("time", "00:00")
+                        put("value", kotlin.math.round(proposal.proposedIc * 100.0) / 100.0)
+                        put("timeAsSeconds", 0)
+                    })
+                }
             }
         } else {
             baseJson["carbratio"] as? JSONArray ?: JSONArray()
         }
 
         val isfArray = if (applyIsf && proposal.proposedIsf > 0.0) {
-            JSONArray().apply {
-                put(JSONObject().apply {
-                    put("time", "00:00")
-                    put("value", proposal.proposedIsf)
-                    put("timeAsSeconds", 0)
-                })
+            val existing = baseJson["sens"] as? JSONArray
+            if (existing != null && existing.length() > 0) {
+                JSONArray().apply {
+                    for (i in 0 until existing.length()) {
+                        val obj = existing.getJSONObject(i)
+                        val oldVal = obj.optDouble("value", proposal.currentIsf)
+                        val scaledVal = kotlin.math.round(oldVal * isfRatioFactor * 100.0) / 100.0
+                        put(JSONObject().apply {
+                            put("time", obj.optString("time", "00:00"))
+                            put("value", scaledVal)
+                            put("timeAsSeconds", obj.optInt("timeAsSeconds", 0))
+                        })
+                    }
+                }
+            } else {
+                JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("time", "00:00")
+                        put("value", kotlin.math.round(proposal.proposedIsf * 100.0) / 100.0)
+                        put("timeAsSeconds", 0)
+                    })
+                }
             }
         } else {
             baseJson["sens"] as? JSONArray ?: JSONArray()
