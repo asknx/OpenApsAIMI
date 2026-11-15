@@ -58,13 +58,16 @@
   - [x] **Контур Б (Целостность базы upstream 4.0.0):**
     - Ядро AAPS 4.0.0 (`core/*`, `shared/*`, KMP структура, Metro DI, драйверы помп Dash/Dana/Eros/Medtronic, NSClient v3) сохранено в неприкосновенности.
   - [x] **Верификация компиляции и ключей:**
-    - `ApexPumpPlugin.kt`: ключи `ApexStringKey.SerialNumber` (первым), `MaxBasal`, `MaxBolus` (после `BatteryHighVoltage`) верифицированы.
-    - `OpenAPSAIMIPlugin.kt`: 45+ ключей форка (Autodrive/Cosine Gate, PKPD/Kicker/ZeroResume/Night Growth, Advisors/OAuth/RemoteControlPin) интегрированы в экран настроек.
-    - `GoogleDriveManager.kt`: поддержка `.jsonl` и маршрутизация `.json`, `.jsonl`, `.csv` с "aimi"/"autodrive" в `CloudConstants.CLOUD_PATH_AIMI`.
+    - `ApexPumpPlugin.kt`: проверены все 6 групп ключей (`SerialNumber`, `MaxBasal`, `MaxBolus`, `FirmwareVer`, `AlarmSoundLength`, `CalcBatteryType`).
+    - `OpenAPSAIMIPlugin.kt`: интегрированы все 45 пользовательских настроек (оставшиеся 5 ключей `OApsAIMILastEstimatedCarbs`, `OApsAIMILastEstimatedCarbTime`, `OApsAIMIUnstableModeState`, `OApsAIMIContextStorage`, `LastPrebolusTime` являются внутренними переменными состояния алгоритма).
+    - `GoogleDriveManager.kt` / `GoogleDriveProvider.kt`: поддержка `.jsonl` и маршрутизация `.json`, `.jsonl`, `.csv` с "aimi"/"autodrive" в `CloudConstants.CLOUD_PATH_AIMI`. Удалены мёртвые дубли из `plugins/configuration/src/main`.
     - `:plugins:aps:assemble` — **BUILD SUCCESSFUL**
     - `:pump:apex:assemble` — **BUILD SUCCESSFUL**
     - `:app:assembleFullDebug` — **BUILD SUCCESSFUL** (успешная компоновка и упаковка APK)
 - [ ] **Этап 5: Миграция UI-экранов на Jetpack Compose / Material 3 (Модуль 10)**
+  - [x] **Этап 5A: Помпа Apex, Meal Advisor, Aimi Profile Advisor, Aimi Mode Settings, Context, Remote Control (Модули 10.1, 10.2, 10.3, 10.7, 10.8)** (Завершено, сборка `:app:assembleFullDebug` успешна)
+  - [ ] **Этап 5B: Dashboard, Overview, карточки статуса, круговой индикатор, график глюкозы, кастомные View (Модули 10.4, 10.5)**
+  - [ ] **Этап 5C: Диалоги болюса, меню, вспомогательные экраны и экраны Wear OS (Модули 10.6, 10.9, 10.10)**
 - [ ] **Этап 6: Адаптация и запуск unit-тестов (Модуль 11), верификация и стабилизация**
 
 ---
@@ -532,23 +535,23 @@
 #### 10.1. Экраны Meal Advisor (AI Vision & Анализ питания) (2 файлов)
 - **Целевая реализация Compose:** `MealAdvisorScreen.kt`, `MealAdvisorCameraScreen.kt` (Jetpack Compose + Material 3 + CameraX)
 
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/MealAdvisorActivity.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/MealAdvisorCameraActivity.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/MealAdvisorActivity.kt` (мигрирован на `MealAdvisorScreen`)
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/meal/MealAdvisorCameraActivity.kt` (мигрирован на `MealAdvisorCameraScreen`)
 
 #### 10.2. Экраны настроек AIMI и профильных рекомендаций (2 файлов)
 - **Целевая реализация Compose:** `AimiModeSettingsScreen.kt`, `AimiProfileAdvisorScreen.kt` (Material 3 Preference Sheets)
 
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AimiModeSettingsActivity.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AimiProfileAdvisorActivity.kt`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AimiModeSettingsActivity.kt` (мигрирован на `AimiModeSettingsScreen`)
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/advisor/AimiProfileAdvisorActivity.kt` (мигрирован на `AimiProfileAdvisorScreen`)
 
 #### 10.3. Экран контекстных намерений (Context UI) (5 файлов)
 - **Целевая реализация Compose:** `ContextScreen.kt` (Compose Material 3)
 
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ui/ContextActivity.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ui/ContextIntentAdapter.kt`
-- [ ] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ui/ContextViewModel.kt`
-- [ ] `[A]` `plugins/aps/src/main/res/layout/activity_context.xml`
-- [ ] `[A]` `plugins/aps/src/main/res/layout/item_active_intent.xml`
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ui/ContextActivity.kt` (мигрирован на `ContextScreen`)
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ui/ContextIntentAdapter.kt` (удалён за ненадобностью, заменён LazyColumn)
+- [x] `[A]` `plugins/aps/src/main/kotlin/app/aaps/plugins/aps/openAPSAIMI/context/ui/ContextViewModel.kt` (мигрирован на StateFlow / Metro DI)
+- [x] `[A]` `plugins/aps/src/main/res/layout/activity_context.xml` (удалён)
+- [x] `[A]` `plugins/aps/src/main/res/layout/item_active_intent.xml` (удалён)
 
 #### 10.4. Экраны компаратора и превью дашборда (2 файлов)
 - **Целевая реализация Compose:** `ComparatorScreen.kt`, `DashboardPreviewScreen.kt` (Compose Material 3)
@@ -620,29 +623,29 @@
 - [ ] `[A]` `plugins/main/src/main/res/values/manual_strings.xml`
 
 #### 10.7. Экран удалённого управления (Remote Control / NS Client) (11 файлов)
-- **Целевая реализация Compose:** `RemoteControlScreen.kt` (Compose Material 3 Tabs, Cards, Dialogs)
+- **Целевая реализация Compose:** `RemoteControlScreen.kt`, `RemoteControlComposeContent.kt`, `RemoteControlViewModel.kt` (Compose Material 3 Tabs, Cards, Dialogs)
 
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/ActiveModesAdapter.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/LicenseKeyDialog.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/ModesAdapter.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteAccessLoginDialog.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteControlFragment.kt`
-- [ ] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteControlPagerAdapter.kt`
-- [ ] `[A]` `plugins/sync/src/main/res/layout/tab_active.xml`
-- [ ] `[A]` `plugins/sync/src/main/res/layout/tab_contexts.xml`
-- [ ] `[A]` `plugins/sync/src/main/res/layout/tab_llm.xml`
-- [ ] `[A]` `plugins/sync/src/main/res/layout/tab_modes.xml`
-- [ ] `[A]` `plugins/sync/src/main/res/values/strings_remote.xml`
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/ActiveModesAdapter.kt` (удалён за ненадобностью, заменён Compose)
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/LicenseKeyDialog.kt` (удалён за ненадобностью, заменён Compose Dialog)
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/ModesAdapter.kt` (удалён за ненадобностью, заменён Compose)
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteAccessLoginDialog.kt` (удалён за ненадобностью, заменён Compose Dialog)
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteControlFragment.kt` (удалён за ненадобностью, заменён `RemoteControlComposeContent`)
+- [x] `[A]` `plugins/sync/src/main/kotlin/app/aaps/plugins/sync/nsShared/RemoteControlPagerAdapter.kt` (удалён за ненадобностью, заменён Compose PrimaryTabRow)
+- [x] `[A]` `plugins/sync/src/main/res/layout/tab_active.xml` (удалён)
+- [x] `[A]` `plugins/sync/src/main/res/layout/tab_contexts.xml` (удалён)
+- [x] `[A]` `plugins/sync/src/main/res/layout/tab_llm.xml` (удалён)
+- [x] `[A]` `plugins/sync/src/main/res/layout/tab_modes.xml` (удалён)
+- [x] `[A]` `plugins/sync/src/main/res/values/strings_remote.xml`
 
 #### 10.8. Экран управления помпой Apex (Apex UI) (6 файлов)
-- **Целевая реализация Compose:** `ApexPumpScreen.kt` (Compose Material 3)
+- **Целевая реализация Compose:** `ApexPumpScreen.kt`, `ApexPumpComposeContent.kt`, `ApexPumpViewModel.kt` (Compose Material 3)
 
-- [ ] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ui/ApexFragment.kt`
-- [ ] `[A]` `pump/apex/src/main/res/drawable/ic_apex.xml`
-- [ ] `[A]` `pump/apex/src/main/res/drawable/ic_apex_detailed.xml`
-- [ ] `[A]` `pump/apex/src/main/res/layout/apex_fragment.xml`
-- [ ] `[A]` `pump/apex/src/main/res/values-ru-rRU/strings.xml`
-- [ ] `[A]` `pump/apex/src/main/res/values/strings.xml`
+- [x] `[A]` `pump/apex/src/main/kotlin/app/aaps/pump/apex/ui/ApexFragment.kt` (удалён, заменён `ApexPumpComposeContent`)
+- [x] `[A]` `pump/apex/src/main/res/drawable/ic_apex.xml`
+- [x] `[A]` `pump/apex/src/main/res/drawable/ic_apex_detailed.xml`
+- [x] `[A]` `pump/apex/src/main/res/layout/apex_fragment.xml` (удалён)
+- [x] `[A]` `pump/apex/src/main/res/values-ru-rRU/strings.xml`
+- [x] `[A]` `pump/apex/src/main/res/values/strings.xml`
 
 #### 10.9. Экраны разрешений Health Connect и Emergency SOS (2 файлов)
 - **Целевая реализация Compose:** Compose Permission Hosts / BottomSheets

@@ -33,12 +33,14 @@ interface HardLimits {
         val LIMIT_TEMP_MIN_BG = 72.0..180.16
         val LIMIT_TEMP_MAX_BG = 72.0..270.0
         val LIMIT_TEMP_TARGET_BG = 72.0..200.0
+        val MIN_DIA = doubleArrayOf(5.0, 5.0, 4.0, 4.0, 4.0)
+        val MAX_DIA = doubleArrayOf(9.0, 9.0, 9.0, 9.0, 12.0)
         val LIMIT_DIA = mapOf(
             AgeType.CHILD to 5.0..9.0,
             AgeType.TEENAGE to 5.0..9.0,
-            AgeType.ADULT to 5.0..9.0,
-            AgeType.RESISTANT_ADULT to 5.0..9.0,
-            AgeType.PREGNANT to 5.0..10.0
+            AgeType.ADULT to 4.0..9.0,
+            AgeType.RESISTANT_ADULT to 4.0..9.0,
+            AgeType.PREGNANT to 4.0..12.0
         )
         val LIMIT_PEAK = 35..120 // min
         val LIMIT_IC = mapOf(
@@ -48,7 +50,9 @@ interface HardLimits {
             AgeType.RESISTANT_ADULT to 2.0..100.0,
             AgeType.PREGNANT to 0.3..100.0
         )
-        val LIMIT_ISF = 2.0..1000.0 // mgdl
+        const val MIN_ISF = 2.0 // mgdl
+        const val MAX_ISF = 1200.0 // mgdl
+        val LIMIT_ISF = 2.0..MAX_ISF // mgdl
         val MAX_IOB_AMA = mapOf(
             AgeType.CHILD to 3.0,
             AgeType.TEENAGE to 5.0,

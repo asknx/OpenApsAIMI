@@ -159,12 +159,28 @@ class GoogleDriveProvider(
             .map { CloudFolder(id = it.id, name = it.name) }
 
     override suspend fun uploadFileToPath(fileName: String, content: ByteArray, mimeType: String, path: String): String? {
+        val lower = fileName.lowercase()
+        val effectiveMime = if (lower.endsWith(".jsonl") && (mimeType.isEmpty() || mimeType == "application/octet-stream")) {
+            "application/json; charset=UTF-8"
+        } else mimeType
         val folderId = getOrCreateFolderPath(path) ?: return null
-        return api.uploadFile(fileName, content, folderId, mimeType).onFailure { noteFailure(it) }.getOrNull()
+        return api.uploadFile(fileName, content, folderId, effectiveMime).onFailure { noteFailure(it) }.getOrNull()
     }
 
-    override suspend fun uploadFile(fileName: String, content: ByteArray, mimeType: String): String? =
-        api.uploadFile(fileName, content, getSelectedFolderId(), mimeType).onFailure { noteFailure(it) }.getOrNull()
+    override suspend fun uploadFile(fileName: String, content: ByteArray, mimeType: String): String? {
+        val lower = fileName.lowercase()
+        val effectiveMime = if (lower.endsWith(".jsonl") && (mimeType.isEmpty() || mimeType == "application/octet-stream")) {
+            "application/json; charset=UTF-8"
+        } else mimeType
+        val targetFolderId = if ((lower.endsWith(".json") || lower.endsWith(".jsonl") || lower.endsWith(".csv")) &&
+            (lower.contains("aimi") || lower.contains("autodrive"))
+        ) {
+            getOrCreateFolderPath(CloudConstants.CLOUD_PATH_AIMI) ?: getSelectedFolderId()
+        } else {
+            getSelectedFolderId()
+        }
+        return api.uploadFile(fileName, content, targetFolderId, effectiveMime).onFailure { noteFailure(it) }.getOrNull()
+    }
 
     override suspend fun downloadFile(fileId: String): ByteArray? =
         api.downloadFile(fileId).onFailure { noteFailure(it) }.getOrNull()

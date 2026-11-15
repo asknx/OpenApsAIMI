@@ -9,6 +9,7 @@ import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.resources.TextResolver
 import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.plugins.sync.R
+import app.aaps.plugins.sync.nsclientV3.ui.RemoteControlComposeContent
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -34,7 +35,8 @@ class RemoteControlPlugin @Inject constructor(
         .mainType(PluginType.GENERAL)
         .pluginName(TextRef.AndroidRes(R.string.remote_control_title))
         .description(TextRef.AndroidRes(R.string.remote_control_description))
-        .showInList { config.AAPSCLIENT },
+        .showInList { config.AAPSCLIENT }
+        .composeContent { _ -> RemoteControlComposeContent() },
     aapsLogger,
     rh,
     notificationManager

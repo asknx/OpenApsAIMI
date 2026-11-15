@@ -2,23 +2,20 @@ package app.aaps.plugins.aps.openAPSAIMI.advisor.meal
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Bundle
-import android.util.Size
-import android.view.Gravity
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import app.aaps.core.ui.compose.AapsTheme
+import app.aaps.plugins.aps.openAPSAIMI.advisor.meal.ui.MealAdvisorCameraScreen
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -44,55 +41,23 @@ class MealAdvisorCameraActivity : AppCompatActivity() {
         
         mode = intent.getStringExtra(EXTRA_MODE) ?: MODE_BARCODE
 
-        // --- 1. Layout ---
-        val root = FrameLayout(this).apply {
-            setBackgroundColor(Color.BLACK)
-        }
-        
         previewView = PreviewView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
+            layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         }
-        root.addView(previewView)
 
-        if (mode == MODE_BARCODE) {
-            val overlay = TextView(this).apply {
-                text = "Center the barcode in the frame"
-                setTextColor(Color.WHITE)
-                textSize = 16f
-                gravity = Gravity.CENTER
-                setBackgroundColor(Color.parseColor("#80000000"))
-                setPadding(32, 16, 32, 16)
-                layoutParams = FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                    bottomMargin = 200
-                }
+        setContent {
+            AapsTheme {
+                MealAdvisorCameraScreen(
+                    previewView = previewView,
+                    mode = mode,
+                    onBackClick = { finish() },
+                    onCaptureClick = { takePicture() }
+                )
             }
-            root.addView(overlay)
-        } else {
-            val captureButton = android.widget.Button(this).apply {
-                text = "🔘 CAPTURE"
-                textSize = 18f
-                setTextColor(Color.WHITE)
-                setBackgroundColor(Color.TRANSPARENT)
-                layoutParams = FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                    bottomMargin = 64
-                }
-                setOnClickListener { takePicture() }
-            }
-            root.addView(captureButton)
         }
-        
-        setContentView(root)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 

@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.metro)
     id("android-module-dependencies")
@@ -9,9 +10,6 @@ plugins {
 
 android {
     namespace = "app.aaps.pump.apex"
-    buildFeatures {
-        dataBinding = true
-    }
 }
 
 dependencies {
@@ -23,5 +21,7 @@ dependencies {
     implementation(project(":core:utils"))
     implementation(project(":pump:common"))
     implementation(libs.androidx.preference)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(project(":shared:tests"))
 }

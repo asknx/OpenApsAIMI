@@ -1,347 +1,125 @@
 ﻿package app.aaps.plugins.aps.openAPSAIMI.advisor
 
-import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
-import android.text.InputType
-import android.view.Gravity
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.Space
-import android.widget.TextView
 import android.widget.Toast
-import androidx.cardview.widget.CardView
-import app.aaps.core.keys.DoubleKey
-import app.aaps.core.keys.IntKey
-import app.aaps.core.keys.interfaces.Preferences
-import app.aaps.core.ui.compose.MetroAppCompatActivity
-import androidx.appcompat.app.AlertDialog
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.lifecycleScope
 import app.aaps.core.interfaces.automation.Automation
 import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.keys.DoubleKey
+import app.aaps.core.keys.IntKey
+import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.ui.compose.AapsTheme
+import app.aaps.core.ui.compose.MetroAppCompatActivity
+import app.aaps.plugins.aps.openAPSAIMI.advisor.ui.AimiModeSettingsScreen
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import android.widget.Switch
-
 
 class AimiModeSettingsActivity : MetroAppCompatActivity() {
 
     @Inject lateinit var automation: Automation
     @Inject lateinit var rh: ResourceHelper
-
-    // Removed Inject to avoid Dagger graph issues with new Activity - REVERTED: Now we use Dagger
-    // private val prefs by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
     @Inject lateinit var preferences: Preferences
     @Inject lateinit var persistenceLayer: app.aaps.core.interfaces.db.PersistenceLayer
     private val sp by lazy { androidx.preference.PreferenceManager.getDefaultSharedPreferences(this) }
 
-    private var selectedMode = ModeType.LUNCH
-
-    private lateinit var lunchButton: TextView
-    private lateinit var dinnerButton: TextView
-    private lateinit var bfastButton: TextView
-    private lateinit var highCarbButton: TextView
-    
-    private lateinit var inputPrebolus1: EditText
-    private lateinit var inputPrebolus2: EditText
-    private lateinit var inputReactivity: EditText
-    private lateinit var inputDuration: EditText
-    private lateinit var inputInterval: EditText
-
-    // AI Settings Inputs
-    private lateinit var inputOpenAiKey: EditText
-    private lateinit var inputGeminiKey: EditText
-    private lateinit var switchProvider: Switch
-
-    private val darkNavy = Color.parseColor("#0F172A")
-    private val cardDark = Color.parseColor("#1E293B")
-    private val textPrimary = Color.parseColor("#E2E8F0")
-    private val textSecondary = Color.parseColor("#94A3B8")
-    private val accentColor = Color.parseColor("#6366F1") // Indigo
-    private val activeTabColor = Color.parseColor("#334155")
-
     enum class ModeType { LUNCH, DINNER, BFAST, HIGHCARB }
+
+    private val selectedMode = mutableStateOf(ModeType.LUNCH)
+    private val prebolus1Text = mutableStateOf("")
+    private val prebolus2Text = mutableStateOf("")
+    private val reactivityText = mutableStateOf("")
+    private val durationText = mutableStateOf("")
+    private val intervalText = mutableStateOf("")
+
+    private val showActivateDialog = mutableStateOf(false)
+    private val activateDialogTitle = mutableStateOf("")
+    private val activateDialogMessage = mutableStateOf("")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = darkNavy
-        
-        val mainScroll = ScrollView(this).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(darkNavy)
-            isFillViewport = true
-        }
 
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 48, 48, 48)
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
-        mainScroll.addView(container)
-
-        // Title
-        val title = TextView(this).apply {
-            text = "⚙️ Mode Settings"
-            textSize = 24f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 48
-            }
-        }
-        container.addView(title)
-
-        // Mode Toggles (Tabs)
-        val toggleContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            weightSum = 4f
-            // Custom simplified background logic
-            setBackgroundColor(cardDark)
-            setPadding(16, 16, 16, 16)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 48
-            }
-        }
-
-        lunchButton = createTabButton("LUNCH 🥗", true)
-        dinnerButton = createTabButton("DINNER 🍽️", false)
-        bfastButton = createTabButton("BFAST 🍳", false)
-        highCarbButton = createTabButton("HIGHCARB 🍕", false)
-
-        toggleContainer.addView(lunchButton)
-        toggleContainer.addView(Space(this), LinearLayout.LayoutParams(16, 1))
-        toggleContainer.addView(dinnerButton)
-        toggleContainer.addView(Space(this), LinearLayout.LayoutParams(16, 1))
-        toggleContainer.addView(bfastButton)
-        toggleContainer.addView(Space(this), LinearLayout.LayoutParams(16, 1))
-        toggleContainer.addView(highCarbButton)
-        container.addView(toggleContainer)
-
-        // Inputs Card
-        val formCard = CardView(this).apply {
-            setCardBackgroundColor(cardDark)
-            radius = 24f
-            cardElevation = 8f
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        }
-        
-        val formLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 48, 48, 48)
-        }
-
-        inputPrebolus1 = createLabeledInput(formLayout, "Prebolus 1 (U)", "2.5")
-        inputPrebolus2 = createLabeledInput(formLayout, "Prebolus 2 (U)", "2.0")
-        inputReactivity = createLabeledInput(formLayout, "Reactivity (%)", "100")
-        inputDuration = createLabeledInput(formLayout, "Duration (min)", "60") // 🚀 ADDED
-        inputInterval = createLabeledInput(formLayout, "Interval (min)", "5")
-        (inputInterval.layoutParams as LinearLayout.LayoutParams).bottomMargin = 0
-
-        formCard.addView(formLayout)
-        container.addView(formCard)
-
-
-        // Save Button
-        val saveBtn = Button(this).apply {
-            text = "SAVE SETTINGS"
-            textSize = 16f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(accentColor)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 120).apply {
-                topMargin = 64
-            }
-            setOnClickListener { saveValues(true) }
-        }
-        container.addView(saveBtn)
-
-        // Activate Button
-        val activateBtn = Button(this).apply {
-            text = "⚡ ACTIVATE ${if (selectedMode == ModeType.LUNCH) "LUNCH" else "DINNER"}" // Initial text
-            textSize = 14f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#4ADE80")) // Green text
-            // Outlined style simulation
-            background = android.graphics.drawable.GradientDrawable().apply {
-                 setStroke(4, Color.parseColor("#4ADE80"))
-                 cornerRadius = 12f
-                 setColor(Color.TRANSPARENT)
-            }
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 120).apply {
-                topMargin = 32
-                bottomMargin = 64
-            }
-            setOnClickListener { activateMode() }
-        }
-        container.addView(activateBtn)
-        
-        // Helper to update button text on switch
-        lunchButton.setOnClickListener { 
-            switchMode(ModeType.LUNCH) 
-            activateBtn.text = "⚡ ACTIVATE LUNCH"
-        }
-        dinnerButton.setOnClickListener { 
-            switchMode(ModeType.DINNER) 
-            activateBtn.text = "⚡ ACTIVATE DINNER"
-        }
-        bfastButton.setOnClickListener { 
-            switchMode(ModeType.BFAST) 
-            activateBtn.text = "⚡ ACTIVATE BFAST"
-        }
-        highCarbButton.setOnClickListener { 
-            switchMode(ModeType.HIGHCARB) 
-            activateBtn.text = "⚡ ACTIVATE HIGH CARB"
-        }
-
-        setContentView(mainScroll)
-
-
-        // Initial Load
         loadValues(ModeType.LUNCH)
-    }
 
-    private fun createTabButton(label: String, active: Boolean): TextView {
-        return TextView(this).apply {
-            text = label
-            textSize = 16f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            setTextColor(if (active) Color.WHITE else textSecondary)
-            setBackgroundColor(if (active) activeTabColor else Color.TRANSPARENT)
-            setPadding(0, 32, 0, 32)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                weight = 1f
+        setContent {
+            AapsTheme {
+                AimiModeSettingsScreen(
+                    selectedMode = selectedMode.value,
+                    onSelectMode = { switchMode(it) },
+                    prebolus1Text = prebolus1Text.value,
+                    onPrebolus1Change = { prebolus1Text.value = it },
+                    prebolus2Text = prebolus2Text.value,
+                    onPrebolus2Change = { prebolus2Text.value = it },
+                    reactivityText = reactivityText.value,
+                    onReactivityChange = { reactivityText.value = it },
+                    durationText = durationText.value,
+                    onDurationChange = { durationText.value = it },
+                    intervalText = intervalText.value,
+                    onIntervalChange = { intervalText.value = it },
+                    onSaveClick = { saveValues(finishAfterSave = true) },
+                    onActivateClick = { promptActivateMode() },
+                    onBackClick = { finish() },
+                    showActivateDialog = showActivateDialog.value,
+                    activateDialogTitle = activateDialogTitle.value,
+                    activateDialogMessage = activateDialogMessage.value,
+                    onConfirmActivate = { confirmActivateMode() },
+                    onDismissActivateDialog = { showActivateDialog.value = false }
+                )
             }
-        }
-    }
-
-    private fun createLabeledInput(parent: LinearLayout, labelText: String, hintText: String): EditText {
-        val label = TextView(this).apply {
-            text = labelText
-            textSize = 14f
-            setTextColor(textSecondary)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 16
-            }
-        }
-        parent.addView(label)
-
-        val input = EditText(this).apply {
-            hint = hintText
-            setHintTextColor(Color.parseColor("#475569"))
-            setTextColor(Color.WHITE)
-            textSize = 18f
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            background = null // Remove underline
-            setBackgroundColor(Color.parseColor("#334155")) // Slightly lighter input bg
-            setPadding(32, 32, 32, 32)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 48
-            }
-        }
-        parent.addView(input)
-        return input
-    }
-
-    private fun getInputBackground(): android.graphics.drawable.Drawable {
-        return android.graphics.drawable.GradientDrawable().apply {
-            cornerRadius = 12f
-            setColor(Color.parseColor("#334155")) // Slightly lighter input bg
         }
     }
 
     private fun switchMode(mode: ModeType) {
-        if (selectedMode == mode) return
-        selectedMode = mode
-        
-        // Update Tabs
-        if (mode == ModeType.LUNCH) {
-            lunchButton.setBackgroundColor(activeTabColor)
-            lunchButton.setTextColor(Color.WHITE)
-            dinnerButton.setBackgroundColor(Color.TRANSPARENT)
-            dinnerButton.setTextColor(textSecondary)
-            bfastButton.setBackgroundColor(Color.TRANSPARENT)
-            bfastButton.setTextColor(textSecondary)
-            highCarbButton.setBackgroundColor(Color.TRANSPARENT)
-            highCarbButton.setTextColor(textSecondary)
-        } else if (mode == ModeType.DINNER) {
-            dinnerButton.setBackgroundColor(activeTabColor)
-            dinnerButton.setTextColor(Color.WHITE)
-            lunchButton.setBackgroundColor(Color.TRANSPARENT)
-            lunchButton.setTextColor(textSecondary)
-            bfastButton.setBackgroundColor(Color.TRANSPARENT)
-            bfastButton.setTextColor(textSecondary)
-            highCarbButton.setBackgroundColor(Color.TRANSPARENT)
-            highCarbButton.setTextColor(textSecondary)
-        } else if (mode == ModeType.BFAST) {
-            bfastButton.setBackgroundColor(activeTabColor)
-            bfastButton.setTextColor(Color.WHITE)
-            lunchButton.setBackgroundColor(Color.TRANSPARENT)
-            lunchButton.setTextColor(textSecondary)
-            dinnerButton.setBackgroundColor(Color.TRANSPARENT)
-            dinnerButton.setTextColor(textSecondary)
-            highCarbButton.setBackgroundColor(Color.TRANSPARENT)
-            highCarbButton.setTextColor(textSecondary)
-        } else {
-            highCarbButton.setBackgroundColor(activeTabColor)
-            highCarbButton.setTextColor(Color.WHITE)
-            lunchButton.setBackgroundColor(Color.TRANSPARENT)
-            lunchButton.setTextColor(textSecondary)
-            dinnerButton.setBackgroundColor(Color.TRANSPARENT)
-            dinnerButton.setTextColor(textSecondary)
-            bfastButton.setBackgroundColor(Color.TRANSPARENT)
-            bfastButton.setTextColor(textSecondary)
-        }
-
+        if (selectedMode.value == mode) return
+        saveValues(finishAfterSave = false)
+        selectedMode.value = mode
         loadValues(mode)
     }
 
     private fun loadValues(mode: ModeType) {
         when (mode) {
             ModeType.LUNCH -> {
-                inputPrebolus1.setText(getStringPref(DoubleKey.OApsAIMILunchPrebolus))
-                inputPrebolus2.setText(getStringPref(DoubleKey.OApsAIMILunchPrebolus2))
-                inputReactivity.setText(getStringPref(DoubleKey.OApsAIMILunchFactor))
-                inputDuration.setText(sp.getInt("aimi_mode_lunch_duration", 60).toString())
-                inputInterval.setText(getStringPref(IntKey.OApsAIMILunchinterval))
+                prebolus1Text.value = getStringPref(DoubleKey.OApsAIMILunchPrebolus)
+                prebolus2Text.value = getStringPref(DoubleKey.OApsAIMILunchPrebolus2)
+                reactivityText.value = getStringPref(DoubleKey.OApsAIMILunchFactor)
+                durationText.value = sp.getInt("aimi_mode_lunch_duration", 60).toString()
+                intervalText.value = getStringPref(IntKey.OApsAIMILunchinterval)
             }
             ModeType.DINNER -> {
-                inputPrebolus1.setText(getStringPref(DoubleKey.OApsAIMIDinnerPrebolus))
-                inputPrebolus2.setText(getStringPref(DoubleKey.OApsAIMIDinnerPrebolus2))
-                inputReactivity.setText(getStringPref(DoubleKey.OApsAIMIDinnerFactor))
-                inputDuration.setText(sp.getInt("aimi_mode_dinner_duration", 60).toString())
-                inputInterval.setText(getStringPref(IntKey.OApsAIMIDinnerinterval))
+                prebolus1Text.value = getStringPref(DoubleKey.OApsAIMIDinnerPrebolus)
+                prebolus2Text.value = getStringPref(DoubleKey.OApsAIMIDinnerPrebolus2)
+                reactivityText.value = getStringPref(DoubleKey.OApsAIMIDinnerFactor)
+                durationText.value = sp.getInt("aimi_mode_dinner_duration", 60).toString()
+                intervalText.value = getStringPref(IntKey.OApsAIMIDinnerinterval)
             }
             ModeType.BFAST -> {
-                inputPrebolus1.setText(getStringPref(DoubleKey.OApsAIMIBFPrebolus))
-                inputPrebolus2.setText(getStringPref(DoubleKey.OApsAIMIBFPrebolus2))
-                inputReactivity.setText(getStringPref(DoubleKey.OApsAIMIBFFactor))
-                inputDuration.setText(sp.getInt("aimi_mode_bfast_duration", 60).toString())
-                inputInterval.setText(getStringPref(IntKey.OApsAIMIBFinterval))
+                prebolus1Text.value = getStringPref(DoubleKey.OApsAIMIBFPrebolus)
+                prebolus2Text.value = getStringPref(DoubleKey.OApsAIMIBFPrebolus2)
+                reactivityText.value = getStringPref(DoubleKey.OApsAIMIBFFactor)
+                durationText.value = sp.getInt("aimi_mode_bfast_duration", 60).toString()
+                intervalText.value = getStringPref(IntKey.OApsAIMIBFinterval)
             }
             ModeType.HIGHCARB -> {
-                inputPrebolus1.setText(getStringPref(DoubleKey.OApsAIMIHighCarbPrebolus))
-                inputPrebolus2.setText(getStringPref(DoubleKey.OApsAIMIHighCarbPrebolus2))
-                inputReactivity.setText(getStringPref(DoubleKey.OApsAIMIHCFactor))
-                inputDuration.setText(sp.getInt("aimi_mode_hc_duration", 60).toString())
-                inputInterval.setText(getStringPref(IntKey.OApsAIMIHCinterval))
+                prebolus1Text.value = getStringPref(DoubleKey.OApsAIMIHighCarbPrebolus)
+                prebolus2Text.value = getStringPref(DoubleKey.OApsAIMIHighCarbPrebolus2)
+                reactivityText.value = getStringPref(DoubleKey.OApsAIMIHCFactor)
+                durationText.value = sp.getInt("aimi_mode_hc_duration", 60).toString()
+                intervalText.value = getStringPref(IntKey.OApsAIMIHCinterval)
             }
         }
     }
 
     private fun saveValues(finishAfterSave: Boolean) {
-        // 1. Save Mode Settings
-        val p1 = inputPrebolus1.text.toString().toDoubleOrNull() ?: 0.0
-        val p2 = inputPrebolus2.text.toString().toDoubleOrNull() ?: 0.0
-        val react = inputReactivity.text.toString().toDoubleOrNull() ?: 100.0
-        val dur = inputDuration.text.toString().toIntOrNull() ?: 60
-        val interv = inputInterval.text.toString().toIntOrNull() ?: 5
+        val p1 = prebolus1Text.value.toDoubleOrNull() ?: 0.0
+        val p2 = prebolus2Text.value.toDoubleOrNull() ?: 0.0
+        val react = reactivityText.value.toDoubleOrNull() ?: 100.0
+        val dur = durationText.value.toIntOrNull() ?: 60
+        val interv = intervalText.value.toIntOrNull() ?: 5
 
-        when (selectedMode) {
+        when (selectedMode.value) {
             ModeType.LUNCH -> {
                 preferences.put(DoubleKey.OApsAIMILunchPrebolus, p1)
                 preferences.put(DoubleKey.OApsAIMILunchPrebolus2, p2)
@@ -373,54 +151,61 @@ class AimiModeSettingsActivity : MetroAppCompatActivity() {
         }
 
         if (finishAfterSave) {
+            Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show()
             finish()
         }
     }
 
-    private fun activateMode() {
-        saveValues(false) // Save without closing logic merged.
-        
-        val modeNote = when (selectedMode) {
+    private fun promptActivateMode() {
+        saveValues(finishAfterSave = false)
+
+        val modeNote = when (selectedMode.value) {
             ModeType.LUNCH -> "Lunch"
             ModeType.DINNER -> "Dinner"
             ModeType.BFAST -> "Breakfast"
             ModeType.HIGHCARB -> "High Carb"
         }
 
-        val durationMin = inputDuration.text.toString().toIntOrNull() ?: 60
+        val durationMin = durationText.value.toIntOrNull() ?: 60
+        activateDialogTitle.value = "Activate $modeNote mode?"
+        activateDialogMessage.value = "This will create a Note '$modeNote' ($durationMin min) to trigger AIMI logic."
+        showActivateDialog.value = true
+    }
+
+    private fun confirmActivateMode() {
+        showActivateDialog.value = false
+        val modeNote = when (selectedMode.value) {
+            ModeType.LUNCH -> "Lunch"
+            ModeType.DINNER -> "Dinner"
+            ModeType.BFAST -> "Breakfast"
+            ModeType.HIGHCARB -> "High Carb"
+        }
+        val durationMin = durationText.value.toIntOrNull() ?: 60
         val durationMs = durationMin * 60 * 1000L
 
-        AlertDialog.Builder(this)
-            .setTitle("Activate $modeNote mode?")
-            .setMessage("This will create a Note '$modeNote' ($durationMin min) to trigger AIMI logic.")
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                 // Create Therapy Event
-                 val te = app.aaps.core.data.model.TE(
-                     timestamp = System.currentTimeMillis(),
-                     type = app.aaps.core.data.model.TE.Type.NOTE,
-                     note = modeNote,
-                     duration = durationMs, // 🚀 ADDED DURATION
-                     enteredBy = "AIMI Advisor",
-                     glucoseUnit = app.aaps.core.data.model.GlucoseUnit.MGDL
-                 )
-                 
-                 lifecycleScope.launch(Dispatchers.IO) {
-                     try {
-                         persistenceLayer.insertOrUpdateTherapyEvent(te)
-                         withContext(Dispatchers.Main) {
-                             Toast.makeText(this@AimiModeSettingsActivity, "$modeNote Mode Activated ($durationMin min)!", Toast.LENGTH_SHORT).show()
-                             finish()
-                         }
-                     } catch (error: Exception) {
-                         withContext(Dispatchers.Main) {
-                             Toast.makeText(this@AimiModeSettingsActivity, "Error: ${error.message}", Toast.LENGTH_LONG).show()
-                         }
-                         error.printStackTrace()
-                     }
-                 }
+        val te = app.aaps.core.data.model.TE(
+            timestamp = System.currentTimeMillis(),
+            type = app.aaps.core.data.model.TE.Type.NOTE,
+            note = modeNote,
+            duration = durationMs,
+            enteredBy = "AIMI Advisor",
+            glucoseUnit = app.aaps.core.data.model.GlucoseUnit.MGDL
+        )
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                persistenceLayer.insertOrUpdateTherapyEvent(te)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AimiModeSettingsActivity, "$modeNote Mode Activated ($durationMin min)!", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            } catch (error: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AimiModeSettingsActivity, "Error: ${error.message}", Toast.LENGTH_LONG).show()
+                }
+                error.printStackTrace()
             }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        }
     }
 
     private fun getStringPref(key: DoubleKey): String {
@@ -432,7 +217,7 @@ class AimiModeSettingsActivity : MetroAppCompatActivity() {
     }
 
     private fun getStringPref(key: IntKey): String {
-         return try {
+        return try {
             preferences.get(key).toString()
         } catch (e: Exception) {
             key.defaultValue.toString()

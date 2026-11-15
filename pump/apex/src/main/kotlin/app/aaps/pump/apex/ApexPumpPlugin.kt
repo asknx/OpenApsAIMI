@@ -50,7 +50,7 @@ import app.aaps.pump.apex.connectivity.FirmwareVersion
 import app.aaps.pump.apex.connectivity.ProtocolVersion
 import app.aaps.pump.apex.connectivity.commands.pump.AlarmLength
 import app.aaps.pump.apex.misc.BatteryType
-import app.aaps.pump.apex.ui.ApexFragment
+import app.aaps.pump.apex.ui.ApexPumpComposeContent
 import app.aaps.pump.apex.utils.keys.ApexBooleanKey
 import app.aaps.pump.apex.utils.keys.ApexDoubleKey
 import app.aaps.pump.apex.utils.keys.ApexStringKey
@@ -90,6 +90,11 @@ class ApexPumpPlugin @Inject constructor(
 ): PumpPluginBase(
     PluginDescription()
         .mainType(PluginType.PUMP)
+        .composeContent { _ ->
+            ApexPumpComposeContent(
+                pluginName = rh.gs(R.string.apex_plugin_name)
+            )
+        }
         .pluginName(app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.apex_plugin_name))
         .description(app.aaps.core.keys.interfaces.TextRef.AndroidRes(R.string.apex_plugin_description)),
     ownPreferences = ApexBooleanKey.entries + ApexDoubleKey.entries + ApexStringKey.entries,
