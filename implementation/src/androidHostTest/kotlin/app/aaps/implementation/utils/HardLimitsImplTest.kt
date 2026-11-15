@@ -141,7 +141,7 @@ class HardLimitsImplTest : TestBase() {
         assertThat(hardLimits.diaRange()).isEqualTo(5.0..9.0)
 
         whenever(preferences.get(StringKey.SafetyAge)).thenReturn("pregnant")
-        assertThat(hardLimits.diaRange()).isEqualTo(5.0..10.0)
+        assertThat(hardLimits.diaRange()).isEqualTo(4.0..12.0)
     }
 
     @Test

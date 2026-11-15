@@ -176,7 +176,7 @@ class PreferencesImpl(
         booleanFlows.getOrCreate(key.key) { get(key) }
 
     override fun get(key: BooleanPreferenceKey): Boolean =
-        if (!config.isEngineeringMode() && key.engineeringModeOnly) key.defaultValue
+        if (key.engineeringModeOnly && !config.isEngineeringMode()) key.defaultValue
         else if (simpleMode && key.defaultedBySM) calculatedDefaultValue(key)
         // The switch itself is never defaultedByHardenedMode (PreferencesImplTest checks it), so reading hardenedMode here cannot loop.
         else if (key.defaultedByHardenedMode && hardenedMode) calculatedDefaultValue(key)
@@ -325,7 +325,7 @@ class PreferencesImpl(
     }
 
     override fun get(key: IntPreferenceKey): Int =
-        if (!config.isEngineeringMode() && key.engineeringModeOnly) key.defaultValue
+        if (key.engineeringModeOnly && !config.isEngineeringMode()) key.defaultValue
         else if (simpleMode && key.defaultedBySM) calculatedDefaultValue(key)
         // Recompute-when-hidden is for LOCAL values only; a synced key is remote-authoritative, so its stored value wins (visibility ≠ value).
         else if (key.calculatedDefaultValue && isHidden(key) && key.sync == null) calculatedDefaultValue(key)
@@ -368,7 +368,7 @@ class PreferencesImpl(
         longFlows.getOrCreate(key.key) { get(key) }
 
     override fun get(key: LongPreferenceKey): Long =
-        if (!config.isEngineeringMode() && key.engineeringModeOnly) key.defaultValue
+        if (key.engineeringModeOnly && !config.isEngineeringMode()) key.defaultValue
         else if (simpleMode && key.defaultedBySM) calculatedDefaultValue(key)
         // Recompute-when-hidden is for LOCAL values only; a synced key is remote-authoritative, so its stored value wins (visibility ≠ value).
         else if (key.calculatedDefaultValue && isHidden(key) && key.sync == null) calculatedDefaultValue(key)

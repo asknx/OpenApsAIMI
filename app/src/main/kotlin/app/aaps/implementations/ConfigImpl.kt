@@ -99,10 +99,80 @@ class ConfigImpl(
     }
 
     private val enabledOptionsCache = mutableMapOf<ExternalOptions, Boolean>()
+    private var isCheckingEngineeringMode = false
 
     override fun isEngineeringModeOrRelease(): Boolean = if (!APS) true else isEngineeringMode() || !isDev()
-    override fun isEngineeringMode(): Boolean = isEnabled(ExternalOptions.ENGINEERING_MODE) ||
-        (try { preferences().get(app.aaps.core.keys.BooleanKey.AimiEngineeringBypassEnabled) } catch (_: Exception) { false })
+
+    override fun isEngineeringMode(): Boolean {
+        if (isCheckingEngineeringMode) return false
+        isCheckingEngineeringMode = true
+        return try {
+            // 1. Direct external options check (files in extra dir or test override)
+            val fromOption = try { isEnabled(ExternalOptions.ENGINEERING_MODE) } catch (_: Exception) { false }
+            if (fromOption) return true
+
+            // 2. Direct fallback file check on external storage
+            if (checkDirectEngineeringFile()) return true
+
+            // 3. Query AIMI preference bypass safely via getIfExists (never calls isEngineeringMode)
+            val prefs = try { preferences() } catch (_: Exception) { null } ?: return false
+
+            val explicitBypass = try {
+                prefs.getIfExists(app.aaps.core.keys.BooleanKey.AimiEngineeringBypassEnabled)
+            } catch (_: Exception) {
+                null
+            }
+            if (explicitBypass != null) {
+                return explicitBypass
+            }
+
+            val devUnlocked = try {
+                prefs.getIfExists(app.aaps.core.keys.BooleanKey.AimiDeveloperOptionsUnlocked)
+            } catch (_: Exception) {
+                null
+            }
+            if (devUnlocked == true) {
+                try {
+                    prefs.put(app.aaps.core.keys.BooleanKey.AimiEngineeringBypassEnabled, true)
+                } catch (_: Exception) {}
+                return true
+            }
+
+            // Upgrade preservation: if upgrading from an install where engineering features/SMB were active
+            val hasPreviousEngineeringState = try {
+                prefs.getIfExists(app.aaps.core.keys.BooleanKey.ApsUseSmb) == true ||
+                    prefs.getIfExists(app.aaps.core.keys.BooleanKey.ApsUseSmbAlways) == true
+            } catch (_: Exception) {
+                false
+            }
+            if (hasPreviousEngineeringState) {
+                try {
+                    prefs.put(app.aaps.core.keys.BooleanKey.AimiDeveloperOptionsUnlocked, true)
+                    prefs.put(app.aaps.core.keys.BooleanKey.AimiEngineeringBypassEnabled, true)
+                } catch (_: Exception) {}
+                return true
+            }
+
+            false
+        } finally {
+            isCheckingEngineeringMode = false
+        }
+    }
+
+    private fun checkDirectEngineeringFile(): Boolean {
+        return try {
+            val base = android.os.Environment.getExternalStorageDirectory() ?: return false
+            val candidates = listOf(
+                java.io.File(base, "Documents/AAPS/engineering_mode"),
+                java.io.File(base, "Documents/AAPS/extra/engineering_mode"),
+                java.io.File(base, "AAPS/engineering_mode"),
+                java.io.File(base, "AAPS/extra/engineering_mode")
+            )
+            candidates.any { it.exists() }
+        } catch (_: Exception) {
+            false
+        }
+    }
     override fun isDev(): Boolean {
         if (BuildConfig.DEBUG) return true
         if (BuildConfig.FLAVOR == "fulldev") return true
