@@ -92,6 +92,7 @@ fun OverviewScreen(
     formatDuration: (Long) -> String = { ms -> "${(ms / 60000L).toInt()}m" },
     /** The "time to eat" bar, shown under the scene bar in every layout. */
     eatReminderBanner: @Composable () -> Unit = {},
+    aimiOverview: (@Composable () -> Unit)? = null,
     paddingValues: PaddingValues,
     fabBottomOffset: Dp = 0.dp,
     /**
@@ -188,6 +189,7 @@ fun OverviewScreen(
                     commandsAllowed = commandsAllowed,
                     formatDuration = formatDuration,
                     eatReminderBanner = eatReminderBanner,
+                    aimiOverview = aimiOverview,
                     overlaidBarsHeight = overlaidBarsHeight
                 )
             } else if (twoColumns) {
@@ -227,6 +229,7 @@ fun OverviewScreen(
                     commandsAllowed = commandsAllowed,
                     formatDuration = formatDuration,
                     eatReminderBanner = eatReminderBanner,
+                    aimiOverview = aimiOverview,
                     overlaidBarsHeight = overlaidBarsHeight
                 )
             } else {
@@ -266,6 +269,7 @@ fun OverviewScreen(
                     commandsAllowed = commandsAllowed,
                     formatDuration = formatDuration,
                     eatReminderBanner = eatReminderBanner,
+                    aimiOverview = aimiOverview,
                     overlaidBarsHeight = overlaidBarsHeight
                 )
             }

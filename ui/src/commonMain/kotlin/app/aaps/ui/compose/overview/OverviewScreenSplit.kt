@@ -78,6 +78,7 @@ fun OverviewScreenSplit(
     formatDuration: (Long) -> String = { ms -> "${(ms / 60000L).toInt()}m" },
     /** The "time to eat" bar, under the scene bar. */
     eatReminderBanner: @Composable () -> Unit = {},
+    aimiOverview: (@Composable () -> Unit)? = null,
     /** Height of the bars drawn over the content in preview mode; both columns need it as extra space at their end. */
     overlaidBarsHeight: Dp = 0.dp,
     modifier: Modifier = Modifier
@@ -188,6 +189,8 @@ fun OverviewScreenSplit(
                     expanded = statusExpanded,
                     onExpandedChange = { statusExpanded = it }
                 )
+
+                aimiOverview?.invoke()
 
                 if (config.AAPSCLIENT) {
                     val nsClientStatus by graphViewModel.nsClientStatusFlow.collectAsStateWithLifecycle()

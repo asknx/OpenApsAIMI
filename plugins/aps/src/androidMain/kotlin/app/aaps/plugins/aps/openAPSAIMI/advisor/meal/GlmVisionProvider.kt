@@ -80,7 +80,7 @@ class GlmVisionProvider : AIVisionProvider {
             return connection.inputStream.bufferedReader().use { it.readText() }
         } else {
             val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
-            throw Exception("HTTP $code: $err")
+            throw Exception("[Provider: GLM | URL: https://open.bigmodel.cn/api/paas/v4/chat/completions | HTTP $code: $err]")
         }
     }
     

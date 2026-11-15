@@ -8,6 +8,7 @@ sealed class NavigationRequest {
     data class QuickWizard(val guid: String) : NavigationRequest()
     data class Plugin(val className: String) : NavigationRequest()
     data class PluginPreferences(val pluginKey: String) : NavigationRequest()
+    data class Custom(val id: String) : NavigationRequest()
 }
 
 /**

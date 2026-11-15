@@ -43,6 +43,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -589,6 +590,8 @@ private fun CognitiveCard(reactivity: Double) {
 
 @Composable
 private fun CoachCard(coachAnalysis: String) {
+    val parsed = remember(coachAnalysis) { parseCoachAnalysis(coachAnalysis) }
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -600,24 +603,152 @@ private fun CoachCard(coachAnalysis: String) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Psychology,
+                    contentDescription = null,
+                    tint = Color(0xFFA855F7),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "AI Coach Guidance",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFA855F7)
+                )
+            }
+
+            if (parsed.mainConclusion != null || parsed.recommendedAction != null) {
+                parsed.mainConclusion?.let { conclusion ->
+                    Card(
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "💡 Главный вывод",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = conclusion,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                parsed.recommendedAction?.let { action ->
+                    Card(
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "🎯 Рекомендуемое действие",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF4ADE80)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = action,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                parsed.additionalPoints.forEach { (key, value) ->
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                        Text(
+                            text = key,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = coachAnalysis,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
             Text(
-                text = "✨ AI Coach Guidance",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFA855F7)
-            )
-            Text(
-                text = coachAnalysis,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "⚙️ Configure AI Provider to enable Pro coaching.",
+                text = "⚙️ Configure AI Provider to customize coaching models.",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
         }
     }
+}
+
+private data class ParsedCoachAdvice(
+    val mainConclusion: String?,
+    val recommendedAction: String?,
+    val additionalPoints: List<Pair<String, String>>,
+    val rawText: String
+)
+
+private fun parseCoachAnalysis(text: String): ParsedCoachAdvice {
+    val trimmed = text.trim()
+    val jsonCandidate = when {
+        trimmed.startsWith("{") && trimmed.endsWith("}") -> trimmed
+        trimmed.contains("{") && trimmed.contains("}") -> {
+            trimmed.substringAfter("{").substringBeforeLast("}").let { "{$it}" }
+        }
+        else -> null
+    }
+
+    if (jsonCandidate != null) {
+        try {
+            val obj = org.json.JSONObject(jsonCandidate)
+            var mainConclusion: String? = null
+            var recommendedAction: String? = null
+            val additional = mutableListOf<Pair<String, String>>()
+
+            for (key in obj.keys()) {
+                val value = obj.optString(key, "")
+                when {
+                    key.contains("Главный вывод", ignoreCase = true) ||
+                        key.contains("conclusion", ignoreCase = true) ||
+                        key.contains("summary", ignoreCase = true) -> mainConclusion = value
+
+                    key.contains("Рекомендуемое действие", ignoreCase = true) ||
+                        key.contains("action", ignoreCase = true) ||
+                        key.contains("recommendation", ignoreCase = true) -> recommendedAction = value
+
+                    else -> additional.add(key to value)
+                }
+            }
+
+            if (mainConclusion != null || recommendedAction != null || additional.isNotEmpty()) {
+                return ParsedCoachAdvice(mainConclusion, recommendedAction, additional, text)
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    return ParsedCoachAdvice(null, null, emptyList(), text)
 }

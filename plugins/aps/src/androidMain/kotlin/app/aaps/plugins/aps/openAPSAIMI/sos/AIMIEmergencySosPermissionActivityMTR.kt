@@ -7,33 +7,29 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import app.aaps.plugins.aps.R
+import app.aaps.core.ui.compose.AapsTheme
 
 /**
  * 🚨 AIMI Emergency SOS Permission Request Activity
- *
- * Handles the permission request flow for Location and SMS with a clear UI.
- * Provides fallback options if permissions are denied.
- *
- * @author MTR & Lyra AI
+ * Migrated to Jetpack Compose + Material 3.
  */
 class AIMIEmergencySosPermissionActivityMTR : AppCompatActivity() {
-
-    companion object {
-        private const val TAG = "AIMI_SOS_Perms"
-    }
-
-    // UI Elements
-    private lateinit var tvStatus: TextView
-    private lateinit var btnRequestPerms: Button
-    private lateinit var btnOpenSettings: Button
 
     private val requiredForegroundPermissions = arrayOf(
         Manifest.permission.SEND_SMS,
@@ -42,128 +38,198 @@ class AIMIEmergencySosPermissionActivityMTR : AppCompatActivity() {
         Manifest.permission.ACCESS_COARSE_LOCATION
     )
 
-    // Request launcher for foreground permissions (SMS + Fine/Coarse Location)
+    private val permissionsState = mutableStateOf(false)
+
     private val requestForegroundPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        var allGranted = true
-        permissions.entries.forEach {
-            val isGranted = it.value
-            Log.i(TAG, "${it.key} granted: $isGranted")
-            if (!isGranted) allGranted = false
-        }
-        
-        if (allGranted) {
-            checkBackgroundLocationPermission()
-        } else {
-            updateStatusText()
-            Toast.makeText(this, "Foreground permissions denied.", Toast.LENGTH_SHORT).show()
-        }
+    ) {
+        checkBackgroundLocationPermission()
+        checkPermissions()
     }
 
-    // Request launcher for background location (Android 10+)
     private val requestBackgroundLocationLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        Log.i(TAG, "ACCESS_BACKGROUND_LOCATION granted: $isGranted")
-        updateStatusText()
-        if (isGranted) {
-            Toast.makeText(this, "All SOS permissions granted!", Toast.LENGTH_LONG).show()
-            android.os.Handler(mainLooper).postDelayed({ finish() }, 1500)
-        } else {
-            Toast.makeText(this, "Background location denied. SOS may not work when App is not in foreground.", Toast.LENGTH_LONG).show()
-        }
+    ) {
+        checkPermissions()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_aimi_sos_permission)
+        checkPermissions()
 
-        tvStatus = findViewById(R.id.tv_status_sos)
-        btnRequestPerms = findViewById(R.id.btn_request_perms_sos)
-        btnOpenSettings = findViewById(R.id.btn_open_settings_sos)
-
-        setupButtons()
+        setContent {
+            AapsTheme {
+                EmergencySosPermissionScreen(
+                    allGranted = permissionsState.value,
+                    onRequestPermissions = { requestPermissions() },
+                    onOpenSettings = { openAppSettings() },
+                    onBack = { finish() }
+                )
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        updateStatusText()
+        checkPermissions()
     }
 
-    private fun setupButtons() {
-        btnRequestPerms.setOnClickListener {
-            // First check foreground permissions
-            val missingParams = requiredForegroundPermissions.filter {
-                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-            }.toTypedArray()
-
-            if (missingParams.isNotEmpty()) {
-                Log.i(TAG, "Requesting foreground permissions: ${missingParams.joinToString()}")
-                requestForegroundPermissionsLauncher.launch(missingParams)
-            } else {
-                Log.i(TAG, "Foreground permissions already granted. Checking background.")
-                checkBackgroundLocationPermission()
-            }
+    private fun checkPermissions() {
+        val fgOk = requiredForegroundPermissions.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }
+        val bgOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
+        } else true
 
-        btnOpenSettings.setOnClickListener {
-            openAppSettings()
+        permissionsState.value = fgOk && bgOk
+    }
+
+    private fun requestPermissions() {
+        val missing = requiredForegroundPermissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }.toTypedArray()
+
+        if (missing.isNotEmpty()) {
+            requestForegroundPermissionsLauncher.launch(missing)
+        } else {
+            checkBackgroundLocationPermission()
         }
     }
 
     private fun checkBackgroundLocationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                Log.i(TAG, "Requesting background location permission.")
                 requestBackgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-            } else {
-                Log.i(TAG, "Background location already granted.")
-                updateStatusText()
             }
-        } else {
-            // Android 9 and below: background location is granted via FINE_LOCATION implicitly.
-            updateStatusText()
-        }
-    }
-
-    private fun updateStatusText() {
-        var allGranted = true
-        val sb = StringBuilder()
-        sb.append("📊 Permission Status:\n")
-
-        requiredForegroundPermissions.forEach { perm ->
-            val granted = ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED
-            if (!granted) allGranted = false
-            sb.append(if (granted) "✅ " else "❌ ").append(perm.substringAfterLast(".")).append("\n")
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val bgGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
-            if (!bgGranted) allGranted = false
-            sb.append(if (bgGranted) "✅ " else "❌ ").append("ACCESS_BACKGROUND_LOCATION\n")
-        }
-
-        tvStatus.text = sb.toString()
-
-        if (allGranted) {
-            btnRequestPerms.text = "Permissions Granted"
-            btnRequestPerms.isEnabled = false
-        } else {
-            btnRequestPerms.text = "Grant Access"
-            btnRequestPerms.isEnabled = true
         }
     }
 
     private fun openAppSettings() {
         try {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 data = Uri.parse("package:$packageName")
+            })
+        } catch (_: Exception) {}
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EmergencySosPermissionScreen(
+    allGranted: Boolean,
+    onRequestPermissions: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onBack: () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Emergency SOS Permissions") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Spacer(Modifier.height(8.dp))
+
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = if (allGranted) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        if (allGranted) Icons.Default.CheckCircle else Icons.Default.Emergency,
+                        contentDescription = null,
+                        tint = if (allGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Column {
+                        Text(
+                            text = if (allGranted) "SOS Ready" else "SOS Permissions Needed",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (allGranted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Text(
+                            text = if (allGranted) "AIMI can send emergency SMS with location during severe hypos."
+                            else "To notify emergency contacts during severe hypos, SMS and Location access are required.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (allGranted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
             }
-            startActivity(intent)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error opening App Settings", e)
-            Toast.makeText(this, "Cannot open settings", Toast.LENGTH_SHORT).show()
+
+            Text("Required Permissions", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+
+            val items = listOf(
+                "Send SMS" to "Sends automated emergency text to your emergency contact with current glucose reading",
+                "Phone Call" to "Allows direct call to emergency services if enabled",
+                "Location (Precise & Background)" to "Includes GPS coordinates in emergency messages so help can find you"
+            )
+
+            items.forEach { (name, desc) ->
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            if (allGranted) Icons.Default.Check else Icons.Default.Security,
+                            contentDescription = null,
+                            tint = if (allGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Button(
+                onClick = onRequestPermissions,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (allGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                )
+            ) {
+                Icon(Icons.Default.Emergency, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(if (allGranted) "Re-check Permissions" else "Grant SOS Permissions")
+            }
+
+            OutlinedButton(
+                onClick = onOpenSettings,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Open App Settings")
+            }
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 }

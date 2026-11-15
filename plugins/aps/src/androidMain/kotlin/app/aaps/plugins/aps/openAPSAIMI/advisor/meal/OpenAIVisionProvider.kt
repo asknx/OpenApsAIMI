@@ -80,7 +80,7 @@ class OpenAIVisionProvider : AIVisionProvider {
             return connection.inputStream.bufferedReader().use { it.readText() }
         } else {
             val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
-            throw Exception("HTTP $code: $err")
+            throw Exception("[Provider: OpenAI | URL: https://api.openai.com/v1/chat/completions | HTTP $code: $err]")
         }
     }
     

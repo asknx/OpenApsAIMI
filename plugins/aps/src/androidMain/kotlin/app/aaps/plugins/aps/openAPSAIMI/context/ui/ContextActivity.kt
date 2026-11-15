@@ -119,7 +119,7 @@ class ContextActivity : MetroAppCompatActivity() {
                     Toast.makeText(this@ContextActivity, "${ids.size} context(s) added", Toast.LENGTH_SHORT).show()
                 } else {
                     val isLLM = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIContextLLMEnabled.key, false)
-                    val provider = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "OPENAI")
+                    val provider = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "GEMINI")
 
                     parseFailureMessage.value = if (isLLM) {
                         "No context detected via AI ($provider).\n\nPossible causes:\n1. Missing or invalid API key (Preferences > AIMI > Advisor)\n2. Network timeout\n3. Description too vague\n\nFallback: Try simple keywords (e.g. 'Sport 1h', 'Sick')."

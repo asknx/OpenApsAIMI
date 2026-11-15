@@ -579,7 +579,12 @@ class ComposeMainActivity : MetroAppCompatActivity() {
                         onRecreateActivity = { recreate() },
                         onAuthorizationFailed = { finish() },
                         autoShowNotificationSheet = _autoShowNotifications.value,
-                        onAutoShowConsumed = { _autoShowNotifications.value = false }
+                        onAutoShowConsumed = { _autoShowNotifications.value = false },
+                        aimiOverview = {
+                            app.aaps.plugins.aps.openAPSAIMI.ui.AimiOverviewCard(
+                                onNavigate = { handleNavigationRequest(it, navController) }
+                            )
+                        }
                     )
                 },
             )
@@ -700,7 +705,21 @@ class ComposeMainActivity : MetroAppCompatActivity() {
     )
 
     private fun handleNavigationRequest(request: NavigationRequest, navController: NavController) {
-        navigator(navController).handleNavigationRequest(request)
+        when (request) {
+            is NavigationRequest.Custom -> {
+                when (request.id) {
+                    "meal_advisor" -> startActivity(Intent(this, app.aaps.plugins.aps.openAPSAIMI.advisor.meal.MealAdvisorActivity::class.java))
+                    "profile_advisor" -> startActivity(Intent(this, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiProfileAdvisorActivity::class.java))
+                    "aimi_context" -> startActivity(Intent(this, app.aaps.plugins.aps.openAPSAIMI.context.ui.ContextActivity::class.java))
+                    "comparator" -> startActivity(Intent(this, app.aaps.activities.ComparatorActivity::class.java))
+                    "adjustment_details" -> startActivity(Intent(this, app.aaps.plugins.main.general.dashboard.AdjustmentDetailsActivity::class.java))
+                    "aimi_modes" -> startActivity(Intent(this, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiModeSettingsActivity::class.java))
+                    "user_manual" -> startActivity(Intent(this, app.aaps.plugins.main.general.manual.UserManualActivity::class.java))
+                    "abbreviations" -> startActivity(Intent(this, app.aaps.activities.AbbreviationsActivity::class.java))
+                }
+            }
+            else -> navigator(navController).handleNavigationRequest(request)
+        }
     }
 
     private fun handleQuickLaunchAction(action: QuickLaunchAction, navController: NavController) {

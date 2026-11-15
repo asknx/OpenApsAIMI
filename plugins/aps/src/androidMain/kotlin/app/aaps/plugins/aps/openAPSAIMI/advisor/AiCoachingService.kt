@@ -143,7 +143,7 @@ class AiCoachingService @Inject constructor() {
             val err = StringBuilder()
             var line: String?
             while (reader.readLine().also { line = it } != null) err.append(line)
-            return "Erreur OpenAI ($responseCode): $err"
+            return "[Provider: OpenAI | URL: $OPENAI_URL | HTTP $responseCode: $err]"
         }
     }
 
@@ -295,7 +295,8 @@ class AiCoachingService @Inject constructor() {
                     errorResponse.append(line)
                 }
             }
-            throw Exception("HTTP $responseCode: $errorResponse")
+            val sanitized = if (urlStr.contains("?key=")) urlStr.substringBefore("?key=") + "?key=REDACTED" else urlStr
+            throw Exception("[Provider: Gemini | URL: $sanitized | HTTP $responseCode: $errorResponse]")
         }
     }
 
@@ -453,7 +454,7 @@ class AiCoachingService @Inject constructor() {
             val err = StringBuilder()
             var line: String?
             while (reader.readLine().also { line = it } != null) err.append(line)
-            return "Erreur DeepSeek ($responseCode): $err"
+            return "[Provider: DeepSeek | URL: $DEEPSEEK_URL | HTTP $responseCode: $err]"
         }
     }
     
@@ -502,7 +503,7 @@ class AiCoachingService @Inject constructor() {
             val err = StringBuilder()
             var line: String?
             while (reader.readLine().also { line = it } != null) err.append(line)
-            return "Erreur Claude ($responseCode): $err"
+            return "[Provider: Claude | URL: $CLAUDE_URL | HTTP $responseCode: $err]"
         }
     }
     
@@ -550,7 +551,7 @@ class AiCoachingService @Inject constructor() {
             return root.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
         } else {
             val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
-            throw Exception("GLM HTTP ${connection.responseCode}: $err")
+            return "[Provider: GLM | URL: https://open.bigmodel.cn/api/paas/v4/chat/completions | HTTP ${connection.responseCode}: $err]"
         }
     }
 }

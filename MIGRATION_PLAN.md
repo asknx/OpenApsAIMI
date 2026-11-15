@@ -64,10 +64,10 @@
     - `:plugins:aps:assemble` — **BUILD SUCCESSFUL**
     - `:pump:apex:assemble` — **BUILD SUCCESSFUL**
     - `:app:assembleFullDebug` — **BUILD SUCCESSFUL** (успешная компоновка и упаковка APK)
-- [ ] **Этап 5: Миграция UI-экранов на Jetpack Compose / Material 3 (Модуль 10)**
+- [x] **Этап 5: Миграция UI-экранов на Jetpack Compose / Material 3 (Модуль 10)**
   - [x] **Этап 5A: Помпа Apex, Meal Advisor, Aimi Profile Advisor, Aimi Mode Settings, Context, Remote Control (Модули 10.1, 10.2, 10.3, 10.7, 10.8)** (Завершено, сборка `:app:assembleFullDebug` успешна)
-  - [ ] **Этап 5B: Dashboard, Overview, карточки статуса, круговой индикатор, график глюкозы, кастомные View (Модули 10.4, 10.5)**
-  - [ ] **Этап 5C: Диалоги болюса, меню, вспомогательные экраны и экраны Wear OS (Модули 10.6, 10.9, 10.10)**
+  - [x] **Этап 5B: Dashboard, Overview, карточки статуса, круговой индикатор, график глюкозы, кастомные View (Модули 10.4, 10.5)** (Завершено: легаси XML DashboardFragment и устаревшие View удалены; нативный Compose OverviewScreen.kt расширен слотом `aimiOverview` и интегрирован с M3-виджетом `AimiOverviewCard`: быстрый запуск Meal Advisor, компактный ряд физиологических метрик, бейдж Dual-Brain Auditor)
+  - [x] **Этап 5C: Диалоги болюса, меню, вспомогательные экраны и экраны Wear OS (Модули 10.6, 10.9, 10.10)** (Завершено: 3-dots overflow в MainTopBar/MainScreen и боковое меню MainDrawer с нативными иконками Ic* для всех 8 подменю AIMI, роутинг LLM Gemini по умолчанию с нормализацией endpoint URL и диагностикой HTTP/URL, активный болюс ApexPump с прогресс-баром и отменой)
 - [ ] **Этап 6: Адаптация и запуск unit-тестов (Модуль 11), верификация и стабилизация**
 
 ---
@@ -554,73 +554,73 @@
 - [x] `[A]` `plugins/aps/src/main/res/layout/item_active_intent.xml` (удалён)
 
 #### 10.4. Экраны компаратора и превью дашборда (2 файлов)
-- **Целевая реализация Compose:** `ComparatorScreen.kt`, `DashboardPreviewScreen.kt` (Compose Material 3)
+- **Целевая реализация Compose:** `ComparatorActivity.kt` (Compose Material 3); `DashboardPreviewActivity.kt` удалён за ненадобностью (архитектурное решение Stage 5B/5C: отказ от дублирующего дашборда 3.x в пользу родного 4.0.0 OverviewScreen).
 
-- [ ] `[A]` `app/src/main/kotlin/app/aaps/activities/ComparatorActivity.kt`
-- [ ] `[A]` `app/src/main/kotlin/app/aaps/activities/DashboardPreviewActivity.kt`
+- [x] `[A]` `app/src/main/kotlin/app/aaps/activities/ComparatorActivity.kt`
+- [x] `[A]` `app/src/main/kotlin/app/aaps/activities/DashboardPreviewActivity.kt` (удалён)
 
 #### 10.5. Дашборд AIMI, детали коррекций, режимы и состояние замкнутого цикла (50 файлов)
-- **Целевая реализация Compose:** Интеграция в Compose `OverviewScreen.kt`, `AdjustmentDetailsScreen.kt`, `DashboardModesScreen.kt`, `LoopStateScreen.kt`
+- **Целевая реализация Compose:** Интеграция в родной Compose `OverviewScreen.kt` (виджет `AimiOverviewCard` с кнопкой быстрого запуска Meal Advisor, компактным рядом физиологических метрик и кликабельным бейджем Dual-Brain Auditor). Устаревший XML `DashboardFragment`, `OverviewViewModel`, кастомные XML View и селекторы удалены. `AdjustmentDetailsActivity` и `LoopStateActivity` адаптированы под Compose/M3.
 
-- [ ] `[A]` `app/src/main/res/layout/activity_dashboard_preview.xml`
-- [ ] `[A]` `implementation/src/main/kotlin/app/aaps/implementation/overview/OverviewDataImpl.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/AdjustmentDetailsActivity.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/DashboardFragment.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/DashboardModesActivity.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/LoopStateActivity.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/viewmodel/OverviewViewModel.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/views/AdjustmentStatusView.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/views/CircleTopDashboardView.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/views/GlucoseGraphView.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/views/StatusCardView.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/OverviewEntryFragment.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/OverviewFragment.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/OverviewMenusImpl.kt`
-- [ ] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/OverviewPlugin.kt`
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/notifications/NotificationUiBinder.kt`
-- [ ] `[A]` `plugins/main/src/main/res/color/dashboard_chip_bg_selector.xml`
-- [ ] `[A]` `plugins/main/src/main/res/color/dashboard_chip_stroke_selector.xml`
-- [ ] `[A]` `plugins/main/src/main/res/color/dashboard_chip_text_selector.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/dashboard_card_surface.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background_quality_bad.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background_quality_ok.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background_quality_uncertain.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background_warning.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/dashboard_loop_indicator.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/ic_dashboard_battery.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/ic_dashboard_droplet.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/ic_dashboard_shoe.xml`
-- [ ] `[A]` `plugins/main/src/main/res/drawable/ic_dashboard_wave.xml`
-- [ ] `[A]` `plugins/main/src/main/res/layout/activity_dashboard_modes.xml`
-- [ ] `[A]` `plugins/main/src/main/res/layout/component_adjustment_status.xml`
-- [ ] `[A]` `plugins/main/src/main/res/layout/component_circle_top_status_hybrid.xml`
-- [ ] `[A]` `plugins/main/src/main/res/layout/component_status_card.xml`
-- [ ] `[A]` `plugins/main/src/main/res/layout/fragment_dashboard.xml`
-- [ ] `[A]` `plugins/main/src/main/res/layout/fragment_overview_entry.xml`
-- [ ] `[M]` `plugins/main/src/main/res/layout/overview_buttons_layout.xml`
-- [ ] `[M]` `plugins/main/src/main/res/layout/overview_fragment.xml`
-- [ ] `[M]` `plugins/main/src/main/res/layout/overview_info_layout.xml`
-- [ ] `[M]` `plugins/main/src/main/res/layout/overview_notification_item.xml`
-- [ ] `[A]` `plugins/main/src/main/res/layout/view_glucose_graph_placeholder.xml`
-- [ ] `[A]` `plugins/main/src/main/res/menu/dashboard_menu.xml`
-- [ ] `[A]` `plugins/main/src/main/res/menu/menu_dashboard_aimi.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values-land/dimens_dashboard.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values-land/fractions_dashboard.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values-sw600dp/dimens_dashboard.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values/colors_dashboard.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values/dimens_dashboard.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values/fractions_dashboard.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values/styles_dashboard.xml`
+- [x] `[A]` `app/src/main/res/layout/activity_dashboard_preview.xml` (удалён)
+- [x] `[A]` `implementation/src/main/kotlin/app/aaps/implementation/overview/OverviewDataImpl.kt`
+- [x] `[A]` `plugins/main/src/androidMain/kotlin/app/aaps/plugins/main/general/dashboard/AdjustmentDetailsActivity.kt`
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/DashboardFragment.kt` (удалён)
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/DashboardModesActivity.kt` (удалён)
+- [x] `[A]` `plugins/main/src/androidMain/kotlin/app/aaps/plugins/main/general/dashboard/LoopStateActivity.kt`
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/viewmodel/OverviewViewModel.kt` (удалён)
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/views/AdjustmentStatusView.kt` (удалён)
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/views/CircleTopDashboardView.kt` (удалён)
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/views/GlucoseGraphView.kt` (удалён)
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/dashboard/views/StatusCardView.kt` (удалён)
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/OverviewEntryFragment.kt` (удалён)
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/OverviewFragment.kt` (заменён нативным 4.0.0 OverviewScreen)
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/OverviewMenusImpl.kt`
+- [x] `[M]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/OverviewPlugin.kt`
+- [x] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/overview/notifications/NotificationUiBinder.kt` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/color/dashboard_chip_bg_selector.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/color/dashboard_chip_stroke_selector.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/color/dashboard_chip_text_selector.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/dashboard_card_surface.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background_quality_bad.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background_quality_ok.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background_quality_uncertain.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/dashboard_chip_background_warning.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/dashboard_loop_indicator.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/ic_dashboard_battery.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/ic_dashboard_droplet.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/ic_dashboard_shoe.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/drawable/ic_dashboard_wave.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/layout/activity_dashboard_modes.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/layout/component_adjustment_status.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/layout/component_circle_top_status_hybrid.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/layout/component_status_card.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/layout/fragment_dashboard.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/layout/fragment_overview_entry.xml` (удалён)
+- [x] `[M]` `plugins/main/src/main/res/layout/overview_buttons_layout.xml` (удалён)
+- [x] `[M]` `plugins/main/src/main/res/layout/overview_fragment.xml` (удалён)
+- [x] `[M]` `plugins/main/src/main/res/layout/overview_info_layout.xml` (удалён)
+- [x] `[M]` `plugins/main/src/main/res/layout/overview_notification_item.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/layout/view_glucose_graph_placeholder.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/menu/dashboard_menu.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/menu/menu_dashboard_aimi.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/values-land/dimens_dashboard.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/values-land/fractions_dashboard.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/values-sw600dp/dimens_dashboard.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/values/colors_dashboard.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/values/dimens_dashboard.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/values/fractions_dashboard.xml` (удалён)
+- [x] `[A]` `plugins/main/src/main/res/values/styles_dashboard.xml` (удалён)
 
 #### 10.6. Экран руководства пользователя (User Manual) (5 файлов)
-- **Целевая реализация Compose:** `UserManualScreen.kt` (Compose Material 3 LazyColumn с поддержкой локализации)
+- **Целевая реализация Compose:** `UserManualActivity.kt` с локализацией в `androidMain/res`.
 
-- [ ] `[A]` `plugins/main/src/main/kotlin/app/aaps/plugins/main/general/manual/UserManualActivity.kt`
-- [ ] `[A]` `plugins/main/src/main/res/layout/activity_user_manual.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values-fr-rFR/manual_strings.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values-ru-rRU/manual_strings.xml`
-- [ ] `[A]` `plugins/main/src/main/res/values/manual_strings.xml`
+- [x] `[A]` `plugins/main/src/androidMain/kotlin/app/aaps/plugins/main/general/manual/UserManualActivity.kt`
+- [x] `[A]` `plugins/main/src/main/res/layout/activity_user_manual.xml` (удалён)
+- [x] `[A]` `plugins/main/src/androidMain/res/values-fr-rFR/manual_strings.xml`
+- [x] `[A]` `plugins/main/src/androidMain/res/values-ru-rRU/manual_strings.xml`
+- [x] `[A]` `plugins/main/src/androidMain/res/values/manual_strings.xml`
 
 #### 10.7. Экран удалённого управления (Remote Control / NS Client) (11 файлов)
 - **Целевая реализация Compose:** `RemoteControlScreen.kt`, `RemoteControlComposeContent.kt`, `RemoteControlViewModel.kt` (Compose Material 3 Tabs, Cards, Dialogs)

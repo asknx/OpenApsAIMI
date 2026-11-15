@@ -244,6 +244,37 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- AIMI Activities -->
+        <activity
+            android:name="app.aaps.activities.AbbreviationsActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/abbreviations_title" />
+
+        <activity
+            android:name="app.aaps.activities.ComparatorActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/comparator_title" />
+
+        <activity
+            android:name="app.aaps.plugins.main.general.dashboard.AdjustmentDetailsActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/dashboard_adjustments_details_title" />
+
+        <activity
+            android:name="app.aaps.plugins.main.general.dashboard.LoopStateActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/loop_status" />
+
+        <activity
+            android:name="app.aaps.plugins.main.general.manual.UserManualActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/manual_app_name" />
+
         <!-- WorkManager on-demand initialization: remove the default initializer so MainApp's
              Configuration.Provider (with MetroWorkerFactory) is used instead. -->
         <provider

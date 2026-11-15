@@ -80,7 +80,7 @@ class ClaudeVisionProvider : AIVisionProvider {
             return connection.inputStream.bufferedReader().use { it.readText() }
         } else {
             val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
-            throw Exception("HTTP $code: $err")
+            throw Exception("[Provider: Claude | URL: https://api.anthropic.com/v1/messages | HTTP $code: $err]")
         }
     }
     

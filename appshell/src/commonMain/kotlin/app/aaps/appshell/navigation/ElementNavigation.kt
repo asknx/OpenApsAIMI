@@ -68,6 +68,8 @@ class ElementNavigator(
             is NavigationRequest.PluginPreferences -> guarded(ElementType.SETTINGS.protection) {
                 navController.navigate(AppRoute.PluginPreferences.createRoute(request.pluginKey))
             }
+
+            is NavigationRequest.Custom            -> Unit
         }
     }
 

@@ -295,6 +295,8 @@ dependencies {
 
     implementation(project(":pump:virtual"))
     implementation(project(":workflow"))
+    implementation(project(":plugins:aps"))
+    implementation(project(":plugins:main"))
 
     // Pump drivers — only for full + pumpcontrol flavors. Derived from the :pump:* modules included
     // in settings.gradle (single source of truth) minus one exception:

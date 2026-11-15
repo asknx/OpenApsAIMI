@@ -6,7 +6,12 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -52,6 +57,7 @@ class MealAdvisorActivity : MetroAppCompatActivity() {
     private val showConfirmDialog = mutableStateOf(false)
     private val confirmDialogMessage = mutableStateOf("")
     private val showFatSecretBlockedDialog = mutableStateOf(false)
+    private val showProviderDialog = mutableStateOf(false)
 
     private var lastCalculatedDose: MealDose? = null
 
@@ -105,8 +111,49 @@ class MealAdvisorActivity : MetroAppCompatActivity() {
                         performInjection(valCarbs, dose?.totalInsulin ?: 0.0, isDirectBolus = false, isAimiPropose = false)
                     },
                     showFatSecretBlockedDialog = showFatSecretBlockedDialog.value,
-                    onDismissFatSecretDialog = { showFatSecretBlockedDialog.value = false }
+                    onDismissFatSecretDialog = { showFatSecretBlockedDialog.value = false },
+                    activeProviderName = preferences.get(app.aaps.core.keys.StringKey.AimiAdvisorProvider),
+                    onSwitchProviderClick = { showProviderDialog.value = true }
                 )
+
+                if (showProviderDialog.value) {
+                    val providers = listOf("GEMINI", "OPENAI", "DEEPSEEK", "CLAUDE", "GLM")
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showProviderDialog.value = false },
+                        title = { androidx.compose.material3.Text("Select AI Provider") },
+                        text = {
+                            androidx.compose.foundation.layout.Column {
+                                providers.forEach { prov ->
+                                    androidx.compose.foundation.layout.Row(
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                        modifier = androidx.compose.ui.Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                preferences.put(app.aaps.core.keys.StringKey.AimiAdvisorProvider, prov)
+                                                showProviderDialog.value = false
+                                            }
+                                            .padding(vertical = 10.dp)
+                                    ) {
+                                        androidx.compose.material3.RadioButton(
+                                            selected = preferences.get(app.aaps.core.keys.StringKey.AimiAdvisorProvider).equals(prov, ignoreCase = true),
+                                            onClick = {
+                                                preferences.put(app.aaps.core.keys.StringKey.AimiAdvisorProvider, prov)
+                                                showProviderDialog.value = false
+                                            }
+                                        )
+                                        androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(8.dp))
+                                        androidx.compose.material3.Text(prov)
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = { showProviderDialog.value = false }) {
+                                androidx.compose.material3.Text("Close")
+                            }
+                        }
+                    )
+                }
             }
         }
     }

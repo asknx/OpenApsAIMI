@@ -152,6 +152,7 @@ fun MainScreen(
     queueStatusText: AnnotatedString? = null,
     isPumpCommunicating: Boolean = false,
     onStopBolus: () -> Unit = {},
+    aimiOverview: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     LocalDateUtil.current
@@ -308,6 +309,7 @@ fun MainScreen(
                                 controlsEnabled = masterReachable
                             )
                         },
+                        aimiOverview = aimiOverview,
                         paddingValues = contentPadding,
                         fabBottomOffset = if (hasToolbar && showChrome) 56.dp else 0.dp,
                         // In preview mode the bottom bar lies over the content instead of above it, so the end of each
@@ -412,6 +414,7 @@ fun MainScreen(
                             onSearchClear = onSearchClear,
                             onSearchActiveChange = onSearchActiveChange,
                             isSimpleMode = uiState.isSimpleMode,
+                            onNavigate = onNavigate,
                             // Guard against transient 0 heights during AnimatedVisibility exit:
                             // the resulting contentPadding invalidation can schedule a remeasure
                             // on a node that's losing its owner — crashes in dispatchDraw.

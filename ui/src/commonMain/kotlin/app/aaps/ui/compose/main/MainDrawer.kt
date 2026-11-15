@@ -24,6 +24,14 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.dp
 import app.aaps.core.interfaces.navigation.ElementType
 import app.aaps.core.ui.compose.LocalAppIcon
+import app.aaps.core.ui.compose.icons.IcActivity
+import app.aaps.core.ui.compose.icons.IcAutomation
+import app.aaps.core.ui.compose.icons.IcCalculator
+import app.aaps.core.ui.compose.icons.IcClinicalNotes
+import app.aaps.core.ui.compose.icons.IcPluginFood
+import app.aaps.core.ui.compose.icons.IcProfile
+import app.aaps.core.ui.compose.icons.IcQuestion
+import app.aaps.core.ui.compose.icons.IcStats
 import app.aaps.core.ui.compose.navigation.NavigationRequest
 import app.aaps.core.ui.compose.navigation.description
 import app.aaps.core.ui.compose.navigation.icon
@@ -79,6 +87,66 @@ fun MainDrawer(
             DrawerMenuItem(ElementType.MAINTENANCE) { onNavigate(NavigationRequest.Element(ElementType.MAINTENANCE)) }
             DrawerMenuItem(ElementType.SETUP_WIZARD) { onNavigate(NavigationRequest.Element(ElementType.SETUP_WIZARD)) }
             DrawerMenuItem(ElementType.CONFIGURATION) { onNavigate(NavigationRequest.Element(ElementType.CONFIGURATION)) }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "OpenAPS AIMI",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+            )
+
+            DrawerMenuItem(
+                icon = IcPluginFood,
+                label = "AIMI Meal Advisor",
+                description = "AI анализ приёма пищи",
+                onClick = { onNavigate(NavigationRequest.Custom("meal_advisor")) }
+            )
+            DrawerMenuItem(
+                icon = IcProfile,
+                label = "AIMI Advisor",
+                description = "Анализ профиля и рекомендации",
+                onClick = { onNavigate(NavigationRequest.Custom("profile_advisor")) }
+            )
+            DrawerMenuItem(
+                icon = IcActivity,
+                label = "Контекст AIMI",
+                description = "Физиологический и внешний контекст",
+                onClick = { onNavigate(NavigationRequest.Custom("aimi_context")) }
+            )
+            DrawerMenuItem(
+                icon = IcStats,
+                label = "Плагин сравнения AIMI-SMB",
+                description = "Сравнение метрик и решений",
+                onClick = { onNavigate(NavigationRequest.Custom("comparator")) }
+            )
+            DrawerMenuItem(
+                icon = IcCalculator,
+                label = "Коррекции (Adjustments)",
+                description = "Детали решений и аудит",
+                onClick = { onNavigate(NavigationRequest.Custom("adjustment_details")) }
+            )
+            DrawerMenuItem(
+                icon = IcAutomation,
+                label = "Режимы AIMI",
+                description = "Управление активными режимами",
+                onClick = { onNavigate(NavigationRequest.Custom("aimi_modes")) }
+            )
+            DrawerMenuItem(
+                icon = IcClinicalNotes,
+                label = "Руководство пользователя",
+                description = "Инструкция OpenAPS AIMI",
+                onClick = { onNavigate(NavigationRequest.Custom("user_manual")) }
+            )
+            DrawerMenuItem(
+                icon = IcQuestion,
+                label = "Расшифровка аббревиатур",
+                description = "Словарь терминов и сокращений",
+                onClick = { onNavigate(NavigationRequest.Custom("abbreviations")) }
+            )
         }
 
         // Bottom section with About and Exit

@@ -110,7 +110,8 @@ fun OverviewScreen(
     onAuthorizationFailed: () -> Unit,
     // Notification sheet, opened from outside when something important arrives
     autoShowNotificationSheet: Boolean,
-    onAutoShowConsumed: () -> Unit
+    onAutoShowConsumed: () -> Unit,
+    aimiOverview: (@Composable () -> Unit)? = null
 ) {
     val state by mainViewModel.uiState.collectAsStateWithLifecycle()
     val searchState by searchViewModel.uiState.collectAsStateWithLifecycle()
@@ -258,6 +259,7 @@ fun OverviewScreen(
             } else {
                 commandQueue.cancelAllBoluses(null)
             }
-        }
+        },
+        aimiOverview = aimiOverview
     )
 }

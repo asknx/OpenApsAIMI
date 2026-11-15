@@ -245,11 +245,11 @@ enum class StringKey(
     AimiAdvisorCustomUrl("aimi_advisor_custom_url", "", title = TextRef.Literal("AIMI Advisor Custom URL")),
     AimiAdvisorCustomKey("aimi_advisor_custom_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor Custom Key")),
     AimiAdvisorModel("aimi_advisor_model", "", title = TextRef.Literal("AIMI Advisor Model")),
-    AimiAdvisorProvider("aimi_advisor_provider", "OPENAI", title = TextRef.Literal("AIMI Advisor Provider")),
+    AimiAdvisorProvider("aimi_advisor_provider", "GEMINI", title = TextRef.Literal("AIMI Advisor Provider")),
     AimiAuditorMode("aimi_auditor_mode", "AUDIT_ONLY", title = TextRef.Literal("AIMI Auditor Mode")),
 
     // Context Module
-    ContextLLMProvider("aimi_context_llm_provider", "OPENAI", title = TextRef.Literal("AIMI Context LLM Provider")),
+    ContextLLMProvider("aimi_context_llm_provider", "GEMINI", title = TextRef.Literal("AIMI Context LLM Provider")),
     ContextLLMOpenAIKey("aimi_context_llm_openai_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM OpenAI Key")),
     ContextLLMGeminiKey("aimi_context_llm_gemini_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM Gemini Key")),
     ContextLLMDeepSeekKey("aimi_context_llm_deepseek_key", "", isPassword = true, title = TextRef.Literal("AIMI Context LLM DeepSeek Key")),

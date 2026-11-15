@@ -84,7 +84,9 @@ fun MealAdvisorScreen(
     onAimiProposeClick: () -> Unit,
     onRecordOnlyClick: () -> Unit,
     showFatSecretBlockedDialog: Boolean,
-    onDismissFatSecretDialog: () -> Unit
+    onDismissFatSecretDialog: () -> Unit,
+    activeProviderName: String = "Gemini",
+    onSwitchProviderClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -111,6 +113,35 @@ fun MealAdvisorScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
+
+            // --- AI Provider Badge with Switch ---
+            androidx.compose.material3.Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onSwitchProviderClick() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "AI Engine: $activeProviderName",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = "SWITCH",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             // --- Image Card / Preview ---
             ElevatedCard(

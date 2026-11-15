@@ -80,7 +80,7 @@ class DeepSeekVisionProvider : AIVisionProvider {
             return connection.inputStream.bufferedReader().use { it.readText() }
         } else {
             val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
-            throw Exception("HTTP $code: $err")
+            throw Exception("[Provider: DeepSeek | URL: https://api.deepseek.com/v1/chat/completions | HTTP $code: $err]")
         }
     }
     

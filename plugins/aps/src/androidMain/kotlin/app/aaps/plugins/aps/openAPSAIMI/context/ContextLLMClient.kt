@@ -218,13 +218,14 @@ Output:
             val prompt = buildEnrichedPrompt(userText, medicalContext)
             
             // Get provider and API key from SHARED preferences (same as Advisor)
-            val providerStr = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "OPENAI").uppercase()
+            val providerStr = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "GEMINI").uppercase()
             val provider = when {
-                providerStr.contains("GEMINI") -> AiCoachingService.Provider.GEMINI
+                providerStr.contains("OPENAI") -> AiCoachingService.Provider.OPENAI
                 providerStr.contains("DEEPSEEK") -> AiCoachingService.Provider.DEEPSEEK
                 providerStr.contains("CLAUDE") -> AiCoachingService.Provider.CLAUDE
                 providerStr.contains("GLM") -> AiCoachingService.Provider.GLM
-                else -> AiCoachingService.Provider.OPENAI
+                providerStr.contains("GEMINI") -> AiCoachingService.Provider.GEMINI
+                else -> AiCoachingService.Provider.GEMINI
             }
             
             val apiKey = when (provider) {

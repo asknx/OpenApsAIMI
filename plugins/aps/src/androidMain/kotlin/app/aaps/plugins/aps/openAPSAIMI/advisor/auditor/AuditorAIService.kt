@@ -41,6 +41,16 @@ class AuditorAIService @Inject constructor(
         
         // Timeout for API calls (45s max per security audit to avoid blocking loop)
         private const val DEFAULT_TIMEOUT_MS = 45_000L
+
+        fun normalizeEndpointUrl(rawUrl: String): String {
+            val trimmed = rawUrl.trim().trimEnd('/')
+            if (trimmed.isBlank()) return "https://api.openai.com/v1/chat/completions"
+            return when {
+                trimmed.endsWith("/chat/completions") -> trimmed
+                trimmed.endsWith("/v1") -> "$trimmed/chat/completions"
+                else -> "$trimmed/v1/chat/completions"
+            }
+        }
     }
     
     enum class Provider(val id: String, val displayName: String) {
@@ -101,7 +111,8 @@ class AuditorAIService @Inject constructor(
                         Provider.OPENROUTER -> callOpenAICompatible(apiKey, "https://openrouter.ai/api/v1/chat/completions", getModel(provider, useHighPerf), prompt)
                         Provider.GROQ -> callOpenAICompatible(apiKey, "https://api.groq.com/openai/v1/chat/completions", getModel(provider, useHighPerf), prompt)
                         Provider.CUSTOM -> {
-                            val url = preferences.get(StringKey.AimiAdvisorCustomUrl)
+                            val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl)
+                            val url = normalizeEndpointUrl(rawUrl)
                             val model = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "custom-model" }
                             callOpenAICompatible(apiKey, url, model, prompt)
                         }
@@ -172,7 +183,8 @@ class AuditorAIService @Inject constructor(
                 Provider.OPENROUTER -> callOpenAICompatible(apiKey, "https://openrouter.ai/api/v1/chat/completions", getModel(provider, useHighPerf), prompt)
                 Provider.GROQ -> callOpenAICompatible(apiKey, "https://api.groq.com/openai/v1/chat/completions", getModel(provider, useHighPerf), prompt)
                 Provider.CUSTOM -> {
-                    val url = preferences.get(StringKey.AimiAdvisorCustomUrl)
+                    val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl)
+                    val url = normalizeEndpointUrl(rawUrl)
                     val model = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "custom-model" }
                     callOpenAICompatible(apiKey, url, model, prompt)
                 }
@@ -268,7 +280,8 @@ class AuditorAIService @Inject constructor(
         if (responseCode != HttpURLConnection.HTTP_OK) {
              val errorStream = connection.errorStream ?: connection.inputStream
              val errorResponse = errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
-             throw Exception("HTTP $responseCode: $errorResponse")
+             val sanitized = if (baseUrl.contains("?key=")) baseUrl.substringBefore("?key=") + "?key=REDACTED" else baseUrl
+             throw Exception("[Provider: Custom/OpenAI | URL: $sanitized | HTTP $responseCode: $errorResponse]")
         }
         
         val response = StringBuilder()
@@ -352,7 +365,8 @@ class AuditorAIService @Inject constructor(
         } else {
              val errorStream = connection.errorStream ?: connection.inputStream
              val errorResponse = errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
-             throw Exception("HTTP $responseCode: $errorResponse")
+             val sanitized = if (urlStr.contains("?key=")) urlStr.substringBefore("?key=") + "?key=REDACTED" else urlStr
+             throw Exception("[Provider: Gemini | URL: $sanitized | HTTP $responseCode: $errorResponse]")
         }
     }
     
@@ -385,7 +399,9 @@ class AuditorAIService @Inject constructor(
         
         val responseCode = connection.responseCode
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw Exception("HTTP $responseCode")
+            val errorStream = connection.errorStream ?: connection.inputStream
+            val errorResponse = errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
+            throw Exception("[Provider: Claude | URL: $CLAUDE_URL | HTTP $responseCode: $errorResponse]")
         }
         
         val response = StringBuilder()

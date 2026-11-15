@@ -166,6 +166,9 @@ class ApexPumpViewModel(
         )
     }
 
+    val inProgressBolus: ApexPump.InProgressBolus?
+        get() = pump.inProgressBolus
+
     fun onRefreshClick() {
         viewModelScope.launch {
             commandQueue.readStatus("ApexPump-manualRefresh")

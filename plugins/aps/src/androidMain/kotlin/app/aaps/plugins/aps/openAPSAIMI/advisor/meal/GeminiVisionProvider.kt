@@ -119,9 +119,9 @@ class GeminiVisionProvider(
             return connection.inputStream.bufferedReader().use { it.readText() }
         } else {
             val err = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Empty error"
-            // Log full error to logcat for developer analysis
-            android.util.Log.e("GeminiVision", "403 Full Body: $err")
-            throw Exception("HTTP $code: $err")
+            val sanitizedUrl = if (urlStr.contains("?key=")) urlStr.substringBefore("?key=") + "?key=REDACTED" else urlStr
+            android.util.Log.e("GeminiVision", "Error: [Provider: Gemini | URL: $sanitizedUrl | HTTP $code: $err]")
+            throw Exception("[Provider: Gemini | URL: $sanitizedUrl | HTTP $code: $err]")
         }
     }
     

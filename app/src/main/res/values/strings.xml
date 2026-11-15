@@ -91,4 +91,9 @@
     <string name="comparator_bg_threshold_180">180 high</string>
     <string name="comparator_bg_threshold_250">250 hyper</string>
 
+    <!-- AIMI Activities -->
+    <string name="abbreviations_title">AIMI Abbreviations</string>
+    <string name="dashboard_adjustments_details_title">Adjustments Details</string>
+    <string name="manual_app_name">AIMI User Manual</string>
+
 </resources>
