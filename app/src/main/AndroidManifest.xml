@@ -198,7 +198,7 @@
              members injector is generated code, which a multiplatform module cannot produce. -->
         <service
             android:name="app.aaps.persistentNotification.DummyService"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse|dataSync">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps AndroidAPS alive for continuous automated insulin delivery (artificial pancreas loop)." />

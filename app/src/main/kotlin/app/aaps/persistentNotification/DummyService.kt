@@ -1,7 +1,6 @@
 package app.aaps.persistentNotification
 
 import android.app.ForegroundServiceStartNotAllowedException
-import android.app.Notification
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
@@ -76,8 +75,14 @@ class DummyService : MetroService() {
     private fun goForeground() {
         try {
             aapsLogger.debug("Starting DummyService with ID ${notificationHolder.notificationID} notification ${notificationHolder.notification}")
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                // Android 14+: Use DATA_SYNC
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    notificationHolder.notificationID,
+                    notificationHolder.notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
+            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 startForeground(
                     notificationHolder.notificationID,
                     notificationHolder.notification,
@@ -92,11 +97,11 @@ class DummyService : MetroService() {
         } catch (e: ForegroundServiceStartNotAllowedException) {
             aapsLogger.warn(LTag.CORE, "Android does not allow DummyService into the foreground now: ${e.message}")
         } catch (e: Exception) {
-            aapsLogger.error(LTag.CORE, "Error starting FGS, retrying with fallback", e)
+            aapsLogger.error(LTag.CORE, "Error starting FGS with typed flags, retrying standard startForeground", e)
             try {
-                startForeground(4711, Notification())
+                startForeground(notificationHolder.notificationID, notificationHolder.notification)
             } catch (e2: Exception) {
-                aapsLogger.error(LTag.CORE, "Fallback FGS failed too. Giving up.", e2)
+                aapsLogger.error(LTag.CORE, "Fallback FGS failed. Service will stop to prevent crash.", e2)
                 stopSelf()
             }
         }
