@@ -88,13 +88,17 @@ fun AboutAlertDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEasterEggTap() },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = annotatedMessage,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onEasterEggTap() },
                     textAlign = TextAlign.Center
                 )
                 if (data.enabledOptions.isNotEmpty()) {

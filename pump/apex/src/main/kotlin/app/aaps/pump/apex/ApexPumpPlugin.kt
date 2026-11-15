@@ -62,15 +62,23 @@ import org.json.JSONException
 import org.json.JSONObject
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.keys.interfaces.PreferenceItem
+import app.aaps.core.interfaces.di.PumpDriver
+import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.keys.interfaces.withEntries
 import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metro.IntKey as MetroIntKey
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
  * @author Roman Rikhter (teledurak@gmail.com)
  */
+@ContributesIntoMap(AppScope::class, binding = binding<PluginBase>())
+@PumpDriver
+@MetroIntKey(1140)
 @SingleIn(AppScope::class)
 class ApexPumpPlugin @Inject constructor(
     aapsLogger: AAPSLogger,

@@ -34,8 +34,10 @@ data class PkPdLogRow(
 )
 
 object PkPdCsvLogger {
-    private val externalDir = File(Environment.getExternalStorageDirectory().absolutePath + "/Documents/AAPS")
-    private val PATH = File(externalDir, "oapsaimi_pkpd_records.csv")
+    private val externalDir: File
+        get() = File(runCatching { Environment.getExternalStorageDirectory()?.absolutePath }.getOrNull() ?: "/sdcard", "Documents/AAPS")
+    private val PATH: File
+        get() = File(externalDir, "oapsaimi_pkpd_records.csv")
     private const val TAG = "PkPdCsvLogger"
 
     @JvmStatic

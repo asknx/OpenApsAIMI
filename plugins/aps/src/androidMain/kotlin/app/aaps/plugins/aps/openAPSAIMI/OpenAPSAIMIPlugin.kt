@@ -104,6 +104,7 @@ import app.aaps.plugins.aps.openAPSAIMI.pkpd.PkPdIntegration
 import androidx.core.util.isEmpty
 import androidx.core.util.size
 import androidx.core.net.toUri
+import app.aaps.core.keys.interfaces.withClick
 import kotlin.math.abs
 import kotlin.math.exp
 import app.aaps.plugins.aps.openAPSAIMI.utils.AimiBackupManager
@@ -1137,235 +1138,314 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
 
     override fun getPreferenceScreenContent() = PreferenceSubScreenDef(
         key = "openapsaimi_settings",
-        title = TextRef.Literal("OpenAPS AIMI"),
+        title = TextRef.AndroidRes(R.string.openapsaimi),
         items = listOf(
+            // 1. AI Assistant SubScreen (Matches Screenshot 3 & 4)
             PreferenceSubScreenDef(
-                key = "Global User Preferences",
-                title = TextRef.Literal("Global User Preferences"),
+                key = "AIMI_AI",
+                title = TextRef.AndroidRes(R.string.aimi_prefs_ai_title),
                 items = listOf(
-                    PreferenceSubScreenDef(
-                        key = "AIMI_AI",
-                        title = TextRef.Literal("AIMI AI / LLM Configuration"),
-                        items = listOf(
-                            StringKey.AimiAdvisorProvider,
-                            StringKey.AimiAdvisorOpenAIKey,
-                            StringKey.AimiAdvisorGeminiKey,
-                            StringKey.AimiAdvisorDeepSeekKey,
-                            StringKey.AimiAdvisorClaudeKey,
-                            StringKey.AimiAdvisorGlmKey,
-                            StringKey.AimiAdvisorGrokKey,
-                            StringKey.AimiAdvisorOpenRouterKey,
-                            StringKey.AimiAdvisorGroqKey,
-                            StringKey.AimiAdvisorCustomUrl,
-                            StringKey.AimiAdvisorCustomKey,
-                            StringKey.AimiAdvisorModel,
-                            BooleanKey.OApsAIMIGeminiUseOAuth,
-                            StringKey.AimiGeminiOAuthClientId,
-                            StringKey.AimiGeminiOAuthClientSecret,
-                            StringKey.AimiGeminiOAuthProjectId,
-                            BooleanKey.OApsAIMIUseOpenFoodFacts,
-                            AimiStringKey.FatSecretClientId,
-                            AimiStringKey.FatSecretClientSecret,
-                            AimiStringKey.FatSecretRegion,
-                            BooleanKey.OApsAIMIMealAdvisorTrigger,
-                            BooleanKey.AimiMealAdvisorEnable,
-                            BooleanKey.OApsAIMIContextEnabled,
-                            BooleanKey.OApsAIMIContextLLMEnabled,
-                            StringKey.ContextMode,
-                            StringKey.AimiGeminiOAuthLoginButton,
-                            StringKey.AimiGeminiOAuthLogoutButton,
-                            IntentKey.OApsAIMIProfileAdvisor,
-                            IntentKey.OApsAIMIMealAdvisor,
-                            IntentKey.OApsAIMIContext
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "AIMI_EMERGENCY_SOS",
-                        title = TextRef.Literal("Emergency SOS (Hypo)"),
-                        items = listOf(
-                            BooleanKey.AimiEmergencySosEnable,
-                            StringKey.AimiEmergencySosPhone,
-                            IntKey.AimiEmergencySosThreshold
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "AIMI_PHYSIO",
-                        title = TextRef.Literal("AIMI Physiological Assistant"),
-                        items = listOf(
-                            BooleanKey.AimiPhysioAssistantEnable,
-                            BooleanKey.AimiPhysioSleepDataEnable,
-                            BooleanKey.AimiPhysioHRVDataEnable,
-                            BooleanKey.AimiPhysioLLMAnalysisEnable,
-                            BooleanKey.AimiPhysioDebugLogs
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "AIMI_PKPD",
-                        title = TextRef.Literal("AIMI PKPD Adaptive Models"),
-                        items = listOf(
-                            BooleanKey.OApsAIMIPkpdEnabled,
-                            DoubleKey.OApsAIMIPkpdInitialDiaH,
-                            DoubleKey.OApsAIMIPkpdInitialPeakMin,
-                            DoubleKey.OApsAIMIPkpdBoundsDiaMinH,
-                            DoubleKey.OApsAIMIPkpdBoundsDiaMaxH,
-                            DoubleKey.OApsAIMIPkpdBoundsPeakMinMin,
-                            DoubleKey.OApsAIMIPkpdBoundsPeakMinMax,
-                            DoubleKey.OApsAIMIPkpdMaxDiaChangePerDayH,
-                            DoubleKey.OApsAIMIPkpdMaxPeakChangePerDayMin,
-                            DoubleKey.OApsAIMIIsfFusionMinFactor,
-                            DoubleKey.OApsAIMIIsfFusionMaxFactor,
-                            DoubleKey.OApsAIMIIsfFusionMaxChangePerTick,
-                            DoubleKey.OApsAIMISmbTailThreshold,
-                            DoubleKey.OApsAIMISmbTailDamping,
-                            BooleanKey.OApsAIMIPkpdPragmaticReliefEnabled,
-                            DoubleKey.OApsAIMIPkpdPragmaticReliefMinFactor,
-                            DoubleKey.OApsAIMIRedCarpetRestoreThreshold,
-                            DoubleKey.OApsAIMIPriorityMaxIobFactor,
-                            DoubleKey.OApsAIMIPriorityMaxIobExtraU,
-                            DoubleKey.OApsAIMISmbExerciseDamping,
-                            DoubleKey.OApsAIMISmbLateFatDamping,
-                            DoubleKey.OApsAIMIPkpdStateDiaH,
-                            DoubleKey.OApsAIMIPkpdStatePeakMin,
-                            DoubleKey.OApsAIMIPlateauBandAbs,
-                            DoubleKey.OApsAIMIR2Confident,
-                            DoubleKey.OApsAIMIMaxMultiplier,
-                            DoubleKey.OApsAIMIKickerStep,
-                            DoubleKey.OApsAIMIKickerMinUph,
-                            IntKey.OApsAIMIKickerStartMin,
-                            IntKey.OApsAIMIKickerMaxMin,
-                            DoubleKey.OApsAIMIZeroResumeFrac,
-                            IntKey.OApsAIMIZeroResumeMin,
-                            IntKey.OApsAIMIZeroResumeMax,
-                            DoubleKey.OApsAIMIAntiStallBias,
-                            DoubleKey.OApsAIMIDeltaPosRelease
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "AIMI_T3C",
-                        title = TextRef.Literal("AIMI T3c Adaptive Basal"),
-                        items = listOf(
-                            BooleanKey.OApsAIMIT3cAdaptiveBasalEnabled,
-                            DoubleKey.OApsAIMIAdaptiveBasalMaxScaling,
-                            BooleanKey.OApsAIMIT3cBrittleMode,
-                            DoubleKey.OApsAIMIT3cActivationThreshold,
-                            DoubleKey.OApsAIMIT3cAggressiveness
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "AIMI_Trajectory",
-                        title = TextRef.Literal("Trajectory Guard"),
-                        items = listOf(
-                            BooleanKey.OApsAIMITrajectoryGuardEnabled
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "Women_Cycle",
-                        title = TextRef.Literal("Women Cycle & Hormonal Modulation"),
-                        items = listOf(
-                            BooleanKey.OApsAIMIwcycle,
-                            StringKey.OApsAIMIWCycleTrackingMode,
-                            StringKey.OApsAIMIWCycleContraceptive,
-                            DoubleKey.OApsAIMIwcycledateday,
-                            IntKey.OApsAIMIWCycleAvgLength,
-                            BooleanKey.OApsAIMIWCycleShadow,
-                            BooleanKey.OApsAIMIWCycleRequireConfirm,
-                            DoubleKey.OApsAIMIWCycleClampMin,
-                            DoubleKey.OApsAIMIWCycleClampMax,
-                            StringKey.OApsAIMIWCycleThyroid,
-                            StringKey.OApsAIMIWCycleVerneuil
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "Thyroid_Module",
-                        title = TextRef.Literal("Thyroid / Basedow Module"),
-                        items = listOf(
-                            BooleanKey.OApsAIMIThyroidEnabled,
-                            StringKey.OApsAIMIThyroidMode,
-                            StringKey.OApsAIMIThyroidManualStatus,
-                            StringKey.OApsAIMIThyroidTreatmentPhase,
-                            StringKey.OApsAIMIThyroidGuardLevel,
-                            BooleanKey.OApsAIMIThyroidLogVerbosity
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "AIMI_ENDO",
-                        title = TextRef.Literal("Endometriosis Management"),
-                        items = listOf(
-                            BooleanKey.AimiEndometriosisEnable,
-                            BooleanKey.AimiEndometriosisHormonalSuppression,
-                            BooleanKey.AimiEndometriosisPainFlare,
-                            IntKey.AimiEndometriosisFlareDuration,
-                            DoubleKey.AimiEndometriosisBasalMult,
-                            DoubleKey.AimiEndometriosisSmbDampen
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "AIMI_AI_Auditor",
-                        title = TextRef.Literal("AI Decision Auditor"),
-                        items = listOf(
-                            BooleanKey.AimiAuditorEnabled,
-                            StringKey.AimiAuditorMode,
-                            IntKey.AimiAuditorMaxPerHour,
-                            IntKey.AimiAuditorTimeoutSeconds,
-                            IntKey.AimiAuditorMinConfidence
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "Night_Growth",
-                        title = TextRef.Literal("Night Growth Resistance"),
-                        items = listOf(
-                            BooleanKey.OApsAIMINightGrowthEnabled,
-                            IntKey.OApsAIMINightGrowthAgeYears,
-                            StringKey.OApsAIMINightGrowthStart,
-                            StringKey.OApsAIMINightGrowthEnd,
-                            DoubleKey.OApsAIMINightGrowthMaxIobExtra,
-                            DoubleKey.OApsAIMINightGrowthMinRiseSlope,
-                            DoubleKey.OApsAIMINightGrowthSmbMultiplier,
-                            DoubleKey.OApsAIMINightGrowthBasalMultiplier,
-                            DoubleKey.OApsAIMINightGrowthMaxSmbClamp,
-                            IntKey.OApsAIMINightGrowthMinDurationMin,
-                            IntKey.OApsAIMINightGrowthMinEventualOverTarget,
-                            IntKey.OApsAIMINightGrowthDecayMinutes
-                        )
-                    ),
-                    PreferenceSubScreenDef(
-                        key = "AIMI_Pregnancy",
-                        title = TextRef.Literal("Gestational Autopilot"),
-                        items = listOf(
-                            BooleanKey.OApsAIMIpregnancy,
-                            AimiLongKey.PregnancyDueDate,
-                            AimiStringKey.PregnancyDueDateString
-                        )
-                    ),
-                    BooleanKey.OApsAIMIhoneymoon,
-                    BooleanKey.OApsAIMInight,
-                    BooleanKey.OApsAIMIUnifiedReactivityEnabled,
-                    BooleanKey.OApsxdriponeminute,
-                    BooleanKey.OApsAIMIEnableBasal,
-                    BooleanKey.OApsAIMIEnableStepsFromWatch,
-                    BooleanKey.OApsAIMIforcelimits,
-                    BooleanKey.AimiEngineeringBypassEnabled,
-                    IntKey.OApsAIMIlogsize,
-                    DoubleKey.OApsAIMIFCLFactor,
-                    DoubleKey.OApsAIMIHighBg,
-                    IntKey.OApsAIMIHighBGinterval,
-                    AimiStringKey.RemoteControlPin
+                    StringKey.AimiAdvisorProvider,
+                    StringKey.AimiAdvisorOpenAIKey,
+                    StringKey.AimiAdvisorGeminiKey,
+                    BooleanKey.OApsAIMIGeminiUseOAuth,
+                    StringKey.AimiGeminiOAuthClientId,
+                    StringKey.AimiGeminiOAuthClientSecret,
+                    StringKey.AimiGeminiOAuthProjectId,
+                    IntentKey.AimiGoogleLogin.withClick {
+                        pluginScope.launch {
+                            try {
+                                val url = geminiOAuthManager.startPKCEAuth()
+                                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                })
+                                val code = geminiOAuthManager.waitForAuthCode()
+                                if (code != null && geminiOAuthManager.exchangeCodeForTokens(code)) {
+                                    android.widget.Toast.makeText(context, "Gemini Login Success", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "Login Failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
+                    IntentKey.AimiGoogleLogout.withClick {
+                        geminiOAuthManager.logout()
+                        android.widget.Toast.makeText(context, "Logged out from Google", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    StringKey.AimiAdvisorDeepSeekKey,
+                    StringKey.AimiAdvisorClaudeKey,
+                    StringKey.AimiAdvisorGlmKey,
+                    StringKey.AimiAdvisorGrokKey,
+                    StringKey.AimiAdvisorOpenRouterKey,
+                    StringKey.AimiAdvisorGroqKey,
+                    StringKey.AimiAdvisorCustomUrl,
+                    StringKey.AimiAdvisorCustomKey,
+                    StringKey.AimiAdvisorModel,
+                    IntentKey.AimiFetchModels.withClick {
+                        pluginScope.launch {
+                            try {
+                                val providerStr = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
+                                val provider = auditorOrchestrator.getProvider()
+                                android.widget.Toast.makeText(context, "Fetching available models for $providerStr...", android.widget.Toast.LENGTH_SHORT).show()
+                                val models = auditorAIService.fetchAvailableModels(provider)
+                                if (models.isNotEmpty()) {
+                                    val modelsArray = models.toTypedArray()
+                                    val currentModel = preferences.get(StringKey.AimiAdvisorModel)
+                                    val selectedIndex = models.indexOf(currentModel).coerceAtLeast(0)
+                                    androidx.appcompat.app.AlertDialog.Builder(context)
+                                        .setTitle("Select Model ($providerStr)")
+                                        .setSingleChoiceItems(modelsArray, selectedIndex) { dialog, which ->
+                                            val chosenModel = modelsArray[which]
+                                            preferences.put(StringKey.AimiAdvisorModel, chosenModel)
+                                            android.widget.Toast.makeText(context, "Model set to: $chosenModel", android.widget.Toast.LENGTH_SHORT).show()
+                                            dialog.dismiss()
+                                        }
+                                        .setNegativeButton(android.R.string.cancel, null)
+                                        .show()
+                                } else {
+                                    android.widget.Toast.makeText(context, "Failed to fetch models from $providerStr", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
+                    BooleanKey.OApsAIMIUseOpenFoodFacts,
+                    AimiStringKey.FatSecretClientId,
+                    AimiStringKey.FatSecretClientSecret,
+                    AimiStringKey.FatSecretRegion,
+                    BooleanKey.AimiMealAdvisorEnable,
+                    IntentKey.AimiLogExport.withClick {
+                        pluginScope.launch {
+                            android.widget.Toast.makeText(context, "Exporting logs (15 min)...", android.widget.Toast.LENGTH_SHORT).show()
+                            val file = logcatExporter.exportLogs(context, 15)
+                            if (file != null) {
+                                android.widget.Toast.makeText(context, "Exported: ${file.name}", android.widget.Toast.LENGTH_LONG).show()
+                            } else {
+                                android.widget.Toast.makeText(context, "Export Failed!", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
                 )
             ),
+
+            // 2. Emergency SOS SubScreen
+            PreferenceSubScreenDef(
+                key = "AIMI_EMERGENCY_SOS",
+                title = TextRef.AndroidRes(R.string.aimi_sos_title),
+                items = listOf(
+                    BooleanKey.AimiEmergencySosEnable,
+                    StringKey.AimiEmergencySosPhone,
+                    IntKey.AimiEmergencySosThreshold,
+                    IntentKey.OApsAIMIEmergencySos.withClick {
+                        context.startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.sos.AIMIEmergencySosPermissionActivityMTR::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    }
+                )
+            ),
+
+            // 3. Physiological Assistant SubScreen
+            PreferenceSubScreenDef(
+                key = "AIMI_PHYSIO",
+                title = TextRef.AndroidRes(R.string.aimi_physio_title),
+                items = listOf(
+                    BooleanKey.AimiPhysioAssistantEnable,
+                    IntentKey.OApsAIMIHealthConnect.withClick {
+                        context.startActivity(Intent(context, app.aaps.plugins.aps.openAPSAIMI.physio.AIMIHealthConnectPermissionActivityMTR::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    },
+                    AimiStringKey.StepsSourceMode,
+                    BooleanKey.AimiPhysioSleepDataEnable,
+                    BooleanKey.AimiPhysioHRVDataEnable,
+                    BooleanKey.AimiPhysioLLMAnalysisEnable,
+                    BooleanKey.AimiPhysioDebugLogs
+                )
+            ),
+
+            // 4. Direct Core AIMI Preferences (Matches Screenshot 4)
             BooleanKey.OApsAIMIMLtraining,
             DoubleKey.OApsAIMIMaxSMB,
             DoubleKey.OApsAIMIHighBGMaxSMB,
             DoubleKey.OApsAIMIweight,
             DoubleKey.OApsAIMICHO,
             DoubleKey.OApsAIMITDD7,
+            BooleanKey.AimiEngineeringBypassEnabled,
+
+            // 5. PK/PD Adaptive Models SubScreen
+            PreferenceSubScreenDef(
+                key = "AIMI_PKPD",
+                title = TextRef.AndroidRes(R.string.oaps_aimi_pkpd_section_title),
+                items = listOf(
+                    BooleanKey.OApsAIMIPkpdEnabled,
+                    DoubleKey.OApsAIMIPkpdInitialDiaH,
+                    DoubleKey.OApsAIMIPkpdInitialPeakMin,
+                    DoubleKey.OApsAIMIPkpdBoundsDiaMinH,
+                    DoubleKey.OApsAIMIPkpdBoundsDiaMaxH,
+                    DoubleKey.OApsAIMIPkpdBoundsPeakMinMin,
+                    DoubleKey.OApsAIMIPkpdBoundsPeakMinMax,
+                    DoubleKey.OApsAIMIPkpdMaxDiaChangePerDayH,
+                    DoubleKey.OApsAIMIPkpdMaxPeakChangePerDayMin,
+                    DoubleKey.OApsAIMIIsfFusionMinFactor,
+                    DoubleKey.OApsAIMIIsfFusionMaxFactor,
+                    DoubleKey.OApsAIMIIsfFusionMaxChangePerTick,
+                    DoubleKey.OApsAIMISmbTailThreshold,
+                    DoubleKey.OApsAIMISmbTailDamping,
+                    BooleanKey.OApsAIMIPkpdPragmaticReliefEnabled,
+                    DoubleKey.OApsAIMIPkpdPragmaticReliefMinFactor,
+                    DoubleKey.OApsAIMIRedCarpetRestoreThreshold,
+                    DoubleKey.OApsAIMIPriorityMaxIobFactor,
+                    DoubleKey.OApsAIMIPriorityMaxIobExtraU,
+                    DoubleKey.OApsAIMISmbExerciseDamping,
+                    DoubleKey.OApsAIMISmbLateFatDamping,
+                    DoubleKey.OApsAIMIPkpdStateDiaH,
+                    DoubleKey.OApsAIMIPkpdStatePeakMin,
+                    DoubleKey.OApsAIMIPlateauBandAbs,
+                    DoubleKey.OApsAIMIR2Confident,
+                    DoubleKey.OApsAIMIMaxMultiplier,
+                    DoubleKey.OApsAIMIKickerStep,
+                    DoubleKey.OApsAIMIKickerMinUph,
+                    IntKey.OApsAIMIKickerStartMin,
+                    IntKey.OApsAIMIKickerMaxMin,
+                    DoubleKey.OApsAIMIZeroResumeFrac,
+                    IntKey.OApsAIMIZeroResumeMin,
+                    IntKey.OApsAIMIZeroResumeMax,
+                    DoubleKey.OApsAIMIAntiStallBias,
+                    DoubleKey.OApsAIMIDeltaPosRelease
+                )
+            ),
+
+            // 6. Universal Adaptive Basal SubScreen
+            PreferenceSubScreenDef(
+                key = "AIMI_ADAPTIVE_BASAL",
+                title = TextRef.AndroidRes(R.string.oaps_aimi_adaptive_basal_title),
+                items = listOf(
+                    BooleanKey.OApsAIMIT3cAdaptiveBasalEnabled,
+                    DoubleKey.OApsAIMIAdaptiveBasalMaxScaling
+                )
+            ),
+
+            // 7. T3C / Brittle Diabetes SubScreen
+            PreferenceSubScreenDef(
+                key = "AIMI_T3C",
+                title = TextRef.AndroidRes(R.string.aimi_t3c_settings_title),
+                items = listOf(
+                    BooleanKey.OApsAIMIT3cBrittleMode,
+                    DoubleKey.OApsAIMIT3cActivationThreshold,
+                    DoubleKey.OApsAIMIT3cAggressiveness
+                )
+            ),
+
+            // 8. Phase-Space Trajectory Guard
+            PreferenceSubScreenDef(
+                key = "AIMI_Trajectory",
+                title = TextRef.Literal("Фазово-пространственный контроль"),
+                items = listOf(
+                    BooleanKey.OApsAIMITrajectoryGuardEnabled
+                )
+            ),
+
+            // 9. Women Cycle & Hormonal Modulation
+            PreferenceSubScreenDef(
+                key = "Women_Cycle",
+                title = TextRef.Literal("Женский цикл и гормоны"),
+                items = listOf(
+                    BooleanKey.OApsAIMIwcycle,
+                    StringKey.OApsAIMIWCycleTrackingMode,
+                    StringKey.OApsAIMIWCycleContraceptive,
+                    DoubleKey.OApsAIMIwcycledateday,
+                    IntKey.OApsAIMIWCycleAvgLength,
+                    BooleanKey.OApsAIMIWCycleShadow,
+                    BooleanKey.OApsAIMIWCycleRequireConfirm,
+                    DoubleKey.OApsAIMIWCycleClampMin,
+                    DoubleKey.OApsAIMIWCycleClampMax,
+                    StringKey.OApsAIMIWCycleThyroid,
+                    StringKey.OApsAIMIWCycleVerneuil
+                )
+            ),
+
+            // 10. Thyroid Module
+            PreferenceSubScreenDef(
+                key = "Thyroid_Module",
+                title = TextRef.Literal("Щитовидная железа / Базедова болезнь"),
+                items = listOf(
+                    BooleanKey.OApsAIMIThyroidEnabled,
+                    StringKey.OApsAIMIThyroidMode,
+                    StringKey.OApsAIMIThyroidManualStatus,
+                    StringKey.OApsAIMIThyroidTreatmentPhase,
+                    StringKey.OApsAIMIThyroidGuardLevel,
+                    BooleanKey.OApsAIMIThyroidLogVerbosity
+                )
+            ),
+
+            // 11. Endometriosis
+            PreferenceSubScreenDef(
+                key = "AIMI_ENDO",
+                title = TextRef.Literal("Эндометриоз"),
+                items = listOf(
+                    BooleanKey.AimiEndometriosisEnable,
+                    BooleanKey.AimiEndometriosisHormonalSuppression,
+                    BooleanKey.AimiEndometriosisPainFlare,
+                    IntKey.AimiEndometriosisFlareDuration,
+                    DoubleKey.AimiEndometriosisBasalMult,
+                    DoubleKey.AimiEndometriosisSmbDampen
+                )
+            ),
+
+            // 12. AI Decision Auditor
+            PreferenceSubScreenDef(
+                key = "AIMI_AI_Auditor",
+                title = TextRef.Literal("AI Decision Auditor"),
+                items = listOf(
+                    BooleanKey.AimiAuditorEnabled,
+                    StringKey.AimiAuditorMode,
+                    IntKey.AimiAuditorMaxPerHour,
+                    IntKey.AimiAuditorTimeoutSeconds,
+                    IntKey.AimiAuditorMinConfidence
+                )
+            ),
+
+            // 13. Night Growth Resistance
+            PreferenceSubScreenDef(
+                key = "Night_Growth",
+                title = TextRef.Literal("Ночной скачок гормона роста"),
+                items = listOf(
+                    BooleanKey.OApsAIMINightGrowthEnabled,
+                    IntKey.OApsAIMINightGrowthAgeYears,
+                    StringKey.OApsAIMINightGrowthStart,
+                    StringKey.OApsAIMINightGrowthEnd,
+                    DoubleKey.OApsAIMINightGrowthMaxIobExtra,
+                    DoubleKey.OApsAIMINightGrowthMinRiseSlope,
+                    DoubleKey.OApsAIMINightGrowthSmbMultiplier,
+                    DoubleKey.OApsAIMINightGrowthBasalMultiplier,
+                    DoubleKey.OApsAIMINightGrowthMaxSmbClamp,
+                    IntKey.OApsAIMINightGrowthMinDurationMin,
+                    IntKey.OApsAIMINightGrowthMinEventualOverTarget,
+                    IntKey.OApsAIMINightGrowthDecayMinutes
+                )
+            ),
+
+            // 14. Gestational Autopilot
+            PreferenceSubScreenDef(
+                key = "AIMI_Pregnancy",
+                title = TextRef.Literal("Гестационный автопилот"),
+                items = listOf(
+                    BooleanKey.OApsAIMIpregnancy,
+                    AimiLongKey.PregnancyDueDate,
+                    AimiStringKey.PregnancyDueDateString
+                )
+            ),
+
+            // 15. Training ML Modes
             PreferenceSubScreenDef(
                 key = "Training_ML_Modes",
-                title = TextRef.Literal("Training ML Modes"),
+                title = TextRef.AndroidRes(R.string.training_ml_modes_preferences),
                 items = listOf(
                     DoubleKey.meal_modes_MaxBasal,
                     PreferenceSubScreenDef(
                         key = "mode_Breakfast",
-                        title = TextRef.Literal("Breakfast Mode"),
+                        title = TextRef.AndroidRes(R.string.training_ml_breakfast_modes_preferences),
                         items = listOf(
                             DoubleKey.OApsAIMIBFPrebolus,
                             DoubleKey.OApsAIMIBFPrebolus2,
@@ -1375,7 +1455,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     ),
                     PreferenceSubScreenDef(
                         key = "mode_Lunch",
-                        title = TextRef.Literal("Lunch Mode"),
+                        title = TextRef.AndroidRes(R.string.training_ml_lunch_modes_preferences),
                         items = listOf(
                             DoubleKey.OApsAIMILunchPrebolus,
                             DoubleKey.OApsAIMILunchPrebolus2,
@@ -1385,7 +1465,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     ),
                     PreferenceSubScreenDef(
                         key = "mode_dinner",
-                        title = TextRef.Literal("Dinner Mode"),
+                        title = TextRef.AndroidRes(R.string.training_ml_dinner_modes_preferences),
                         items = listOf(
                             DoubleKey.OApsAIMIDinnerPrebolus,
                             DoubleKey.OApsAIMIDinnerPrebolus2,
@@ -1395,7 +1475,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     ),
                     PreferenceSubScreenDef(
                         key = "mode_highcarb",
-                        title = TextRef.Literal("High Carb Mode"),
+                        title = TextRef.AndroidRes(R.string.training_ml_high_carb_modes_preferences),
                         items = listOf(
                             DoubleKey.OApsAIMIHighCarbPrebolus,
                             DoubleKey.OApsAIMIHighCarbPrebolus2,
@@ -1405,7 +1485,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     ),
                     PreferenceSubScreenDef(
                         key = "mode_snack",
-                        title = TextRef.Literal("Snack Mode"),
+                        title = TextRef.AndroidRes(R.string.training_ml_snack_modes_preferences),
                         items = listOf(
                             DoubleKey.OApsAIMISnackPrebolus,
                             DoubleKey.OApsAIMISnackFactor,
@@ -1414,7 +1494,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     ),
                     PreferenceSubScreenDef(
                         key = "mode_meal",
-                        title = TextRef.Literal("Generic Meal Mode"),
+                        title = TextRef.AndroidRes(R.string.training_ml_generic_meal_modes_preferences),
                         items = listOf(
                             DoubleKey.OApsAIMIMealPrebolus,
                             DoubleKey.OApsAIMIMealFactor,
@@ -1423,7 +1503,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     ),
                     PreferenceSubScreenDef(
                         key = "mode_sleep",
-                        title = TextRef.Literal("Sleep Mode"),
+                        title = TextRef.AndroidRes(R.string.training_ml_sleep_modes_preferences),
                         items = listOf(
                             DoubleKey.OApsAIMIsleepFactor,
                             IntKey.OApsAIMISleepinterval
@@ -1431,9 +1511,11 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     )
                 )
             ),
+
+            // 16. Autodrive
             PreferenceSubScreenDef(
                 key = "Autodrive",
-                title = TextRef.Literal("Autodrive"),
+                title = TextRef.AndroidRes(R.string.autodrive_preferences),
                 items = listOf(
                     BooleanKey.OApsAIMIautoDrive,
                     BooleanKey.OApsAIMIautoDriveActive,
@@ -1452,7 +1534,7 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     IntKey.AimiCosineGateMaxPeakShift,
                     PreferenceSubScreenDef(
                         key = "Autodrive prebolus variables",
-                        title = TextRef.Literal("Autodrive Prebolus Variables"),
+                        title = TextRef.AndroidRes(R.string.autodrive_prebolus_variables),
                         items = listOf(
                             IntKey.OApsAIMIAutodriveBG,
                             DoubleKey.OApsAIMIcombinedDelta,
@@ -1461,9 +1543,11 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                     )
                 )
             ),
+
+            // 17. OAPS SMB Settings
             PreferenceSubScreenDef(
                 key = "OAPS_SMB_Settings",
-                title = TextRef.Literal("OAPS SMB Settings"),
+                title = TextRef.AndroidRes(R.string.AAPS_SMB_Settings),
                 items = listOf(
                     DoubleKey.ApsMaxBasal,
                     DoubleKey.ApsSmbMaxIob,

@@ -43,7 +43,7 @@ class ConfigImpl(
     override val AAPSCLIENT2 = BuildConfig.FLAVOR == "aapsclient2"
     override val AAPSCLIENT3 = BuildConfig.FLAVOR == "aapsclient3"
     override val PUMPCONTROL = BuildConfig.FLAVOR == "pumpcontrol"
-    override val PUMPDRIVERS = BuildConfig.FLAVOR == "fulldev" || BuildConfig.FLAVOR == "userfull" || BuildConfig.FLAVOR == "pumpcontrol"
+    override val PUMPDRIVERS = BuildConfig.FLAVOR == "fulldev" || BuildConfig.FLAVOR == "userfull" || BuildConfig.FLAVOR == "pumpcontrol" || BuildConfig.FLAVOR == "full"
     override val FLAVOR = BuildConfig.FLAVOR
     override val VERSION_NAME = BuildConfig.VERSION_NAME
     override val HEAD = BuildConfig.HEAD

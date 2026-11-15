@@ -10,9 +10,16 @@ import java.util.*
 class WCycleCsvLogger(private val ctx: Context) {
     private val TAG = "WCycleCsvLogger"
 
-    // 🔧 FIX: Use ONLY standard /Documents/AAPS path (no app-specific fallback)
-    private val dir = File(Environment.getExternalStorageDirectory().absolutePath + "/Documents/AAPS")
-    private val file = File(dir, "oapsaimi_wcycle.csv")
+    // 🔧 FIX: Safe path with fallback if external storage directory is null (e.g. in tests)
+    private val dir: File
+        get() {
+            val base = runCatching { Environment.getExternalStorageDirectory() }.getOrNull()
+                ?: ctx.getExternalFilesDir(null)
+                ?: ctx.filesDir
+            return File(base, "Documents/AAPS")
+        }
+    private val file: File
+        get() = File(dir, "oapsaimi_wcycle.csv")
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
 

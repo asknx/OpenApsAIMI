@@ -81,9 +81,86 @@ val LocalAapsScale = compositionLocalOf { 1f }
 
 /**
  * CompositionLocal providing access to user preferences for theme configuration.
- * Used to retrieve dark mode setting and react to preference changes.
+ * Uses a safe fallback if no Preferences are provided to avoid crashing standalone screens/previews.
  */
-val LocalPreferences = compositionLocalOf<Preferences> { error("No Preferences provided") }
+val LocalPreferences = compositionLocalOf<Preferences> { FallbackPreferences }
+
+private object FallbackPreferences : Preferences {
+    override val simpleMode: Boolean = false
+    override val apsMode: Boolean = true
+    override val nsclientMode: Boolean = false
+    override val pumpControlMode: Boolean = false
+
+    override fun get(key: app.aaps.core.keys.interfaces.BooleanNonPreferenceKey): Boolean = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.BooleanNonPreferenceKey): Boolean = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.BooleanNonPreferenceKey, value: Boolean) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.BooleanNonPreferenceKey): kotlinx.coroutines.flow.StateFlow<Boolean> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+    override fun get(key: app.aaps.core.keys.interfaces.BooleanPreferenceKey): Boolean = key.defaultValue
+    override fun get(key: app.aaps.core.keys.interfaces.BooleanComposedNonPreferenceKey, vararg arguments: Any): Boolean = key.defaultValue
+    override fun get(key: app.aaps.core.keys.interfaces.BooleanComposedNonPreferenceKey, vararg arguments: Any, defaultValue: Boolean): Boolean = defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.BooleanComposedNonPreferenceKey, vararg arguments: Any): Boolean = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.BooleanComposedNonPreferenceKey, vararg arguments: Any, value: Boolean) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.BooleanComposedNonPreferenceKey, vararg arguments: Any): kotlinx.coroutines.flow.StateFlow<Boolean> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+    override fun remove(key: app.aaps.core.keys.interfaces.ComposedKey, vararg arguments: Any) {}
+
+    override fun get(key: app.aaps.core.keys.interfaces.StringNonPreferenceKey): String = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.StringNonPreferenceKey): String = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.StringNonPreferenceKey, value: String) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.StringNonPreferenceKey): kotlinx.coroutines.flow.StateFlow<String> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+    override fun get(key: app.aaps.core.keys.interfaces.StringPreferenceKey): String = key.defaultValue
+    override fun get(key: app.aaps.core.keys.interfaces.StringComposedNonPreferenceKey, vararg arguments: Any): String = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.StringComposedNonPreferenceKey, vararg arguments: Any): String = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.StringComposedNonPreferenceKey, vararg arguments: Any, value: String) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.StringComposedNonPreferenceKey, vararg arguments: Any): kotlinx.coroutines.flow.StateFlow<String> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+
+    override fun get(key: app.aaps.core.keys.interfaces.DoubleNonPreferenceKey): Double = key.defaultValue
+    override fun get(key: app.aaps.core.keys.interfaces.DoublePreferenceKey): Double = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.DoublePreferenceKey): Double = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.DoubleNonPreferenceKey, value: Double) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.DoubleNonPreferenceKey): kotlinx.coroutines.flow.StateFlow<Double> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+    override fun get(key: app.aaps.core.keys.interfaces.DoubleComposedNonPreferenceKey, vararg arguments: Any): Double = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.DoubleComposedNonPreferenceKey, vararg arguments: Any): Double = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.DoubleComposedNonPreferenceKey, vararg arguments: Any, value: Double) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.DoubleComposedNonPreferenceKey, vararg arguments: Any): kotlinx.coroutines.flow.StateFlow<Double> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+
+    override fun get(key: app.aaps.core.keys.interfaces.UnitDoublePreferenceKey): Double = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.UnitDoublePreferenceKey): Double = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.UnitDoublePreferenceKey, value: Double) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.UnitDoublePreferenceKey): kotlinx.coroutines.flow.StateFlow<Double> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+
+    override fun get(key: app.aaps.core.keys.interfaces.IntNonPreferenceKey): Int = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.IntNonPreferenceKey): Int = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.IntComposedNonPreferenceKey, vararg arguments: Any, value: Int) {}
+    override fun put(key: app.aaps.core.keys.interfaces.IntNonPreferenceKey, value: Int) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.IntNonPreferenceKey): kotlinx.coroutines.flow.StateFlow<Int> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+    override fun inc(key: app.aaps.core.keys.interfaces.IntNonPreferenceKey) {}
+    override fun get(key: app.aaps.core.keys.interfaces.IntComposedNonPreferenceKey, vararg arguments: Any): Int = key.defaultValue
+    override fun observe(key: app.aaps.core.keys.interfaces.IntComposedNonPreferenceKey, vararg arguments: Any): kotlinx.coroutines.flow.StateFlow<Int> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+    override fun get(key: app.aaps.core.keys.interfaces.IntPreferenceKey): Int = key.defaultValue
+
+    override fun get(key: app.aaps.core.keys.interfaces.LongNonPreferenceKey): Long = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.LongNonPreferenceKey): Long = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.LongNonPreferenceKey, value: Long) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.LongNonPreferenceKey): kotlinx.coroutines.flow.StateFlow<Long> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+    override fun get(key: app.aaps.core.keys.interfaces.LongPreferenceKey): Long = key.defaultValue
+    override fun inc(key: app.aaps.core.keys.interfaces.LongNonPreferenceKey) {}
+    override fun get(key: app.aaps.core.keys.interfaces.LongComposedNonPreferenceKey, vararg arguments: Any): Long = key.defaultValue
+    override fun getIfExists(key: app.aaps.core.keys.interfaces.LongComposedNonPreferenceKey, vararg arguments: Any): Long = key.defaultValue
+    override fun put(key: app.aaps.core.keys.interfaces.LongComposedNonPreferenceKey, vararg arguments: Any, value: Long) {}
+    override fun observe(key: app.aaps.core.keys.interfaces.LongComposedNonPreferenceKey, vararg arguments: Any): kotlinx.coroutines.flow.StateFlow<Long> = kotlinx.coroutines.flow.MutableStateFlow(key.defaultValue)
+
+    override fun remove(key: app.aaps.core.keys.interfaces.NonPreferenceKey) {}
+    override fun isUnitDependent(key: String): Boolean = false
+    override fun get(key: String): app.aaps.core.keys.interfaces.NonPreferenceKey? = null
+    override fun getIfExists(key: String): app.aaps.core.keys.interfaces.NonPreferenceKey? = null
+    override fun registerPreferences(keys: List<app.aaps.core.keys.interfaces.NonPreferenceKey>) {}
+    override fun allMatchingStrings(key: app.aaps.core.keys.interfaces.ComposedKey): List<String> = emptyList()
+    override fun allMatchingInts(key: app.aaps.core.keys.interfaces.ComposedKey): List<Int> = emptyList()
+    override fun isExportableKey(key: String): Boolean = false
+    override fun getAllPreferenceKeys(): List<app.aaps.core.keys.interfaces.PreferenceKey> = emptyList()
+    override fun getAllKeys(): List<app.aaps.core.keys.interfaces.NonPreferenceKey> = emptyList()
+    override fun reloadFromStore() {}
+}
 
 /**
  * CompositionLocal providing access to DateUtil for date/time formatting.

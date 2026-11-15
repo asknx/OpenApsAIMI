@@ -40,6 +40,18 @@ enum class AimiStringKey(
             "IT" to "Italy (IT)",
             "ES" to "Spain (ES)"
         )
+    ),
+    StepsSourceMode(
+        key = "aimi_steps_source_mode",
+        defaultValue = "wear",
+        title = TextRef.Literal("Режим источника шагов и пульса"),
+        preferenceType = app.aaps.core.keys.PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "wear" to "Wear OS (приоритет)",
+            "auto" to "Авто-переключение (Wear -> Health Connect)",
+            "health_connect" to "Только Health Connect",
+            "disabled" to "Отключено"
+        )
     );
 
     override val entries: Map<String, TextRef> =

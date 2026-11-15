@@ -28,6 +28,7 @@ import app.aaps.core.ui.compose.icons.IcActivity
 import app.aaps.core.ui.compose.icons.IcAutomation
 import app.aaps.core.ui.compose.icons.IcCalculator
 import app.aaps.core.ui.compose.icons.IcClinicalNotes
+import app.aaps.core.ui.compose.icons.IcPluginOpenAPS
 import app.aaps.core.ui.compose.icons.IcPluginFood
 import app.aaps.core.ui.compose.icons.IcProfile
 import app.aaps.core.ui.compose.icons.IcQuestion
@@ -37,6 +38,8 @@ import app.aaps.core.ui.compose.navigation.description
 import app.aaps.core.ui.compose.navigation.icon
 import app.aaps.core.ui.compose.navigation.label
 import app.aaps.core.ui.compose.stringResourceOrNull
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 
 @Composable
 fun MainDrawer(
@@ -99,6 +102,18 @@ fun MainDrawer(
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
             )
 
+            DrawerMenuItem(
+                icon = IcPluginOpenAPS,
+                label = "AIMI 3.3",
+                description = "Статус и расчеты контура",
+                onClick = { onNavigate(NavigationRequest.Plugin("OpenAPSAIMIPlugin")) }
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.Settings,
+                label = "Настройки AIMI",
+                description = "Конфигурация AI, SOS, Physio и параметров",
+                onClick = { onNavigate(NavigationRequest.PluginPreferences("openapsaimi_settings")) }
+            )
             DrawerMenuItem(
                 icon = IcPluginFood,
                 label = "AIMI Meal Advisor",

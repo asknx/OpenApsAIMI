@@ -412,11 +412,19 @@ class DetermineBasalaimiSMB2 @Inject constructor(
     private var consoleError = mutableListOf<String>()
     private var consoleLog = mutableListOf<String>()
     private var lastAutodriveActionTime: Long = 0L  // FCL 14.1 Cooldown State
-    private val externalDir = File(Environment.getExternalStorageDirectory().absolutePath + "/Documents/AAPS")
+    private val externalDir: File
+        get() {
+            val base = runCatching { Environment.getExternalStorageDirectory() }.getOrNull()
+                ?: context.getExternalFilesDir(null)
+                ?: context.filesDir
+            return File(base, "Documents/AAPS")
+        }
     //private val modelFile = File(externalDir, "ml/model.tflite")
     //private val modelFileUAM = File(externalDir, "ml/modelUAM.tflite")
-    private val csvfile = File(externalDir, "oapsaimiML2_records.csv")
-    private val csvfile2 = File(externalDir, "oapsaimi2_records.csv")
+    private val csvfile: File
+        get() = File(externalDir, "oapsaimiML2_records.csv")
+    private val csvfile2: File
+        get() = File(externalDir, "oapsaimi2_records.csv")
     private val pkpdIntegration = PkPdIntegration(preferences)
     //private val tempFile = File(externalDir, "temp.csv")
     private var bgacc = 0.0

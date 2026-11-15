@@ -25,9 +25,15 @@ enum class IntentKey(
 ) : IntentPreferenceKey {
 
     InsulinConcentrationRequest("InsulinConcentrationRequest", title = TextRef.Literal("InsulinConcentrationRequest")),
-    OApsAIMIProfileAdvisor("OApsAIMIProfileAdvisor", title = TextRef.Literal("OApsAIMIProfileAdvisor")),
-    OApsAIMIMealAdvisor("OApsAIMIMealAdvisor", title = TextRef.Literal("OApsAIMIMealAdvisor")),
-    OApsAIMIContext("OApsAIMIContext", title = TextRef.Literal("OApsAIMIContext")),
+    OApsAIMIProfileAdvisor("OApsAIMIProfileAdvisor", title = TextRef.Literal("🤖 AI Ассистент")),
+    OApsAIMIMealAdvisor("OApsAIMIMealAdvisor", title = TextRef.Literal("AI Анализ приёма пищи")),
+    OApsAIMIContext("OApsAIMIContext", title = TextRef.Literal("Контекст AIMI")),
+    OApsAIMIEmergencySos("OApsAIMIEmergencySos", title = TextRef.Literal("Разрешения SOS (SMS / Звонок)"), summary = TextRef.Literal("Нажмите для предоставления разрешений SMS и звонков")),
+    OApsAIMIHealthConnect("OApsAIMIHealthConnect", title = TextRef.Literal("Разрешения Health Connect"), summary = TextRef.Literal("Нажмите для авторизации доступа к шагам, сну и пульсу")),
+    AimiFetchModels("AimiFetchModels", title = TextRef.Literal("Выбрать модель из каталога"), summary = TextRef.Literal("Загрузить доступные модели провайдера онлайн")),
+    AimiGoogleLogin("AimiGoogleLogin", title = TextRef.Literal("Войти через Google (Gemini)"), summary = TextRef.Literal("Авторизация через OAuth аккаунт")),
+    AimiGoogleLogout("AimiGoogleLogout", title = TextRef.Literal("Выйти из Google (Gemini)"), summary = TextRef.Literal("Сбросить авторизационный токен")),
+    AimiLogExport("AimiLogExport", title = TextRef.Literal("Экспорт диагностических логов AIMI"), summary = TextRef.Literal("Сохранить логи в /Documents/AAPS/logs/")),
     ;
 
 }
