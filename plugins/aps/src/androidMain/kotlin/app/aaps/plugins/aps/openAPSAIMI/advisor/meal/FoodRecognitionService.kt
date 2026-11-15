@@ -23,7 +23,9 @@ class FoodRecognitionService(
         val providerName = preferences.get(StringKey.AimiAdvisorProvider).uppercase(java.util.Locale.US)
         
         return when {
-            providerName == "OPENAI" -> OpenAIVisionProvider()
+            providerName == "OPENAI" -> OpenAIVisionProvider(
+                modelName = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "gpt-4o" }
+            )
             providerName.startsWith("GEMINI") -> GeminiVisionProvider(context, preferences, oauthManager)
             providerName == "DEEPSEEK" -> DeepSeekVisionProvider()
             providerName == "CLAUDE" -> ClaudeVisionProvider()

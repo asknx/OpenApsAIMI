@@ -1,6 +1,11 @@
 package app.aaps.plugins.aps.openAPSAIMI.advisor
 
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
+import kotlin.math.pow
+import kotlin.math.hypot
+import kotlin.math.abs
+import java.util.Calendar
 import app.aaps.plugins.aps.R
 import kotlinx.coroutines.runBlocking
 import kotlin.math.max
@@ -250,139 +255,290 @@ class AimiAdvisorService {
         return if (totalDuration > 0) totalWeightedValue / totalDuration else 0.0
     }
 
-    private fun calculateMetrics(days: Int): AdvisorMetrics {
-        // Fallback defaults
-        var tir70_180 = 0.65
-        var tir70_140 = 0.40
-        var timeBelow70 = 0.05
-        var timeBelow54 = 0.01
-        var timeAbove180 = 0.30
-        var timeAbove250 = 0.05
-        var meanBg = 160.0
+    fun calculateMetrics(days: Int): AdvisorMetrics {
+        val now = System.currentTimeMillis()
+        val fromTime = now - (days * 24 * 3600 * 1000L)
+        val isMmol = profileFunction?.getUnits() == GlucoseUnit.MMOL
+        val unitsStr = if (isMmol) "mmol/L" else "mg/dL"
+
+        val rawReadings = persistenceLayer?.let {
+            runBlocking { it.getBgReadingsDataFromTimeToTime(fromTime, now, ascending = true) }
+        } ?: emptyList()
+
+        val validReadings = rawReadings.filter { it.value > 20.0 }
+        val values = validReadings.map { it.value }
+
+        // Real TDD
         var tdd = 45.0
         var basalPercent = 0.50
-        var todayTir: Double? = null
         var todayTdd: Double? = null
-
-        // 1. Calculate Real TIR (70-180)
-        if (tirCalculator != null) {
-            try {
-                runBlocking {
-                    val tirs = tirCalculator.calculate(days.toLong(), 70.0, 180.0)
-                    val avgTir = tirCalculator.averageTIR(tirs)
-                    
-                    if (avgTir != null) {
-                        tir70_180 = (avgTir.inRangePct() ?: 0.0) / 100.0
-                        timeBelow70 = (avgTir.belowPct() ?: 0.0) / 100.0
-                        timeAbove180 = (avgTir.abovePct() ?: 0.0) / 100.0
-                    }
-
-                    val tirs54 = tirCalculator.calculate(days.toLong(), 54.0, 180.0)
-                    val avg54 = tirCalculator.averageTIR(tirs54)
-                    if (avg54 != null) {
-                        timeBelow54 = (avg54.belowPct() ?: 0.0) / 100.0
-                    }
-                    
-                    val tirs250 = tirCalculator.calculate(days.toLong(), 70.0, 250.0)
-                    val avg250 = tirCalculator.averageTIR(tirs250)
-                    if (avg250 != null) {
-                        timeAbove250 = (avg250.abovePct() ?: 0.0) / 100.0
-                    }
-
-                    val tirs140 = tirCalculator.calculate(days.toLong(), 70.0, 140.0)
-                    val avg140 = tirCalculator.averageTIR(tirs140)
-                    if (avg140 != null) {
-                        tir70_140 = (avg140.inRangePct() ?: 0.0) / 100.0
-                    }
-                    
-                    val dailyTirs = tirCalculator.calculateDaily(70.0, 180.0)
-                    if (dailyTirs != null && dailyTirs.size() > 0) {
-                         var maxDate = 0L
-                         var todayStat: app.aaps.core.interfaces.stats.TIR? = null
-                         for(i in 0 until dailyTirs.size()) {
-                             val key = dailyTirs.keyAt(i)
-                             if (key > maxDate) {
-                                 maxDate = key
-                                 todayStat = dailyTirs.valueAt(i)
-                             }
-                         }
-                         if (todayStat != null) {
-                            todayTir = (todayStat.inRangePct() ?: 0.0) / 100.0
-                         }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        // 2. Calculate Real TDD
         if (tddCalculator != null) {
             try {
                 runBlocking {
                     val tdds = tddCalculator.calculate(days.toLong(), true)
                     val avgTdd = tddCalculator.averageTDD(tdds)
-                    
                     if (avgTdd != null) {
                         tdd = avgTdd.data.totalAmount
-                        if (tdd > 0) {
-                            basalPercent = avgTdd.data.basalAmount / tdd
-                        }
+                        if (tdd > 0) basalPercent = avgTdd.data.basalAmount / tdd
                     }
-                    
                     val today = tddCalculator.calculateToday()
-                    if (today != null) {
-                        todayTdd = today.totalAmount
-                    }
+                    if (today != null) todayTdd = today.totalAmount
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            } catch (_: Exception) {}
         }
 
-        // 3. Calculate Mean BG & GMI
-        if (persistenceLayer != null) {
-            try {
-                val now = System.currentTimeMillis()
-                val fromTime = now - (days * 24 * 3600 * 1000L)
-                val bgReadings = runBlocking {
-                    persistenceLayer.getBgReadingsDataFromTimeToTime(fromTime, now, ascending = false)
-                }
-                
-                if (bgReadings.isEmpty()) {
-                    android.util.Log.w("AIMI_ADVISOR", "⚠️ No BG readings found for last $days days.")
-                } else {
-                    val bgValues = bgReadings
-                        .map { it.value }
-                        .filter { it > 30.0 } 
-                    
-                    if (bgValues.isNotEmpty()) {
-                        meanBg = bgValues.average()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        // 4. Therapy Stats for Sub-module
         val therapyStats = collectTherapyStats(days)
+
+        if (values.isEmpty()) {
+            return AdvisorMetrics(
+                periodLabel = "Last $days days",
+                tirVeryLow = 0.01,
+                tirLow = 0.04,
+                tirInRange = 0.65,
+                tirHigh = 0.25,
+                tirVeryHigh = 0.05,
+                meanBg = 160.0,
+                gmi = 3.31 + (0.02392 * 160.0),
+                tdd = tdd,
+                basalPercent = basalPercent,
+                unitsStr = unitsStr,
+                isMmol = isMmol,
+                todayTdd = todayTdd,
+                therapyStats = therapyStats
+            )
+        }
+
+        val totalCount = values.size.toDouble()
+        val tirVeryLow = values.count { it < 54.0 } / totalCount
+        val tirLow = values.count { it in 54.0..69.99 } / totalCount
+        val tirInRange = values.count { it in 70.0..180.0 } / totalCount
+        val tirHigh = values.count { it in 180.01..250.0 } / totalCount
+        val tirVeryHigh = values.count { it > 250.0 } / totalCount
+
+        val sorted = values.sorted()
+        val meanBg = values.average()
+        val medianBg = sorted[sorted.size / 2]
+        val p10Bg = sorted[(sorted.size * 0.10).toInt().coerceIn(0, sorted.size - 1)]
+        val p25Bg = sorted[(sorted.size * 0.25).toInt().coerceIn(0, sorted.size - 1)]
+        val p75Bg = sorted[(sorted.size * 0.75).toInt().coerceIn(0, sorted.size - 1)]
+        val p90Bg = sorted[(sorted.size * 0.90).toInt().coerceIn(0, sorted.size - 1)]
+        val iqrBg = p75Bg - p25Bg
+
+        val variance = values.sumOf { (it - meanBg).pow(2) } / values.size
+        val sdBg = sqrt(variance)
+        val cvPct = if (meanBg > 0.0) (sdBg / meanBg) * 100.0 else 0.0
+
+        // GVI (Glycemic Variability Index)
+        var actualCurveLength = 0.0
+        for (i in 1 until validReadings.size) {
+            val deltaVal = abs(validReadings[i].value - validReadings[i - 1].value)
+            actualCurveLength += hypot(5.0, deltaVal)
+        }
+        val idealLength = (validReadings.size - 1).coerceAtLeast(1) * 5.0
+        val gvi = (actualCurveLength / idealLength).coerceAtLeast(1.0)
+        val psg = gvi * (meanBg / 100.0)
+
+        // GRI (Glycemia Risk Index) 0-100
+        val cHypo = (tirVeryLow * 100.0) + (0.8 * tirLow * 100.0)
+        val cHyper = (tirVeryHigh * 100.0) + (0.5 * tirHigh * 100.0)
+        val gri = ((3.0 * cHypo) + (1.6 * cHyper)).coerceIn(0.0, 100.0)
+        val griZone = when {
+            gri < 20.0 -> "Zone A"
+            gri < 40.0 -> "Zone B"
+            gri < 60.0 -> "Zone C"
+            gri < 80.0 -> "Zone D"
+            else -> "Zone E"
+        }
+
+        // Hourly AGP (24 bins)
+        val cal = Calendar.getInstance()
+        val hourlyBins = (0..23).map { mutableListOf<Double>() }
+        validReadings.forEach { r ->
+            cal.timeInMillis = r.timestamp
+            val hour = cal.get(Calendar.HOUR_OF_DAY)
+            hourlyBins[hour].add(r.value)
+        }
+        val hourlyAgp = (0..23).map { h ->
+            val bValues = hourlyBins[h].sorted()
+            if (bValues.isNotEmpty()) {
+                AgpHourStats(
+                    hour = h,
+                    median = bValues[bValues.size / 2],
+                    p10 = bValues[(bValues.size * 0.10).toInt().coerceIn(0, bValues.size - 1)],
+                    p25 = bValues[(bValues.size * 0.25).toInt().coerceIn(0, bValues.size - 1)],
+                    p75 = bValues[(bValues.size * 0.75).toInt().coerceIn(0, bValues.size - 1)],
+                    p90 = bValues[(bValues.size * 0.90).toInt().coerceIn(0, bValues.size - 1)]
+                )
+            } else {
+                AgpHourStats(h, meanBg, meanBg * 0.7, meanBg * 0.85, meanBg * 1.15, meanBg * 1.3)
+            }
+        }
+
+        // Day-by-Day TIR Grid
+        val sdfDay = SimpleDateFormat("dd.MM", Locale.getDefault())
+        val dayGroups = validReadings.groupBy {
+            cal.timeInMillis = it.timestamp
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            cal.timeInMillis
+        }
+        val dailyTirList = dayGroups.map { (dayMillis, readingsInDay) ->
+            val inRangeCount = readingsInDay.count { it.value in 70.0..180.0 }
+            val tirPct = (inRangeCount.toDouble() / readingsInDay.size.coerceAtLeast(1)) * 100.0
+            DailyTirItem(
+                dateMillis = dayMillis,
+                dateStr = sdfDay.format(Date(dayMillis)),
+                tirPct = tirPct,
+                meanBg = readingsInDay.map { it.value }.average()
+            )
+        }.sortedBy { it.dateMillis }
+
+        val todayTir = if (dailyTirList.isNotEmpty()) dailyTirList.last().tirPct / 100.0 else null
+
+        // Episode Analysis (>= 15 min deviations: 3 consecutive readings spaced <= 10 min)
+        var hypoEventsCount = 0
+        var severeHypoEventsCount = 0
+        var hyperEventsCount = 0
+        var severeHyperEventsCount = 0
+        var totalHypoMinutes = 0
+        var totalHyperMinutes = 0
+        var maxHypoDurationMin = 0
+        var maxHyperDurationMin = 0
+        val hypoOnsetHours = mutableListOf<Int>()
+        val hyperOnsetHours = mutableListOf<Int>()
+
+        var currentEpisodeType = 0
+        var episodeStart = 0L
+        var episodeSevere = false
+        var episodePoints = 0
+
+        for (i in validReadings.indices) {
+            val r = validReadings[i]
+            val prev = if (i > 0) validReadings[i - 1] else null
+            val timeDiffMin = if (prev != null) (r.timestamp - prev.timestamp) / 60000 else 5
+
+            if (r.value < 70.0) {
+                if (currentEpisodeType != -1 || timeDiffMin > 15) {
+                    if (currentEpisodeType == 1 && episodePoints >= 3) {
+                        hyperEventsCount++
+                        val dur = ((prev?.timestamp ?: r.timestamp) - episodeStart) / 60000
+                        val durMin = dur.toInt().coerceAtLeast(15)
+                        totalHyperMinutes += durMin
+                        maxHyperDurationMin = max(maxHyperDurationMin, durMin)
+                        if (episodeSevere) severeHyperEventsCount++
+                    }
+                    currentEpisodeType = -1
+                    episodeStart = r.timestamp
+                    episodeSevere = r.value < 54.0
+                    episodePoints = 1
+                    cal.timeInMillis = r.timestamp
+                    hypoOnsetHours.add(cal.get(Calendar.HOUR_OF_DAY))
+                } else {
+                    episodePoints++
+                    if (r.value < 54.0) episodeSevere = true
+                }
+            } else if (r.value > 180.0) {
+                if (currentEpisodeType != 1 || timeDiffMin > 15) {
+                    if (currentEpisodeType == -1 && episodePoints >= 3) {
+                        hypoEventsCount++
+                        val dur = ((prev?.timestamp ?: r.timestamp) - episodeStart) / 60000
+                        val durMin = dur.toInt().coerceAtLeast(15)
+                        totalHypoMinutes += durMin
+                        maxHypoDurationMin = max(maxHypoDurationMin, durMin)
+                        if (episodeSevere) severeHypoEventsCount++
+                    }
+                    currentEpisodeType = 1
+                    episodeStart = r.timestamp
+                    episodeSevere = r.value > 250.0
+                    episodePoints = 1
+                    cal.timeInMillis = r.timestamp
+                    hyperOnsetHours.add(cal.get(Calendar.HOUR_OF_DAY))
+                } else {
+                    episodePoints++
+                    if (r.value > 250.0) episodeSevere = true
+                }
+            } else {
+                if (currentEpisodeType == -1 && episodePoints >= 3) {
+                    hypoEventsCount++
+                    val dur = (r.timestamp - episodeStart) / 60000
+                    val durMin = dur.toInt().coerceAtLeast(15)
+                    totalHypoMinutes += durMin
+                    maxHypoDurationMin = max(maxHypoDurationMin, durMin)
+                    if (episodeSevere) severeHypoEventsCount++
+                } else if (currentEpisodeType == 1 && episodePoints >= 3) {
+                    hyperEventsCount++
+                    val dur = (r.timestamp - episodeStart) / 60000
+                    val durMin = dur.toInt().coerceAtLeast(15)
+                    totalHyperMinutes += durMin
+                    maxHyperDurationMin = max(maxHyperDurationMin, durMin)
+                    if (episodeSevere) severeHyperEventsCount++
+                }
+                currentEpisodeType = 0
+                episodePoints = 0
+            }
+        }
+
+        fun findPeakInterval(hours: List<Int>): String {
+            if (hours.isEmpty()) return "--"
+            val hourCounts = (0..23).map { h -> hours.count { it in h..(h + 2) % 24 } }
+            val maxH = hourCounts.indices.maxByOrNull { hourCounts[it] } ?: 0
+            return String.format(Locale.US, "%02d:00 - %02d:00", maxH, (maxH + 3) % 24)
+        }
+
+        val hypoPeakIntervalStr = findPeakInterval(hypoOnsetHours)
+        val hyperPeakIntervalStr = findPeakInterval(hyperOnsetHours)
+        val avgHypoDur = if (hypoEventsCount > 0) totalHypoMinutes / hypoEventsCount else 0
+        val avgHyperDur = if (hyperEventsCount > 0) totalHyperMinutes / hyperEventsCount else 0
 
         return AdvisorMetrics(
             periodLabel = "Last $days days",
-            tir70_180 = tir70_180,
-            tir70_140 = tir70_140,
-            timeBelow70 = timeBelow70, 
-            timeBelow54 = timeBelow54,
-            timeAbove180 = timeAbove180,
-            timeAbove250 = timeAbove250,
+            tirVeryLow = tirVeryLow,
+            tirLow = tirLow,
+            tirInRange = tirInRange,
+            tirHigh = tirHigh,
+            tirVeryHigh = tirVeryHigh,
+            tir70_180 = tirInRange,
+            tir70_140 = values.count { it in 70.0..140.0 } / totalCount,
+            timeBelow70 = tirLow + tirVeryLow,
+            timeBelow54 = tirVeryLow,
+            timeAbove180 = tirHigh + tirVeryHigh,
+            timeAbove250 = tirVeryHigh,
             meanBg = meanBg,
             gmi = 3.31 + (0.02392 * meanBg),
             tdd = tdd,
             basalPercent = basalPercent,
-            hypoEvents = 0,
-            severeHypoEvents = 0,
-            hyperEvents = 0,
+            medianBg = medianBg,
+            p10Bg = p10Bg,
+            p25Bg = p25Bg,
+            p75Bg = p75Bg,
+            p90Bg = p90Bg,
+            iqrBg = iqrBg,
+            sdBg = sdBg,
+            cvPct = cvPct,
+            gvi = gvi,
+            psg = psg,
+            gri = gri,
+            griZone = griZone,
+            griHypoComponent = cHypo,
+            griHyperComponent = cHyper,
+            hourlyAgp = hourlyAgp,
+            dailyTirList = dailyTirList,
+            hypoEvents = hypoEventsCount,
+            severeHypoEvents = severeHypoEventsCount,
+            hyperEvents = hyperEventsCount,
+            severeHyperEvents = severeHyperEventsCount,
+            avgHypoDurationMin = avgHypoDur,
+            maxHypoDurationMin = maxHypoDurationMin,
+            totalHypoMinutes = totalHypoMinutes,
+            avgHyperDurationMin = avgHyperDur,
+            maxHyperDurationMin = maxHyperDurationMin,
+            totalHyperMinutes = totalHyperMinutes,
+            hypoPeakIntervalStr = hypoPeakIntervalStr,
+            hyperPeakIntervalStr = hyperPeakIntervalStr,
+            unitsStr = unitsStr,
+            isMmol = isMmol,
             todayTir = todayTir,
             todayTdd = todayTdd,
             therapyStats = therapyStats
@@ -393,26 +549,56 @@ class AimiAdvisorService {
         if (persistenceLayer == null) return null
         val now = System.currentTimeMillis()
         val fromTime = now - (days * 24 * 3600 * 1000L)
-        
+        val cal = Calendar.getInstance()
+
         try {
             return runBlocking {
                 val boluses = persistenceLayer.getBolusesFromTimeToTime(fromTime, now, false)
                 val carbs = persistenceLayer.getCarbsFromTimeToTimeExpanded(fromTime, now, false)
                 val tbrs = persistenceLayer.getTemporaryBasalsStartingFromTimeToTime(fromTime, now, false)
-                
+                val therapyEvents = persistenceLayer.getTherapyEventDataFromToTime(fromTime, now)
+
+                val bFastPeaks = mutableListOf<Double>()
+                val lunchPeaks = mutableListOf<Double>()
+                val dinnerPeaks = mutableListOf<Double>()
+                val prebolusList = mutableListOf<Int>()
+
                 val meals = carbs.map { carb ->
                     val startTime = carb.timestamp
                     val endTime2h = startTime + (2 * 3600 * 1000L)
+                    val endTime3h = startTime + (3 * 3600 * 1000L)
                     val endTime4h = startTime + (4 * 3600 * 1000L)
-                    
-                    val relevantBoluses = boluses.filter { it.timestamp in startTime..endTime2h }
+
+                    val relevantBoluses = boluses.filter { it.timestamp in (startTime - 45 * 60000L)..endTime2h }
                     val insulinIn2h = relevantBoluses.sumOf { it.amount }
-                    
-                    val bgReadings = persistenceLayer.getBgReadingsDataFromTimeToTime(startTime, endTime4h, true)
-                    val bgStart = bgReadings.firstOrNull()?.value ?: 0.0
-                    val bgMax2h = bgReadings.filter { it.timestamp <= endTime2h }.maxByOrNull { it.value }?.value ?: 0.0
-                    val bgEnd4h = bgReadings.lastOrNull()?.value ?: 0.0
-                    
+
+                    val preBolus = boluses
+                        .filter { it.timestamp in (startTime - 45 * 60000L)..(startTime + 5 * 60000L) }
+                        .minByOrNull { abs(startTime - it.timestamp) }
+
+                    val prebolusMin = if (preBolus != null && preBolus.timestamp <= startTime) {
+                        ((startTime - preBolus.timestamp) / 60000).toInt()
+                    } else if (preBolus != null) {
+                        -((preBolus.timestamp - startTime) / 60000).toInt()
+                    } else 0
+                    prebolusList.add(prebolusMin)
+
+                    val bgReadings = persistenceLayer.getBgReadingsDataFromTimeToTime(startTime - 15 * 60000L, endTime4h, true)
+                    val bgStart = bgReadings.firstOrNull()?.value ?: 100.0
+                    val bgMax2h = bgReadings.filter { it.timestamp in startTime..endTime2h }.maxByOrNull { it.value }?.value ?: bgStart
+                    val bgEnd3h = bgReadings.filter { it.timestamp in (startTime + 2 * 3600000L)..endTime3h }.lastOrNull()?.value ?: bgMax2h
+                    val bgEnd4h = bgReadings.lastOrNull()?.value ?: bgEnd3h
+                    val deltaPeak = (bgMax2h - bgStart).coerceAtLeast(0.0)
+
+                    cal.timeInMillis = startTime
+                    when (cal.get(Calendar.HOUR_OF_DAY)) {
+                        in 5..10 -> bFastPeaks.add(bgMax2h)
+                        in 11..15 -> lunchPeaks.add(bgMax2h)
+                        in 16..22 -> dinnerPeaks.add(bgMax2h)
+                    }
+
+                    val success = deltaPeak <= 90.0 && bgMax2h <= 200.0 && bgEnd4h in 70.0..160.0 && bgReadings.none { it.value < 70.0 }
+
                     MealOutcome(
                         timestamp = startTime,
                         carbs = carb.amount,
@@ -420,16 +606,35 @@ class AimiAdvisorService {
                         bgStart = bgStart,
                         bgMax2h = bgMax2h,
                         bgEnd4h = bgEnd4h,
-                        success = bgEnd4h in 70.0..140.0 && bgMax2h < 180.0
+                        success = success,
+                        prebolusMinutes = prebolusMin,
+                        deltaPeak = deltaPeak,
+                        bgEnd3h = bgEnd3h,
+                        note = carb.notes
                     )
                 }
-                
+
+                val successfulMeals = meals.count { it.success }
+                val successRate = (successfulMeals.toDouble() / meals.size.coerceAtLeast(1)) * 100.0
+                val avgPrebolus = if (prebolusList.isNotEmpty()) prebolusList.average() else 0.0
+
+                val teSummary = if (therapyEvents.isNotEmpty()) {
+                    val grouped = therapyEvents.groupBy { it.type.name }.map { "${it.key}: ${it.value.size}" }.joinToString(", ")
+                    "Events (${therapyEvents.size}): $grouped"
+                } else null
+
                 TherapyStats(
                     meals = meals,
                     totalCarbs = carbs.sumOf { it.amount },
                     totalInsulin = boluses.sumOf { it.amount },
                     totalSmb = boluses.filter { it.type == app.aaps.core.data.model.BS.Type.SMB }.sumOf { it.amount },
-                    totalBasal = tbrs.sumOf { it.rate * (it.duration / 3600000.0) } 
+                    totalBasal = tbrs.sumOf { it.rate * (it.duration / 3600000.0) },
+                    avgPrebolusMin = avgPrebolus,
+                    mealSuccessRate = successRate,
+                    bFastAvgPeak = if (bFastPeaks.isNotEmpty()) bFastPeaks.average() else null,
+                    lunchAvgPeak = if (lunchPeaks.isNotEmpty()) lunchPeaks.average() else null,
+                    dinnerAvgPeak = if (dinnerPeaks.isNotEmpty()) dinnerPeaks.average() else null,
+                    therapyEventsSummary = teSummary
                 )
             }
         } catch (e: Exception) {
@@ -465,7 +670,7 @@ class AimiAdvisorService {
 
     private fun getEmptyContext(): AdvisorContext {
         return AdvisorContext(
-            metrics = AdvisorMetrics("N/A",0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0,0,0, null, null),
+            metrics = AdvisorMetrics("N/A"),
             profile = AimiProfileSnapshot(0.0,0.0,0.0,0.0, 5.0, 12.0, "Unknown"),
             prefs = AimiPrefsSnapshot(0.0,0.0,0.0,0.0, emptyMap()),
             pkpdPrefs = PkpdPrefsSnapshot(false,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
@@ -697,7 +902,18 @@ class AimiAdvisorService {
         // 1. Try AI Analysis (Strategic Coaching)
         val aiAnalysis = auditorAIService?.let { service ->
             val prompt = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.TherapyPromptBuilder.buildAnalysisPrompt(context, report)
-            val provider = AuditorAIService.Provider.GEMINI_38_FLASH // High-speed, efficient for coaching
+            val provStr = preferences?.get(StringKey.AimiAdvisorProvider)?.uppercase(Locale.US) ?: "GEMINI"
+            val provider = when {
+                provStr.contains("OPENAI") -> AuditorAIService.Provider.OPENAI
+                provStr.contains("DEEPSEEK") -> AuditorAIService.Provider.DEEPSEEK
+                provStr.contains("CLAUDE") -> AuditorAIService.Provider.CLAUDE
+                provStr.contains("GLM") -> AuditorAIService.Provider.GLM
+                provStr.contains("GROK") -> AuditorAIService.Provider.GROK
+                provStr.contains("OPENROUTER") -> AuditorAIService.Provider.OPENROUTER
+                provStr.contains("GROQ") -> AuditorAIService.Provider.GROQ
+                provStr.contains("CUSTOM") -> AuditorAIService.Provider.CUSTOM
+                else -> AuditorAIService.Provider.GEMINI_38_FLASH
+            }
             service.getChatCompletion(prompt, provider, useHighPerf = false)
         }
         
@@ -725,6 +941,213 @@ class AimiAdvisorService {
              sb.append("Analysis available in app.")
         }
         return sb.toString()
+    }
+
+    fun generateFullProposal(periodDays: Int = 7): FullAdvisorProposal {
+        val metrics = calculateMetrics(periodDays)
+        val profile = profileFunction?.let { runBlocking { it.getProfile() } }
+        val currentIc = profile?.getIc() ?: 10.0
+        val currentIsf = profile?.getProfileIsfMgdl() ?: 40.0
+        val isMmol = metrics.isMmol
+
+        val hourlyProposals = (0..23).map { hour ->
+            val curRate = profile?.getBasal((hour * 3600).toLong()) ?: 1.0
+            val agpStat = metrics.hourlyAgp.getOrNull(hour)
+            val median = agpStat?.median ?: metrics.meanBg
+
+            val factor = when {
+                agpStat != null && agpStat.p10 < 70.0 -> 0.90
+                median < 85.0 -> 0.92
+                median > 180.0 -> 1.08
+                median > 150.0 -> 1.04
+                else -> 1.00
+            }
+            val proposed = (curRate * factor).coerceIn(curRate * 0.85, curRate * 1.15)
+            val reason = when {
+                factor < 1.0 -> "Hypo risk in hour $hour (P10 < 70)"
+                factor > 1.0 -> "Elevated median (${if (isMmol) "%.1f".format(median / 18.01559) else "%.0f".format(median)} ${metrics.unitsStr})"
+                else -> "Median in target range"
+            }
+            HourlyBasalProposal(hour, curRate, proposed, median, reason)
+        }
+
+        val mealSuccess = metrics.therapyStats?.mealSuccessRate ?: 70.0
+        val avgPeak = metrics.therapyStats?.meals?.map { it.bgMax2h }?.average() ?: metrics.meanBg
+        val proposedIc = if (mealSuccess < 50.0 && avgPeak > 180.0) {
+            (currentIc * 0.92).coerceAtLeast(currentIc * 0.85)
+        } else if (metrics.timeBelow70 > 0.05) {
+            (currentIc * 1.08).coerceAtMost(currentIc * 1.15)
+        } else {
+            currentIc
+        }
+
+        val proposedIsf = if (metrics.meanBg > 165.0 && metrics.cvPct < 32.0 && metrics.timeBelow70 < 0.02) {
+            (currentIsf * 0.92).coerceAtLeast(currentIsf * 0.85)
+        } else if (metrics.timeBelow70 > 0.04) {
+            (currentIsf * 1.08).coerceAtMost(currentIsf * 1.15)
+        } else {
+            currentIsf
+        }
+
+        val aimiSettings = mutableListOf<AimiSettingProposal>()
+        if (preferences != null) {
+            val curLunch = preferences.get(DoubleKey.OApsAIMILunchFactor)
+            val lunchPeak = metrics.therapyStats?.lunchAvgPeak ?: 160.0
+            if (lunchPeak > 180.0) {
+                aimiSettings.add(
+                    AimiSettingProposal(
+                        prefKey = DoubleKey.OApsAIMILunchFactor.key,
+                        title = "Lunch Factor",
+                        currentValue = "%.2f".format(curLunch),
+                        proposedValue = "%.2f".format((curLunch * 1.1).coerceAtMost(1.8)),
+                        reason = "Lunch postprandial peak is elevated (${if (isMmol) "%.1f".format(lunchPeak / 18.01559) else "%.0f".format(lunchPeak)} ${metrics.unitsStr})"
+                    )
+                )
+            }
+
+            val curMaxSmb = preferences.get(DoubleKey.OApsAIMIMaxSMB)
+            if (metrics.timeBelow54 > 0.01) {
+                aimiSettings.add(
+                    AimiSettingProposal(
+                        prefKey = DoubleKey.OApsAIMIMaxSMB.key,
+                        title = "Max SMB",
+                        currentValue = "%.2f U".format(curMaxSmb),
+                        proposedValue = "%.2f U".format((curMaxSmb * 0.85).coerceAtLeast(0.5)),
+                        reason = "Severe hypo pressure detected (TIR <54 = %.1f%%)".format(metrics.timeBelow54 * 100)
+                    )
+                )
+            }
+
+            val pkpdEnabled = preferences.get(BooleanKey.OApsAIMIPkpdEnabled)
+            if (!pkpdEnabled && metrics.cvPct > 36.0) {
+                aimiSettings.add(
+                    AimiSettingProposal(
+                        prefKey = BooleanKey.OApsAIMIPkpdEnabled.key,
+                        title = "PK/PD Dynamic Model",
+                        currentValue = "Disabled",
+                        proposedValue = "Enabled",
+                        reason = "High glycemic variability (CV = %.1f%% > 36%%)".format(metrics.cvPct)
+                    )
+                )
+            }
+        }
+
+        val clinicalSummary = "AGP Median: ${if (isMmol) "%.1f".format(metrics.medianBg / 18.01559) else "%.0f".format(metrics.medianBg)} ${metrics.unitsStr}, " +
+            "CV: %.1f%%, GRI: %.0f (%s), Success Rate: %.0f%%".format(metrics.cvPct, metrics.gri, metrics.griZone, mealSuccess)
+
+        return FullAdvisorProposal(
+            generatedAt = System.currentTimeMillis(),
+            periodDays = periodDays,
+            hourlyBasal = hourlyProposals,
+            currentIc = currentIc,
+            proposedIc = proposedIc,
+            currentIsf = currentIsf,
+            proposedIsf = proposedIsf,
+            aimiSettings = aimiSettings,
+            clinicalSummary = clinicalSummary
+        )
+    }
+
+    fun createAndActivateAimiProfile(
+        proposal: FullAdvisorProposal,
+        applyBasal: Boolean,
+        applyIc: Boolean,
+        applyIsf: Boolean,
+        checkedSettings: Map<String, Boolean>
+    ): String {
+        val currentProfile = profileFunction?.let { runBlocking { it.getProfile() } }
+            ?: throw IllegalStateException("Profile is not available")
+        val effectiveDateUtil = dateUtil ?: throw IllegalStateException("DateUtil is not available")
+        val date = effectiveDateUtil.now()
+        val name = "AIMI " + SimpleDateFormat("dd.MM HH:mm", Locale.getDefault()).format(Date(date))
+
+        val baseJson = currentProfile.toPureNsJson(effectiveDateUtil)
+
+        val basalArray = if (applyBasal) {
+            JSONArray().apply {
+                proposal.hourlyBasal.forEach { row ->
+                    put(JSONObject().apply {
+                        put("time", String.format(Locale.US, "%02d:00", row.hour))
+                        put("value", row.proposedRate)
+                        put("timeAsSeconds", row.hour * 3600)
+                    })
+                }
+            }
+        } else {
+            baseJson["basal"] as? JSONArray ?: JSONArray()
+        }
+
+        val icArray = if (applyIc && proposal.proposedIc > 0.0) {
+            JSONArray().apply {
+                put(JSONObject().apply {
+                    put("time", "00:00")
+                    put("value", proposal.proposedIc)
+                    put("timeAsSeconds", 0)
+                })
+            }
+        } else {
+            baseJson["carbratio"] as? JSONArray ?: JSONArray()
+        }
+
+        val isfArray = if (applyIsf && proposal.proposedIsf > 0.0) {
+            JSONArray().apply {
+                put(JSONObject().apply {
+                    put("time", "00:00")
+                    put("value", proposal.proposedIsf)
+                    put("timeAsSeconds", 0)
+                })
+            }
+        } else {
+            baseJson["sens"] as? JSONArray ?: JSONArray()
+        }
+
+        val amountKey = object : IntNonPreferenceKey {
+            override val key: String = "LocalProfile_profiles"
+            override val defaultValue: Int = 0
+            override val exportable: Boolean = true
+        }
+        val amount = preferences?.get(amountKey) ?: 0
+        val index = amount
+
+        preferences?.run {
+            put(amountKey, amount + 1)
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_name_"; override val format = "%d"; override val defaultValue = ""; override val exportable = true }, index, value = name)
+            put(object : DoubleComposedNonPreferenceKey { override val key = "LocalProfile_dia_"; override val format = "%d"; override val defaultValue = 0.0; override val exportable = true }, index, value = currentProfile.iCfg.dia)
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_basal_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = basalArray.toString())
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_isf_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = isfArray.toString())
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_ic_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = icArray.toString())
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_targetlow_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = (baseJson["target_low"] ?: "[]").toString())
+            put(object : StringComposedNonPreferenceKey { override val key = "LocalProfile_targethigh_"; override val format = "%d"; override val defaultValue = "[]"; override val exportable = true }, index, value = (baseJson["target_high"] ?: "[]").toString())
+            put(object : BooleanComposedNonPreferenceKey { override val key = "LocalProfile_mgdl_"; override val format = "%d"; override val defaultValue = true; override val exportable = true }, index, value = currentProfile.units == GlucoseUnit.MGDL)
+        }
+
+        proposal.aimiSettings.forEach { setting ->
+            if (checkedSettings[setting.prefKey] == true && preferences != null) {
+                when (setting.prefKey) {
+                    DoubleKey.OApsAIMILunchFactor.key -> preferences.put(DoubleKey.OApsAIMILunchFactor, setting.proposedValue.toDoubleOrNull() ?: 1.0)
+                    DoubleKey.OApsAIMIMaxSMB.key -> {
+                        val num = setting.proposedValue.replace("U", "").trim().toDoubleOrNull()
+                        if (num != null) preferences.put(DoubleKey.OApsAIMIMaxSMB, num)
+                    }
+                    BooleanKey.OApsAIMIPkpdEnabled.key -> preferences.put(BooleanKey.OApsAIMIPkpdEnabled, setting.proposedValue.equals("Enabled", ignoreCase = true))
+                }
+            }
+        }
+
+        runBlocking {
+            profileFunction.createProfileSwitch(
+                durationInMinutes = 0,
+                percentage = 100,
+                timeShiftInHours = 0,
+                action = Action.PROFILE_SWITCH,
+                source = Sources.LocalProfile,
+                note = "AIMI Clinical Advisor Profile: $name",
+                listValues = emptyList()
+            )
+        }
+        rxBus?.send(EventProfileChangeRequested())
+
+        return name
     }
 
     fun generateBasalProfileProposal(periodDays: Int = 7): BasalProfileProposal {

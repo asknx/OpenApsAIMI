@@ -120,9 +120,14 @@ class ContextActivity : MetroAppCompatActivity() {
                 } else {
                     val isLLM = sp.getBoolean(app.aaps.core.keys.BooleanKey.OApsAIMIContextLLMEnabled.key, false)
                     val provider = sp.getString(app.aaps.core.keys.StringKey.AimiAdvisorProvider.key, "GEMINI")
+                    val llmErr = contextManager.getLastLLMError()
 
                     parseFailureMessage.value = if (isLLM) {
-                        "No context detected via AI ($provider).\n\nPossible causes:\n1. Missing or invalid API key (Preferences > AIMI > Advisor)\n2. Network timeout\n3. Description too vague\n\nFallback: Try simple keywords (e.g. 'Sport 1h', 'Sick')."
+                        if (!llmErr.isNullOrBlank()) {
+                            "AI Context Error ($provider):\n$llmErr\n\nPlease check your API key, network connection or custom endpoint URL in Preferences > AIMI > Advisor."
+                        } else {
+                            "No context detected via AI ($provider).\n\nPossible causes:\n1. Missing or invalid API key (Preferences > AIMI > Advisor)\n2. Network timeout\n3. Description too vague\n\nFallback: Try simple keywords (e.g. 'Sport 1h', 'Sick')."
+                        }
                     } else {
                         "No context detected via keywords.\nTry simple commands:\n- 'Cardio 1h'\n- 'Sick'\n- 'Stress'\n- 'Heavy meal'"
                     }

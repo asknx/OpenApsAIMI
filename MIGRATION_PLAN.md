@@ -68,7 +68,18 @@
   - [x] **Этап 5A: Помпа Apex, Meal Advisor, Aimi Profile Advisor, Aimi Mode Settings, Context, Remote Control (Модули 10.1, 10.2, 10.3, 10.7, 10.8)** (Завершено, сборка `:app:assembleFullDebug` успешна)
   - [x] **Этап 5B: Dashboard, Overview, карточки статуса, круговой индикатор, график глюкозы, кастомные View (Модули 10.4, 10.5)** (Завершено: легаси XML DashboardFragment и устаревшие View удалены; нативный Compose OverviewScreen.kt расширен слотом `aimiOverview` и интегрирован с M3-виджетом `AimiOverviewCard`: быстрый запуск Meal Advisor, компактный ряд физиологических метрик, бейдж Dual-Brain Auditor)
   - [x] **Этап 5C: Диалоги болюса, меню, вспомогательные экраны и экраны Wear OS (Модули 10.6, 10.9, 10.10)** (Завершено: 3-dots overflow в MainTopBar/MainScreen и боковое меню MainDrawer с нативными иконками Ic* для всех 8 подменю AIMI, роутинг LLM Gemini по умолчанию с нормализацией endpoint URL и диагностикой HTTP/URL, активный болюс ApexPump с прогресс-баром и отменой)
-- [ ] **Этап 6: Адаптация и запуск unit-тестов (Модуль 11), верификация и стабилизация**
+  - [x] **Финальная полировка Этапа 5, клиническая аналитика Juggluco NG и генератор профилей:**
+    - `AdjustmentDetailsActivity`: мигрирована на `MetroAppCompatActivity` с автосборкой актуального состояния петли/глюкозы/дозировок и кнопкой «Обновить».
+    - `ContextActivity`: прозрачный вывод реальной ошибки LLM (`contextLLMClient.lastError`) при отсутствии намерений.
+    - `MealAdvisorActivity`: реактивное переключение между 9 AI-провайдерами, поддержка кастомных моделей для OpenAI/Gemini.
+    - `StringKey` / `AimiStringKey`: строгая типизация `PreferenceType.LIST` и `entriesLiterals` для списочных настроек режимов.
+    - Глубокая аналитика в стиле Juggluco NG: строгая поддержка единиц пациента (`mmol/L` vs `mg/dL`), 5 зон TIR, статистика (IQR, CV%, GVI, PSG, GRI 0-100 с зоной и компонентами гипо/гипер), 24-часовой холст AGP Canvas с процентильными полосами (P10, P25, медиана, P75, P90), подневная сетка TIR, анализ эпизодов (>=15 мин с интервалами до пика), преболюсный анализ приёмов пищи.
+    - Интерактивный диалог предложений и создание реального профиля в `LocalProfile` («AIMI dd.MM HH:mm») с переключением и корректировкой параметров AIMI.
+- [x] **Этап 6: Адаптация и запуск unit-тестов (Модуль 11), верификация и стабилизация**
+  - [x] Адаптированы unit-тесты `:pump:apex:testDebugUnitTest`: исправлены вызовы конструкторов `TDDEntry` и `StatusV1` в `CommandsTest.kt` (8 passed, 0 skipped, 0 failed).
+  - [x] Запущены host unit-тесты `:plugins:smoothing:testAndroidHostTest`: 8 passed, 0 skipped, 0 failed.
+  - [x] Запущены host unit-тесты `:plugins:aps:testAndroidHostTest`: 346 passed, 0 skipped, 0 failed.
+  - [x] Полная верификация сборки `:app:assembleFullDebug`: **BUILD SUCCESSFUL**. APK собран и готов к установке.
 
 ---
 

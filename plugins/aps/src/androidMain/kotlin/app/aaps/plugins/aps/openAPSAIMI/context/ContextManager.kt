@@ -62,6 +62,8 @@ class ContextManager @Inject constructor(
     
     // Auto-increment ID
     private var nextId = 1
+
+    fun getLastLLMError(): String? = contextLLMClient.lastError
     
     init {
         loadFromStorage()

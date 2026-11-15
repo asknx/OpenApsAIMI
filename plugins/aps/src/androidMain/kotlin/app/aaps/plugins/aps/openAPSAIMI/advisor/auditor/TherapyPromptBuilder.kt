@@ -13,58 +13,88 @@ import org.json.JSONObject
 object TherapyPromptBuilder {
 
     fun buildAnalysisPrompt(context: AdvisorContext, report: AdvisorReport): String {
+        val m = context.metrics
+        val isMmol = m.isMmol
+        val unitStr = if (isMmol) "ммоль/л (mmol/L)" else "мг/дл (mg/dL)"
+        val meanBgStr = if (isMmol) "%.1f ммоль/л".format(m.meanBg / 18.01559) else "%.0f mg/dL".format(m.meanBg)
+        val isfStr = if (isMmol) "%.1f ммоль/л/U".format(context.profile.isf / 18.01559) else "%.0f mg/dL/U".format(context.profile.isf)
+        val targetStr = if (isMmol) "%.1f ммоль/л".format(context.profile.targetBg / 18.01559) else "%.0f mg/dL".format(context.profile.targetBg)
+
+        val unitInstruction = if (isMmol) {
+            "ВАЖНО: Все значения глюкозы и чувствительности (ISF) в ответе пиши СТРОГО в ммоль/л (mmol/L)! Никаких mg/dL!"
+        } else {
+            "ВАЖНО: Все значения глюкозы и чувствительности (ISF) в ответе пиши СТРОГО в мг/дл (mg/dL)!"
+        }
+
         return """
-# TU ES UN EXPERT CLINIQUE EN BOUCLE FERMÉE HYBRIDE (AID)
+# ТЫ — ВЕДУЩИЙ КЛИНИЧЕСКИЙ ЭКСПЕРТ В ОБЛАСТИ ГИБРИДНЫХ ЗАМКНУТЫХ СИСТЕМ (AID / ИСКУССТВЕННАЯ ПОДЖЕЛУДОЧНАЯ ЖЕЛЕЗА)
 
-## TON RÔLE
-Tu analyses les données de thérapie d'un patient sous AIMI (Artificial Intelligence Metabolic Interface). 
-Ton objectif est de fournir une analyse **prospective et stratégique** pour optimiser le contrôle glycémique.
+## ТВОЯ РОЛЬ
+Ты анализируешь детальные клинические данные и Juggluco NG-статистику пациента на алгоритме AIMI (AndroidAPS 4.0).
+Твоя цель — предоставить глубокий клинический разбор и стратегические рекомендации по оптимизации базала, углеводных коэффициентов (IC), фактора чувствительности (ISF) и преболюсов.
 
-## CONTEXTE DU PATIENT (Derniers 7 jours)
-- **TIR (70-180)**: ${(context.metrics.tir70_180 * 100).toInt()}%
-- **Hypoglycémies (<70)**: ${(context.metrics.timeBelow70 * 100).toInt()}%
-- **Moyenne Glycémique**: ${context.metrics.meanBg.toInt()} mg/dL
-- **TDD (Insuline Totale/Jour)**: ${context.metrics.tdd} U
-- **Part Basale**: ${(context.metrics.basalPercent * 100).toInt()}% du TDD
+## КЛИНИЧЕСКИЙ СТАТУС ПАЦИЕНТА (${m.periodLabel})
+- **Единицы измерения**: $unitStr
+- **5-зонный TIR**:
+  - Очень высокий (>13.9 / >250): ${(m.tirVeryHigh * 100).toInt()}%
+  - Высокий (10.0-13.9 / 180-250): ${(m.tirHigh * 100).toInt()}%
+  - В целевом диапазоне (3.9-10.0 / 70-180): ${(m.tirInRange * 100).toInt()}%
+  - Низкий (3.0-3.9 / 54-70): ${(m.tirLow * 100).toInt()}%
+  - Очень низкий (<3.0 / <54): ${(m.tirVeryLow * 100).toInt()}%
+- **Средний сахар**: $meanBgStr (GMI / HbA1c: ${"%.1f%%".format(m.gmi)})
+- **Вариабельность (CV)**: ${"%.1f%%".format(m.cvPct)} (Цель <36%)
+- **Индекс риска гликемии (GRI)**: ${"%.0f".format(m.gri)} (${m.griZone})
+- **GVI (Glycemic Variability Index)**: ${"%.2f".format(m.gvi)}, **PSG**: ${"%.2f".format(m.psg)}
+- **Эпизоды гипогликемий**: ${m.hypoEvents} (тяжелых: ${m.severeHypoEvents}, ср. длит: ${m.avgHypoDurationMin} мин, пик: ${m.hypoPeakIntervalStr})
+- **Эпизоды гипергликемий**: ${m.hyperEvents} (тяжелых: ${m.severeHyperEvents}, ср. длит: ${m.avgHyperDurationMin} мин, пик: ${m.hyperPeakIntervalStr})
+- **TDD (Всего инсулина/сутки)**: ${"%.1f".format(m.tdd)} U (Базал: ${(m.basalPercent * 100).toInt()}%)
 
-## RÉGLAGES ACTUELS DU PROFIL
-- **Basal Nuit**: ${context.profile.nightBasal} U/h
-- **Ratio Glucides (IC)**: ${context.profile.icRatio} g/U
-- **Facteur Sensibilité (ISF)**: ${context.profile.isf} mg/dL/U
-- **Cible**: ${context.profile.targetBg} mg/dL
+## ТЕКУЩИЕ НАСТРОЙКИ ПРОФИЛЯ
+- **Ночной базал**: ${context.profile.nightBasal} U/h
+- **Углеводный коэффициент (IC)**: ${context.profile.icRatio} г/U
+- **Фактор чувствительности (ISF)**: $isfStr
+- **Целевая гликемия**: $targetStr
 
-## ANALYSE DES REPAS (Therapy Stats)
+## АНАЛИЗ ПРИЕМОВ ПИЩИ И ТЕРАПИИ
 ${formatTherapyStats(context)}
 
-## INSTRUCTIONS D'ANALYSE
-1. **Efficacité IC/Prebolus**: Analyse si les pics post-prandiaux sont dus à un IC trop faible ou un prebolus insuffisant.
-2. **Équilibre Basal/SMB**: Détermine si le système sur-compense une basale trop faible par des SMB agressifs.
-3. **Stabilité Nocturne**: Vérifie si la basale de nuit maintient la cible sans provoquer d'hypos.
-4. **Utilisation des Modes**: Recommande l'usage plus systématique des modes AIMI (Meal, Sport, etc.) si nécessaire.
+## ПРАВИЛА И ИНСТРУКЦИИ ДЛЯ ОТВЕТА
+$unitInstruction
+Сформируй лаконичный, авторитетный клинический ответ на русском языке (максимум 200-250 слов), структурированный строго по 4 пунктам:
+1. **Клинический вердикт**: Оценка текущего контроля, риска гипогликемий и вариабельности.
+2. **Оценка питания и преболюсов**: Анализ постпрандиальных пиков, достаточности паузы до еды (преболюса) и точности IC.
+3. **Рекомендации по профилю**: Конкретные шаги по корректировке базала (ночь/день), IC и ISF в единицах $unitStr.
+4. **Совет пациенту**: Практический совет по поведению или режимам AIMI.
 
-## TON OUTPUT
-Fournis une analyse en **russe** (Russian), concise (max 200 mots), structurée en 3 points :
-- **Главный вывод**: Основная выявленная проблема.
-- **Рекомендуемое действие**: Точная настройка, которую необходимо изменить.
-- **Совет коуча**: Поведенческий совет для пациента.
-
-Будь клинически точным, используй цифры и поддерживающий тон.
+Пиши профессионально, поддерживающе и с конкретными цифрами.
         """.trimIndent()
     }
 
     private fun formatTherapyStats(context: AdvisorContext): String {
-        val stats = context.metrics.therapyStats ?: return "Aucune donnée de repas disponible."
+        val stats = context.metrics.therapyStats ?: return "Нет данных о приемах пищи."
         val mealCount = stats.meals.size
-        if (mealCount == 0) return "Aucun repas enregistré."
-        
-        val successCount = stats.meals.count { it.success }
-        val successRate = (successCount.toDouble() / mealCount * 100).toInt()
-        
-        return """
-- **Nombre de repas**: $mealCount
-- **Taux de succès (70-140 à 4h)**: $successRate%
-- **Pics moyens post-repas (2h)**: ${stats.meals.map { it.bgMax2h }.average().toInt()} mg/dL
-- **Consommation Glucides Totale**: ${stats.totalCarbs.toInt()}g
-        """.trimIndent()
+        if (mealCount == 0) return "Приемы пищи не зафиксированы."
+        val isMmol = context.metrics.isMmol
+
+        val sb = StringBuilder()
+        sb.appendLine("- **Всего приемов пищи**: $mealCount")
+        sb.appendLine("- **Успешность компенсации**: ${stats.mealSuccessRate.toInt()}%")
+        sb.appendLine("- **Среднее время преболюса**: ${"%.0f".format(stats.avgPrebolusMin)} мин")
+        if (stats.bFastAvgPeak != null) {
+            val v = if (isMmol) "%.1f ммоль/л".format(stats.bFastAvgPeak / 18.01559) else "%.0f mg/dL".format(stats.bFastAvgPeak)
+            sb.appendLine("- **Средний пик (Завтрак)**: $v")
+        }
+        if (stats.lunchAvgPeak != null) {
+            val v = if (isMmol) "%.1f ммоль/л".format(stats.lunchAvgPeak / 18.01559) else "%.0f mg/dL".format(stats.lunchAvgPeak)
+            sb.appendLine("- **Средний пик (Обед)**: $v")
+        }
+        if (stats.dinnerAvgPeak != null) {
+            val v = if (isMmol) "%.1f ммоль/л".format(stats.dinnerAvgPeak / 18.01559) else "%.0f mg/dL".format(stats.dinnerAvgPeak)
+            sb.appendLine("- **Средний пик (Ужин)**: $v")
+        }
+        if (!stats.therapyEventsSummary.isNullOrBlank()) {
+            sb.appendLine("- **События терапии**: ${stats.therapyEventsSummary}")
+        }
+        return sb.toString().trimEnd()
     }
 }

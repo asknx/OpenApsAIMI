@@ -4,16 +4,17 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,7 +30,6 @@ import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.compose.MetroAppCompatActivity
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.plugins.aps.R
-import app.aaps.plugins.aps.openAPSAIMI.advisor.AimiAdvisorService.BasalProfileProposal
 import app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService
 import app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository
 import app.aaps.plugins.aps.openAPSAIMI.advisor.ui.AimiProfileAdvisorScreen
@@ -64,11 +64,12 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
     private val coachAnalysisState = mutableStateOf("")
     private val isLoadingState = mutableStateOf(true)
     private val errorMessageState = mutableStateOf<String?>(null)
+    private val selectedPeriodDaysState = mutableStateOf(7)
 
     private val showModelDialogState = mutableStateOf(false)
     private val showSupportDialogState = mutableStateOf(false)
     private val showClinicalDialogState = mutableStateOf(false)
-    private val clinicalProposalState = mutableStateOf<BasalProfileProposal?>(null)
+    private val clinicalProposalState = mutableStateOf<FullAdvisorProposal?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,6 +101,11 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
                     coachAnalysis = coachAnalysisState.value,
                     isLoading = isLoadingState.value,
                     errorMessage = errorMessageState.value,
+                    selectedPeriodDays = selectedPeriodDaysState.value,
+                    onSelectPeriodDays = { days ->
+                        selectedPeriodDaysState.value = days
+                        loadReport(days)
+                    },
                     onBackClick = { finish() },
                     onSupportClick = { showSupportDialogState.value = true },
                     onModelSelectorClick = { showModelDialogState.value = true },
@@ -129,53 +135,36 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
                     clinicalDialogContent = {
                         ClinicalProposalContent(
                             proposal = clinicalProposalState.value,
-                            report = reportState.value
+                            report = reportState.value,
+                            onApplyFull = { applyBasal, applyIc, applyIsf, checkedSettings ->
+                                applyFullProposal(applyBasal, applyIc, applyIsf, checkedSettings)
+                            },
+                            onApplySettingsOnly = { checkedSettings ->
+                                applySettingsOnly(checkedSettings)
+                            },
+                            onExportProposal = { exportProposalText() }
                         )
                     },
-                    onExportClinicalProposal = {
-                        showClinicalDialogState.value = false
-                        clinicalProposalState.value?.let { proposal ->
-                            val text = advisorService.exportBasalProfileProposalText(proposal)
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, text)
-                            }
-                            startActivity(Intent.createChooser(intent, "Поделиться отчетом"))
-                        }
-                    },
-                    onApplyBasalProfile = {
-                        showClinicalDialogState.value = false
-                        reportState.value?.let { rep ->
-                            advisorService.applyProfileRecommendations(rep.recommendations)
-                            Toast.makeText(this@AimiProfileAdvisorActivity, "Новый профиль создан!", Toast.LENGTH_LONG).show()
-                            finish()
-                        }
-                    },
-                    onApplySettingsProposal = {
-                        showClinicalDialogState.value = false
-                        reportState.value?.let { rep ->
-                            advisorService.applySettingRecommendations(rep.recommendations)
-                            Toast.makeText(this@AimiProfileAdvisorActivity, "Настройки AIMI обновлены!", Toast.LENGTH_LONG).show()
-                            finish()
-                        }
-                    },
+                    onExportClinicalProposal = { exportProposalText() },
+                    onApplyBasalProfile = {},
+                    onApplySettingsProposal = {},
                     onDismissClinicalDialog = { showClinicalDialogState.value = false }
                 )
             }
         }
 
-        loadReport()
+        loadReport(7)
     }
 
-    private fun loadReport() {
+    private fun loadReport(days: Int = 7) {
         isLoadingState.value = true
         errorMessageState.value = null
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val history = historyRepo.getRecentActions(7)
-                val report = advisorService.generateReport(periodDays = 7, history = history)
-                val context = advisorService.collectContext(periodDays = 7)
+                val history = historyRepo.getRecentActions(days)
+                val report = advisorService.generateReport(periodDays = days, history = history)
+                val context = advisorService.collectContext(periodDays = days)
                 val coachAnalysis = advisorService.generatePlainTextAnalysis(context, report)
 
                 withContext(Dispatchers.Main) {
@@ -198,7 +187,7 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
         if (reportState.value == null || contextState.value == null) return
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val proposal = advisorService.generateBasalProfileProposal(7)
+                val proposal = advisorService.generateFullProposal(selectedPeriodDaysState.value)
                 withContext(Dispatchers.Main) {
                     clinicalProposalState.value = proposal
                     showClinicalDialogState.value = true
@@ -211,79 +200,267 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
         }
     }
 
+    private fun applyFullProposal(
+        applyBasal: Boolean,
+        applyIc: Boolean,
+        applyIsf: Boolean,
+        checkedSettings: Map<String, Boolean>
+    ) {
+        val proposal = clinicalProposalState.value ?: return
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val createdProfileName = advisorService.createAndActivateAimiProfile(
+                    proposal = proposal,
+                    applyBasal = applyBasal,
+                    applyIc = applyIc,
+                    applyIsf = applyIsf,
+                    checkedSettings = checkedSettings
+                )
+                historyRepo.logAction(
+                    AdvisorHistoryRepository.ActionType.PROFILE_CHANGE,
+                    createdProfileName,
+                    "Applied via AIMI Clinical Proposal",
+                    "User Accepted",
+                    "Activated"
+                )
+                withContext(Dispatchers.Main) {
+                    showClinicalDialogState.value = false
+                    Toast.makeText(this@AimiProfileAdvisorActivity, "Создан и активирован профиль $createdProfileName", Toast.LENGTH_LONG).show()
+                    loadReport(selectedPeriodDaysState.value)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AimiProfileAdvisorActivity, "Ошибка создания профиля: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun applySettingsOnly(checkedSettings: Map<String, Boolean>) {
+        val proposal = clinicalProposalState.value ?: return
+        try {
+            proposal.aimiSettings.forEach { setting ->
+                if (checkedSettings[setting.prefKey] == true) {
+                    when (setting.prefKey) {
+                        app.aaps.core.keys.DoubleKey.OApsAIMILunchFactor.key -> preferences.put(app.aaps.core.keys.DoubleKey.OApsAIMILunchFactor, setting.proposedValue.toDoubleOrNull() ?: 1.0)
+                        app.aaps.core.keys.DoubleKey.OApsAIMIMaxSMB.key -> {
+                            val num = setting.proposedValue.replace("U", "").trim().toDoubleOrNull()
+                            if (num != null) preferences.put(app.aaps.core.keys.DoubleKey.OApsAIMIMaxSMB, num)
+                        }
+                        app.aaps.core.keys.BooleanKey.OApsAIMIPkpdEnabled.key -> preferences.put(app.aaps.core.keys.BooleanKey.OApsAIMIPkpdEnabled, setting.proposedValue.equals("Enabled", ignoreCase = true))
+                    }
+                }
+            }
+            showClinicalDialogState.value = false
+            Toast.makeText(this, "Применены настройки AIMI", Toast.LENGTH_SHORT).show()
+            loadReport(selectedPeriodDaysState.value)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Ошибка применения настроек: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun exportProposalText() {
+        val proposal = clinicalProposalState.value ?: return
+        val text = buildString {
+            appendLine("=== КЛИНИЧЕСКИЙ ОТЧЕТ И ПРЕДЛОЖЕНИЕ AIMI ===")
+            appendLine("Период: ${proposal.periodDays} дней")
+            appendLine("Сводка: ${proposal.clinicalSummary}")
+            appendLine()
+            appendLine("ПОЧАСОВОЙ БАЗАЛ (24 часа):")
+            proposal.hourlyBasal.forEach { h ->
+                appendLine(String.format(Locale.US, "%02d:00 | %.2f -> %.2f U/h | Median: %.1f | %s", h.hour, h.currentRate, h.proposedRate, h.agpMedian, h.reason))
+            }
+            appendLine()
+            appendLine("КОЭФФИЦИЕНТЫ:")
+            appendLine("IC (Carb Ratio): %.1f -> %.1f g/U".format(proposal.currentIc, proposal.proposedIc))
+            appendLine("ISF: %.1f -> %.1f mg/dL/U".format(proposal.currentIsf, proposal.proposedIsf))
+            appendLine()
+            appendLine("НАСТРОЙКИ AIMI:")
+            proposal.aimiSettings.forEach { s ->
+                appendLine("${s.title}: ${s.currentValue} -> ${s.proposedValue} (${s.reason})")
+            }
+        }
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(Intent.createChooser(intent, "Экспорт клинического предложения AIMI"))
+    }
+
     @Composable
     private fun ClinicalProposalContent(
-        proposal: BasalProfileProposal?,
-        report: AdvisorReport?
+        proposal: FullAdvisorProposal?,
+        report: AdvisorReport?,
+        onApplyFull: (Boolean, Boolean, Boolean, Map<String, Boolean>) -> Unit,
+        onApplySettingsOnly: (Map<String, Boolean>) -> Unit,
+        onExportProposal: () -> Unit
     ) {
         if (proposal == null) {
-            Text("Загрузка данных...")
+            Text("Загрузка клинических данных...")
             return
         }
 
-        val strategyRus = when (proposal.strategy) {
-            "SAFETY_REDUCTION" -> "Снижение для безопасности (риск гипо)"
-            "GENTLE_INCREASE" -> "Мягкое повышение (коррекция гипер)"
-            else -> "Сохранение текущей базы"
+        var applyBasal by remember { mutableStateOf(true) }
+        var applyIc by remember { mutableStateOf(true) }
+        var applyIsf by remember { mutableStateOf(true) }
+        val checkedSettings = remember {
+            mutableStateMapOf<String, Boolean>().apply {
+                proposal.aimiSettings.forEach { put(it.prefKey, it.isEnabledByDefault) }
+            }
         }
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = "Стратегия: $strategyRus",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                text = proposal.clinicalSummary,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
-            Text(
-                text = "Обоснование: ${proposal.rationale}",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
 
-            if (report?.recommendations?.isNotEmpty() == true) {
+            HorizontalDivider()
+
+            // 1. Basal Section
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = applyBasal, onCheckedChange = { applyBasal = it })
                 Text(
-                    text = "Рекомендации:",
+                    text = "Почасовой базал (24 часа) — адаптация к AGP",
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
+                    style = MaterialTheme.typography.titleSmall
                 )
-                report.recommendations.forEach { rec ->
-                    val color = if (rec.priority == app.aaps.plugins.aps.openAPSAIMI.model.AimiPriority.Critical) Color.Red else Color.Unspecified
-                    val title = rh.gs(rec.titleResId)
-                    val desc = if (rec.descriptionArgs.isNotEmpty()) {
-                        String.format(rh.gs(rec.descriptionResId), *rec.descriptionArgs.toTypedArray())
-                    } else {
-                        rh.gs(rec.descriptionResId)
+            }
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    proposal.hourlyBasal.forEach { h ->
+                        val deltaPct = if (h.currentRate > 0) ((h.proposedRate / h.currentRate) - 1.0) * 100.0 else 0.0
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "%02d:00  %.2f -> %.2f U/h (%+.0f%%)".format(h.hour, h.currentRate, h.proposedRate, deltaPct),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = h.reason,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    Text(
-                        text = "• $title: $desc",
-                        color = color,
-                        style = MaterialTheme.typography.bodySmall
-                    )
                 }
             }
 
-            Text(
-                text = "Предлагаемые базальные слоты:",
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-            )
-            proposal.rows.forEach { slot ->
-                val timeStr = String.format(Locale.US, "%02d:00", slot.hour)
+            HorizontalDivider()
+
+            // 2. Coefficients (IC & ISF)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = applyIc, onCheckedChange = { applyIc = it })
                 Text(
-                    text = "$timeStr : ${slot.current} -> ${slot.proposed} Ед/ч",
-                    style = MaterialTheme.typography.bodySmall
+                    text = "Углеводный коэффициент (IC): %.1f -> %.1f г/U".format(proposal.currentIc, proposal.proposedIc),
+                    style = MaterialTheme.typography.bodyMedium
                 )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = applyIsf, onCheckedChange = { applyIsf = it })
+                Text(
+                    text = "Фактор чувствительности (ISF): %.1f -> %.1f".format(proposal.currentIsf, proposal.proposedIsf),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            if (proposal.aimiSettings.isNotEmpty()) {
+                HorizontalDivider()
+                Text(
+                    text = "Корректировка параметров AIMI:",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall
+                )
+
+                proposal.aimiSettings.forEach { setting ->
+                    val isChecked = checkedSettings[setting.prefKey] ?: true
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = isChecked,
+                            onCheckedChange = { checkedSettings[setting.prefKey] = it }
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "${setting.title}: ${setting.currentValue} -> ${setting.proposedValue}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = setting.reason,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+            // Action Buttons
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { onApplyFull(applyBasal, applyIc, applyIsf, checkedSettings) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Создать профиль (с датой) и применить")
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = { onApplySettingsOnly(checkedSettings) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Только настройки AIMI")
+                    }
+                    OutlinedButton(
+                        onClick = onExportProposal,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Экспорт")
+                    }
+                }
             }
         }
     }
 
     private fun generateAndShareReport() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val content = advisorService.generateClinicalExport(14)
+            val content = advisorService.generateClinicalExport(selectedPeriodDaysState.value)
             withContext(Dispatchers.Main) {
                 val sendIntent = Intent(Intent.ACTION_SEND).apply {
                     action = Intent.ACTION_SEND
@@ -307,7 +484,7 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
                 }
                 lifecycleScope.launch(Dispatchers.IO) {
                     historyRepo.logAction(
-                        app.aaps.plugins.aps.openAPSAIMI.advisor.data.AdvisorHistoryRepository.ActionType.PREFERENCE_CHANGE,
+                        AdvisorHistoryRepository.ActionType.PREFERENCE_CHANGE,
                         action.key.key,
                         action.reason,
                         "Manual",
@@ -315,7 +492,7 @@ class AimiProfileAdvisorActivity : MetroAppCompatActivity() {
                     )
                 }
                 Toast.makeText(this, "Настройка обновлена!", Toast.LENGTH_SHORT).show()
-                loadReport()
+                loadReport(selectedPeriodDaysState.value)
             } catch (e: Exception) {
                 Toast.makeText(this, "Ошибка применения: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
             }

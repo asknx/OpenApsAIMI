@@ -228,10 +228,55 @@ enum class StringKey(
 
     // AIMI and custom keys
     GarminRequestKey(key = "garmin_aaps_key", defaultValue = "", title = TextRef.Literal("Garmin AAPS Key")),
-    OApsAIMIWCycleTrackingMode("key_oaps_aimi_wcycle_tracking_mode", "FIXED_28", title = TextRef.Literal("AIMI WCycle Tracking Mode")),
-    OApsAIMIWCycleContraceptive("key_oaps_aimi_wcycle_contraceptive", "NONE", title = TextRef.Literal("AIMI WCycle Contraceptive")),
-    OApsAIMIWCycleThyroid("key_oaps_aimi_wcycle_thyroid", "EUTHYROID", title = TextRef.Literal("AIMI WCycle Thyroid")),
-    OApsAIMIWCycleVerneuil("key_oaps_aimi_wcycle_verneuil", "NONE", title = TextRef.Literal("AIMI WCycle Verneuil")),
+    OApsAIMIWCycleTrackingMode(
+        key = "key_oaps_aimi_wcycle_tracking_mode",
+        defaultValue = "FIXED_28",
+        title = TextRef.Literal("AIMI WCycle Tracking Mode"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "FIXED_28" to "Fixed 28-day",
+            "DYNAMIC" to "Dynamic / Rolling",
+            "MANUAL" to "Manual Phase",
+            "OFF" to "Off"
+        )
+    ),
+    OApsAIMIWCycleContraceptive(
+        key = "key_oaps_aimi_wcycle_contraceptive",
+        defaultValue = "NONE",
+        title = TextRef.Literal("AIMI WCycle Contraceptive"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "NONE" to "None",
+            "COMBINED_PILL" to "Combined Pill",
+            "PROGESTIN_ONLY" to "Progestin Only (Mini-pill)",
+            "IUD_HORMONAL" to "Hormonal IUD",
+            "IUD_COPPER" to "Copper IUD",
+            "IMPLANT" to "Implant / Injection"
+        )
+    ),
+    OApsAIMIWCycleThyroid(
+        key = "key_oaps_aimi_wcycle_thyroid",
+        defaultValue = "EUTHYROID",
+        title = TextRef.Literal("AIMI WCycle Thyroid"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "EUTHYROID" to "Euthyroid (Normal)",
+            "HYPOTHYROID" to "Hypothyroid",
+            "HYPERTHYROID" to "Hyperthyroid"
+        )
+    ),
+    OApsAIMIWCycleVerneuil(
+        key = "key_oaps_aimi_wcycle_verneuil",
+        defaultValue = "NONE",
+        title = TextRef.Literal("AIMI WCycle Verneuil"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "NONE" to "None",
+            "STAGE_1" to "Hurley Stage 1",
+            "STAGE_2" to "Hurley Stage 2",
+            "STAGE_3" to "Hurley Stage 3"
+        )
+    ),
     OApsAIMINightGrowthStart("key_oaps_aimi_ngr_night_start", "22:00", title = TextRef.Literal("AIMI Night Growth Start")),
     OApsAIMINightGrowthEnd("key_oaps_aimi_ngr_night_end", "06:00", title = TextRef.Literal("AIMI Night Growth End")),
     AimiAdvisorOpenAIKey("aimi_advisor_openai_key", "", isPassword = true, title = TextRef.Literal("AIMI Advisor OpenAI Key")),
@@ -262,19 +307,84 @@ enum class StringKey(
             "CUSTOM" to "Custom Endpoint"
         )
     ),
-    AimiAuditorMode("aimi_auditor_mode", "AUDIT_ONLY", title = TextRef.Literal("AIMI Auditor Mode")),
+    AimiAuditorMode(
+        key = "aimi_auditor_mode",
+        defaultValue = "AUDIT_ONLY",
+        title = TextRef.Literal("AIMI Auditor Mode"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "DISABLED" to "Disabled",
+            "AUDIT_ONLY" to "Audit Only",
+            "INTERVENE" to "Active Intervention"
+        )
+    ),
 
     // Context Module
-    ContextMode("aimi_context_mode", "BALANCED", title = TextRef.Literal("AIMI Context Mode")),
+    ContextMode(
+        key = "aimi_context_mode",
+        defaultValue = "BALANCED",
+        title = TextRef.Literal("AIMI Context Mode"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "OFF" to "Off",
+            "PASSIVE" to "Passive / Keywords",
+            "BALANCED" to "Balanced (AI + Keywords)",
+            "AGGRESSIVE" to "Aggressive (High AI Sensitivity)"
+        )
+    ),
 
     OApsAIMIUnstableModeState("key_oaps_aimi_mode_state", "", title = TextRef.Literal("AIMI Unstable Mode State")),
     OApsAIMIContextStorage("aimi_context_storage", "", title = TextRef.Literal("AIMI Context Storage")),
 
     // Thyroid / Basedow Module (MTR)
-    OApsAIMIThyroidMode("key_aimi_thyroid_mode", "MANUAL", title = TextRef.Literal("AIMI Thyroid Mode")),
-    OApsAIMIThyroidManualStatus("key_aimi_thyroid_manual_status", "EUTHYROID", title = TextRef.Literal("AIMI Thyroid Manual Status")),
-    OApsAIMIThyroidTreatmentPhase("key_aimi_thyroid_treatment_phase", "NONE", title = TextRef.Literal("AIMI Thyroid Treatment Phase")),
-    OApsAIMIThyroidGuardLevel("key_aimi_thyroid_guard_level", "HIGH", title = TextRef.Literal("AIMI Thyroid Guard Level")),
+    OApsAIMIThyroidMode(
+        key = "key_aimi_thyroid_mode",
+        defaultValue = "MANUAL",
+        title = TextRef.Literal("AIMI Thyroid Mode"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "OFF" to "Off",
+            "MANUAL" to "Manual",
+            "LABS" to "Lab Results",
+            "DYNAMIC" to "Dynamic Physio (MTR)"
+        )
+    ),
+    OApsAIMIThyroidManualStatus(
+        key = "key_aimi_thyroid_manual_status",
+        defaultValue = "EUTHYROID",
+        title = TextRef.Literal("AIMI Thyroid Manual Status"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "EUTHYROID" to "Euthyroid (Normal)",
+            "HYPOTHYROID" to "Hypothyroid",
+            "HYPERTHYROID" to "Hyperthyroid (Active Basedow)"
+        )
+    ),
+    OApsAIMIThyroidTreatmentPhase(
+        key = "key_aimi_thyroid_treatment_phase",
+        defaultValue = "NONE",
+        title = TextRef.Literal("AIMI Thyroid Treatment Phase"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "NONE" to "None",
+            "ATTACK" to "Attack Phase (High Dose)",
+            "MAINTENANCE" to "Maintenance Phase",
+            "BLOCK_REPLACE" to "Block & Replace",
+            "REMISSION" to "Remission"
+        )
+    ),
+    OApsAIMIThyroidGuardLevel(
+        key = "key_aimi_thyroid_guard_level",
+        defaultValue = "HIGH",
+        title = TextRef.Literal("AIMI Thyroid Guard Level"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "LOW" to "Low (Mild Limits)",
+            "STANDARD" to "Standard Guard",
+            "HIGH" to "High Guard (Hypo Protection)",
+            "MAX" to "Max Protection (Aggressive Block)"
+        )
+    ),
 
     // Emergency SOS (Hypo)
     AimiEmergencySosPhone("aimi_emergency_sos_phone", "", title = TextRef.Literal("AIMI Emergency SOS Phone")),

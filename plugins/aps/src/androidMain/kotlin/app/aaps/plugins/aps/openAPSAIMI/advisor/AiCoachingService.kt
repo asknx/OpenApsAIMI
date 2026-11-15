@@ -124,7 +124,7 @@ class AiCoachingService @Inject constructor() {
         
         try {
             return@withContext when (provider) {
-                Provider.GEMINI -> callGemini(context, apiKey, tokenToUse, prompt)
+                Provider.GEMINI -> callGemini(context, apiKey, tokenToUse, prompt, customModel)
                 Provider.CLAUDE -> callClaude(apiKey, prompt, customModel)
                 Provider.OPENAI -> callOpenAICompatible(OPENAI_URL, apiKey, customModel?.ifBlank { null } ?: OPENAI_MODEL, prompt, "OpenAI")
                 Provider.DEEPSEEK -> callOpenAICompatible(DEEPSEEK_URL, apiKey, customModel?.ifBlank { null } ?: DEEPSEEK_MODEL, prompt, "DeepSeek")
@@ -190,7 +190,13 @@ class AiCoachingService @Inject constructor() {
         }
     }
 
-    private fun callGemini(context: Context, apiKey: String?, oauthToken: String?, prompt: String): String {
+    private fun callGemini(
+        context: Context, 
+        apiKey: String?, 
+        oauthToken: String?, 
+        prompt: String,
+        customModel: String? = null
+    ): String {
         val resolver = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiModelResolver(context)
         
         // Use manual dependency resolution with interfaces
@@ -252,7 +258,8 @@ class AiCoachingService @Inject constructor() {
 
         val oauthManager = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager(aapsLogger, sp, context)
         
-        val primaryModel = resolver.resolveGenerateContentModel(apiKey, oauthToken, "gemini-3.8-flash")
+        val defaultModel = customModel?.ifBlank { null } ?: "gemini-3.8-flash"
+        val primaryModel = resolver.resolveGenerateContentModel(apiKey, oauthToken, defaultModel)
         
         try {
             return executeGeminiRequest(resolver, oauthManager, apiKey, oauthToken, prompt, primaryModel)

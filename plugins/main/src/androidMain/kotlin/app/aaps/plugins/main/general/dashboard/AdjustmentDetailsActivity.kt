@@ -24,6 +24,16 @@ import androidx.compose.ui.unit.dp
 import app.aaps.core.ui.compose.AapsTheme
 import java.io.Serializable
 
+import app.aaps.core.ui.compose.MetroAppCompatActivity
+import app.aaps.core.interfaces.aps.Loop
+import app.aaps.core.interfaces.iob.IobCobCalculator
+import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.plugin.ActivePlugin
+import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.data.model.GlucoseUnit
+import dev.zacsweers.metro.Inject
+
 data class AdjustmentCardState(
     val glycemiaLine: String = "--",
     val predictionLine: String = "--",
@@ -46,7 +56,16 @@ data class AdjustmentCardState(
     val adjustments: List<String> = emptyList()
 ) : Serializable
 
-class AdjustmentDetailsActivity : AppCompatActivity() {
+class AdjustmentDetailsActivity : MetroAppCompatActivity() {
+
+    @Inject lateinit var loop: Loop
+    @Inject lateinit var iobCobCalculator: IobCobCalculator
+    @Inject lateinit var profileFunction: ProfileFunction
+    @Inject lateinit var persistenceLayer: PersistenceLayer
+    @Inject lateinit var activePlugin: ActivePlugin
+    @Inject lateinit var preferences: Preferences
+
+    private val cardState = mutableStateOf<AdjustmentCardState?>(null)
 
     companion object {
         const val EXTRA_ADJUSTMENT_STATE = "extra_adjustment_state"
@@ -60,15 +79,88 @@ class AdjustmentDetailsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val state = intent.getSerializableExtra(EXTRA_ADJUSTMENT_STATE) as? AdjustmentCardState
+        val passedState = intent.getSerializableExtra(EXTRA_ADJUSTMENT_STATE) as? AdjustmentCardState
+        cardState.value = passedState ?: buildLiveState()
         setContent {
             AapsTheme {
                 AdjustmentDetailsScreen(
-                    state = state,
-                    onBack = { onBackPressedDispatcher.onBackPressed() }
+                    state = cardState.value,
+                    onBack = { onBackPressedDispatcher.onBackPressed() },
+                    onRefresh = { cardState.value = buildLiveState() }
                 )
             }
         }
+    }
+
+    private fun buildLiveState(): AdjustmentCardState {
+        val lastRun = loop.lastRun
+        val apsResult = lastRun?.constraintsProcessed ?: lastRun?.request
+        val isMmol = profileFunction.getUnits() == GlucoseUnit.MMOL
+        val unitLabel = if (isMmol) "mmol/L" else "mg/dL"
+
+        val lastGv = kotlinx.coroutines.runBlocking { persistenceLayer.getLastGlucoseValue() }
+        val glycemiaLine = if (lastGv != null) {
+            val bgDisp = if (isMmol) lastGv.value / 18.01559 else lastGv.value
+            val deltaVal = apsResult?.glucoseStatus?.delta
+            val deltaStr = if (deltaVal != null && deltaVal != 0.0) {
+                val d = if (isMmol) deltaVal / 18.01559 else deltaVal
+                (if (d > 0) "+%.1f" else "%.1f").format(d)
+            } else ""
+            "%.1f %s %s".format(bgDisp, unitLabel, deltaStr).trim()
+        } else "--"
+
+        val predLine = if (apsResult != null && apsResult.hasPredictions && apsResult.predictionsAsGv.isNotEmpty()) {
+            val lastPred = apsResult.predictionsAsGv.lastOrNull()
+            if (lastPred != null) {
+                val pVal = if (isMmol) lastPred.value / 18.01559 else lastPred.value
+                "Pred: %.1f %s".format(pVal, unitLabel)
+            } else "Predictions available"
+        } else "--"
+
+        val iobObj = apsResult?.iobData?.firstOrNull()
+        val iobVal = iobObj?.iob ?: 0.0
+        val actVal = iobObj?.activity ?: 0.0
+        val iobActivityLine = "IOB: %.2f U | Act: %.3f U/h".format(iobVal, actVal)
+
+        val smbVal = apsResult?.smb
+        val rateVal = apsResult?.rate
+        val decisionLine = when {
+            smbVal != null && smbVal > 0.0 -> "SMB: %.2f U (Basal: %.2f U/h)".format(smbVal, rateVal ?: 0.0)
+            rateVal != null -> "TBR: %.2f U/h".format(rateVal)
+            else -> "--"
+        }
+
+        val pump = activePlugin.activePumpInternal
+        val pumpName = (pump as? app.aaps.core.interfaces.plugin.PluginBase)?.name ?: "Pump"
+        val pumpLine = "$pumpName (${if (pump.isSuspended()) "Suspended" else "Active"})"
+        val safetyLine = try {
+            val clazz = Class.forName("app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorStatusTracker")
+            val getStatus = clazz.getMethod("getStatus")
+            val pair = getStatus.invoke(null) as? Pair<*, *>
+            val status = pair?.first
+            val verdict = pair?.second as? String
+            val messageProp = status?.javaClass?.getMethod("getMessage")?.invoke(status) as? String
+            "Auditor: ${messageProp ?: "ACTIVE"}" + (verdict?.let { " ($it)" } ?: "")
+        } catch (_: Throwable) {
+            "Auditor: ACTIVE"
+        }
+
+        val targetDisp = apsResult?.targetBG?.let { if (isMmol) it / 18.01559 else it }
+        val detailedReason = apsResult?.reason ?: lastRun?.request?.reason
+
+        return AdjustmentCardState(
+            glycemiaLine = glycemiaLine,
+            predictionLine = predLine,
+            iobActivityLine = iobActivityLine,
+            decisionLine = decisionLine,
+            targetBg = targetDisp,
+            smb = smbVal,
+            basal = rateVal,
+            isHypoRisk = apsResult?.isHypoRisk ?: false,
+            pumpLine = pumpLine,
+            safetyLine = safetyLine,
+            detailedReason = detailedReason
+        )
     }
 }
 
@@ -76,7 +168,8 @@ class AdjustmentDetailsActivity : AppCompatActivity() {
 @Composable
 fun AdjustmentDetailsScreen(
     state: AdjustmentCardState?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onRefresh: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -90,6 +183,9 @@ fun AdjustmentDetailsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onRefresh) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
                     if (state != null) {
                         IconButton(onClick = {
                             val text = buildExportText(state)

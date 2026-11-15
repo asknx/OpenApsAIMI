@@ -43,6 +43,9 @@ class ContextLLMClient @Inject constructor(
     private val context: android.content.Context,
     private val geminiOAuthManager: app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiOAuthManager
 ) {
+    @Volatile
+    var lastError: String? = null
+
     companion object {
         private const val TIMEOUT_MS = 3000L // 3 secondes max
         
@@ -210,6 +213,7 @@ Output:
      */
     suspend fun parseWithLLM(userText: String, medicalContext: MedicalContext? = null): List<ContextIntent> {
         if (userText.isBlank()) return emptyList()
+        lastError = null
         
         aapsLogger.debug(LTag.APS, "[ContextLLM] Parsing: '$userText'")
         
@@ -254,7 +258,9 @@ Output:
             } else null
 
             if (apiKey.isBlank() && token == null && provider != AiCoachingService.Provider.CUSTOM) {
-                aapsLogger.error(LTag.APS, "[ContextLLM] API key or OAuth token not configured for $provider")
+                val err = "API key or OAuth token not configured for $provider"
+                aapsLogger.error(LTag.APS, "[ContextLLM] $err")
+                lastError = err
                 return emptyList()
             }
             
@@ -264,14 +270,22 @@ Output:
             // Check for service errors
             if (llmResponse.startsWith("Erreur") || llmResponse.startsWith("[Provider:")) {
                 aapsLogger.error(LTag.APS, "[ContextLLM] Service error: $llmResponse")
+                lastError = llmResponse
                 throw Exception(llmResponse)
             }
             
             // Parse JSON response
-            parseJsonResponse(llmResponse, userText)
+            val parsed = parseJsonResponse(llmResponse, userText)
+            if (parsed.isEmpty()) {
+                lastError = "AI returned response without valid context intents: ${llmResponse.take(150)}"
+            }
+            parsed
             
         } catch (e: Exception) {
             aapsLogger.error(LTag.APS, "[ContextLLM] LLM parsing failed: ${e.message}", e)
+            if (lastError == null) {
+                lastError = e.message ?: e.toString()
+            }
             emptyList()
         }
     }

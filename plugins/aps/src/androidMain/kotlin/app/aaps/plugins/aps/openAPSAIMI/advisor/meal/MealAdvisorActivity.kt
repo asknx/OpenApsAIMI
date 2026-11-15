@@ -7,6 +7,8 @@ import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -58,12 +60,14 @@ class MealAdvisorActivity : MetroAppCompatActivity() {
     private val confirmDialogMessage = mutableStateOf("")
     private val showFatSecretBlockedDialog = mutableStateOf(false)
     private val showProviderDialog = mutableStateOf(false)
+    private val activeProviderName = mutableStateOf("")
 
     private var lastCalculatedDose: MealDose? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        activeProviderName.value = preferences.get(app.aaps.core.keys.StringKey.AimiAdvisorProvider)
         recognitionService = FoodRecognitionService(this, preferences, persistenceLayer, geminiOAuthManager)
 
         setContent {
@@ -112,17 +116,17 @@ class MealAdvisorActivity : MetroAppCompatActivity() {
                     },
                     showFatSecretBlockedDialog = showFatSecretBlockedDialog.value,
                     onDismissFatSecretDialog = { showFatSecretBlockedDialog.value = false },
-                    activeProviderName = preferences.get(app.aaps.core.keys.StringKey.AimiAdvisorProvider),
+                    activeProviderName = activeProviderName.value,
                     onSwitchProviderClick = { showProviderDialog.value = true }
                 )
 
                 if (showProviderDialog.value) {
-                    val providers = listOf("GEMINI", "OPENAI", "DEEPSEEK", "CLAUDE", "GLM")
+                    val providers = listOf("GEMINI", "OPENAI", "DEEPSEEK", "CLAUDE", "GLM", "GROK", "OPENROUTER", "GROQ", "CUSTOM")
                     androidx.compose.material3.AlertDialog(
                         onDismissRequest = { showProviderDialog.value = false },
                         title = { androidx.compose.material3.Text("Select AI Provider") },
                         text = {
-                            androidx.compose.foundation.layout.Column {
+                            androidx.compose.foundation.layout.Column(modifier = androidx.compose.ui.Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
                                 providers.forEach { prov ->
                                     androidx.compose.foundation.layout.Row(
                                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -130,14 +134,16 @@ class MealAdvisorActivity : MetroAppCompatActivity() {
                                             .fillMaxWidth()
                                             .clickable {
                                                 preferences.put(app.aaps.core.keys.StringKey.AimiAdvisorProvider, prov)
+                                                activeProviderName.value = prov
                                                 showProviderDialog.value = false
                                             }
                                             .padding(vertical = 10.dp)
                                     ) {
                                         androidx.compose.material3.RadioButton(
-                                            selected = preferences.get(app.aaps.core.keys.StringKey.AimiAdvisorProvider).equals(prov, ignoreCase = true),
+                                            selected = activeProviderName.value.equals(prov, ignoreCase = true),
                                             onClick = {
                                                 preferences.put(app.aaps.core.keys.StringKey.AimiAdvisorProvider, prov)
+                                                activeProviderName.value = prov
                                                 showProviderDialog.value = false
                                             }
                                         )

@@ -2,6 +2,7 @@ plugins {
     id("kmp-android-library")
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.metro)
 }
 
 registerKeyStrings("main")
