@@ -115,7 +115,7 @@ class AuditorAIService @Inject constructor(
                         Provider.CUSTOM -> {
                             val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl)
                             val url = normalizeEndpointUrl(rawUrl)
-                            val model = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "custom-model" }
+                            val model = getActiveModel(Provider.CUSTOM)
                             callOpenAICompatible(apiKey, url, model, prompt, requireJson = true)
                         }
                     }
@@ -188,7 +188,7 @@ class AuditorAIService @Inject constructor(
                 Provider.CUSTOM -> {
                     val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl)
                     val url = normalizeEndpointUrl(rawUrl)
-                    val model = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "custom-model" }
+                    val model = getActiveModel(Provider.CUSTOM)
                     callOpenAICompatible(apiKey, url, model, prompt, requireJson = false)
                 }
             }
@@ -258,22 +258,48 @@ class AuditorAIService @Inject constructor(
         }
     }
     
-    private fun getModel(provider: Provider, useHighPerf: Boolean): String {
-        val userModel = preferences.get(StringKey.AimiAdvisorModel)
-        if (userModel.isNotBlank()) return userModel
-        
-        return when (provider) {
-            Provider.OPENAI -> if (useHighPerf) "gpt-6.1-sol" else "gpt-6-astra"
-            Provider.GEMINI_38_FLASH -> "gemini-3.8-flash"
-            Provider.GEMINI_31_PRO -> "gemini-3.1-pro"
-            Provider.DEEPSEEK -> "deepseek-v4"
-            Provider.CLAUDE -> if (useHighPerf) "claude-sonnet-5" else "claude-3-7-sonnet"
-            Provider.GLM -> "glm-5.2"
-            Provider.GROK -> "grok-4"
-            Provider.OPENROUTER -> "google/gemini-2.0-flash-exp:free"
-            Provider.GROQ -> if (useHighPerf) "llama-3.3-70b-versatile" else "llama-3.1-8b-instant"
-            Provider.CUSTOM -> ""
+    fun getProvider(): Provider {
+        val providerName = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
+        return when {
+            providerName.contains("OPENAI") -> Provider.OPENAI
+            providerName.contains("GEMINI-3.8-FLASH") -> Provider.GEMINI_38_FLASH
+            providerName.contains("GEMINI-3.1-PRO") -> Provider.GEMINI_31_PRO
+            providerName.contains("DEEPSEEK") -> Provider.DEEPSEEK
+            providerName.contains("CLAUDE") -> Provider.CLAUDE
+            providerName.contains("GLM") -> Provider.GLM
+            providerName.contains("GROK") -> Provider.GROK
+            providerName.contains("OPENROUTER") -> Provider.OPENROUTER
+            providerName.contains("GROQ") -> Provider.GROQ
+            providerName.contains("CUSTOM") -> Provider.CUSTOM
+            else -> Provider.GEMINI_38_FLASH
         }
+    }
+
+    fun getActiveModel(provider: Provider = getProvider()): String {
+        val model = when (provider) {
+            Provider.GEMINI_38_FLASH -> preferences.get(StringKey.AimiAdvisorModelGemini).ifBlank { "gemini-3.8-flash" }
+            Provider.GEMINI_31_PRO -> preferences.get(StringKey.AimiAdvisorModelGemini).ifBlank { "gemini-3.1-pro" }
+            Provider.OPENAI -> preferences.get(StringKey.AimiAdvisorModelOpenAI).ifBlank { "gpt-5.4" }
+            Provider.DEEPSEEK -> preferences.get(StringKey.AimiAdvisorModelDeepSeek).ifBlank { "deepseek-chat" }
+            Provider.CLAUDE -> preferences.get(StringKey.AimiAdvisorModelClaude).ifBlank { "claude-sonnet-5" }
+            Provider.GLM -> preferences.get(StringKey.AimiAdvisorModelGlm).ifBlank { "glm-5.2" }
+            Provider.GROK -> preferences.get(StringKey.AimiAdvisorModelGrok).ifBlank { "grok-4" }
+            Provider.OPENROUTER -> preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "meta-llama/llama-3.3-70b-instruct" }
+            Provider.GROQ -> preferences.get(StringKey.AimiAdvisorModelGroq).ifBlank { "llama-3.3-70b-versatile" }
+            Provider.CUSTOM -> {
+                val manual = preferences.get(StringKey.AimiAdvisorModelCustomManual).trim()
+                if (manual.isNotBlank()) manual
+                else preferences.get(StringKey.AimiAdvisorModelCustom).ifBlank { "custom-model" }
+            }
+        }
+        if (preferences.get(StringKey.AimiAdvisorModel) != model) {
+            preferences.put(StringKey.AimiAdvisorModel, model)
+        }
+        return model
+    }
+    
+    private fun getModel(provider: Provider, useHighPerf: Boolean = false): String {
+        return getActiveModel(provider)
     }
 
     private fun callOpenAICompatible(apiKey: String, baseUrl: String, model: String, prompt: String, requireJson: Boolean): String {

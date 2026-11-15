@@ -175,7 +175,7 @@ fun MainDrawer(
                 icon = Icons.Default.Settings,
                 label = "Настройки AIMI",
                 description = "Конфигурация AI, SOS, Physio и параметров",
-                onClick = { onNavigate(NavigationRequest.PluginPreferences("openapsaimi_settings")) }
+                onClick = { onNavigate(NavigationRequest.PluginPreferences("OpenAPSAIMIPlugin")) }
             )
             DrawerMenuItem(
                 icon = IcPluginFood,

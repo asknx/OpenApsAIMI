@@ -1150,37 +1150,21 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                 title = TextRef.AndroidRes(R.string.aimi_prefs_ai_title),
                 items = listOf(
                     StringKey.AimiAdvisorProvider,
-                    StringKey.AimiAdvisorModel,
+                    StringKey.AimiAdvisorModelGemini,
+                    StringKey.AimiAdvisorModelOpenAI,
+                    StringKey.AimiAdvisorModelDeepSeek,
+                    StringKey.AimiAdvisorModelClaude,
+                    StringKey.AimiAdvisorModelGlm,
+                    StringKey.AimiAdvisorModelGrok,
+                    StringKey.AimiAdvisorModelOpenRouter,
+                    StringKey.AimiAdvisorModelGroq,
+                    StringKey.AimiAdvisorModelCustom,
+                    StringKey.AimiAdvisorModelCustomManual,
                     IntentKey.AimiFetchModels.withClick {
-                        pluginScope.launch {
-                            try {
-                                val providerStr = preferences.get(StringKey.AimiAdvisorProvider).uppercase()
-                                val provider = auditorOrchestrator.getProvider()
-                                withContext(Dispatchers.Main) {
-                                    android.widget.Toast.makeText(context, "Запрос списка моделей для $providerStr...", android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                                val models = auditorAIService.fetchAvailableModels(provider)
-                                withContext(Dispatchers.Main) {
-                                    if (models.isNotEmpty()) {
-                                        val current = preferences.get(StringKey.AimiAdvisorModel)
-                                        val nextIndex = (models.indexOf(current) + 1).takeIf { it in models.indices } ?: 0
-                                        val chosenModel = models[nextIndex]
-                                        preferences.put(StringKey.AimiAdvisorModel, chosenModel)
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "Выбрана модель [${nextIndex + 1}/${models.size}]: $chosenModel",
-                                            android.widget.Toast.LENGTH_LONG
-                                        ).show()
-                                    } else {
-                                        android.widget.Toast.makeText(context, "Не удалось получить модели от $providerStr", android.widget.Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                withContext(Dispatchers.Main) {
-                                    android.widget.Toast.makeText(context, "Ошибка: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-                                }
-                            }
+                        val intent = android.content.Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiModelPickerActivity::class.java).apply {
+                            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
                         }
+                        context.startActivity(intent)
                     },
                     StringKey.AimiAdvisorGeminiKey,
                     StringKey.AimiAdvisorOpenAIKey,

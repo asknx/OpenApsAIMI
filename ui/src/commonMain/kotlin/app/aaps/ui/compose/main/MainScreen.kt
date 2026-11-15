@@ -196,7 +196,7 @@ fun MainScreen(
                         onNavigate(request)
                     }
                 },
-                isTreatmentsEnabled = uiState.isProfileLoaded,
+                isTreatmentsEnabled = true,
                 showExit = mainViewModel.showExit
             )
         },

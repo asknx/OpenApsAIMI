@@ -23,6 +23,7 @@ import app.aaps.core.interfaces.pump.VirtualPump
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.ui.UiInteraction
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.dialogs.OkDialog
 import app.aaps.core.ui.compose.navigation.NavigationRequest
@@ -154,7 +155,8 @@ fun OverviewScreen(
     val objectivesPlugin = objectives as? PluginBase
     val objectivesTotal = objectives.size
     val objectivesDone = objectives.accomplishedCount
-    val showObjectivesSetup = !config.isEngineeringMode() && config.APS && objectivesPlugin != null && objectivesTotal > 0 &&
+    val isEngineeringBypassed = mainViewModel.preferences.get(BooleanKey.AimiEngineeringBypassEnabled) || config.isEngineeringMode()
+    val showObjectivesSetup = !isEngineeringBypassed && config.APS && objectivesPlugin != null && objectivesTotal > 0 &&
         objectivesDone < objectivesTotal && objectivesPlugin.isEnabled() && objectivesPlugin.hasComposeContent()
     val objectivesSetupPlugin = if (showObjectivesSetup) objectivesPlugin else null
     val objectivesProgressText = if (showObjectivesSetup) "$objectivesDone/$objectivesTotal" else null

@@ -113,14 +113,18 @@ class NsIncomingDataProcessor(
         val glucoseValues = mutableListOf<GV>()
 
         if (sgvs is List<*>) { // V3 client
+            val rawList = sgvs.filterIsInstance<NSSgvV3>()
+                .map { it.toGV() }
+                .sortedWith(compareBy<GV> { it.timestamp }.thenByDescending { it.sourceSensor != app.aaps.core.data.model.SourceSensor.UNKNOWN })
+                .distinctBy { it.timestamp }
 
-            for (i in 0 until sgvs.size) {
-                val sgv = (sgvs[i] as NSSgvV3).toGV()
+            for (sgv in rawList) {
                 if (sgv.timestamp < dateUtil.now() + T.mins(1).msecs() && sgv.timestamp > latestDateInReceivedData) {
                     latestDateInReceivedData = sgv.timestamp
                     glucoseValues += sgv
-                } else
+                } else {
                     aapsLogger.debug(LTag.NSCLIENT, "Ignoring record with wrong timestamp: $sgv")
+                }
             }
         }
         if (glucoseValues.isNotEmpty()) {

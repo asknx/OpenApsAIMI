@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="error_mustbe4hexadidits">Должно быть 4 из этих символов: ABCDEF0123456789</string>
+    <string name="treatments">Терапия</string>
+    <string name="treatments_history">История терапии</string>
+    <string name="treatments_desc">Просмотр и удаление записей инсулина, SMB и углеводов</string>
+    <string name="manage">Управление</string>
+    <string name="search">Поиск</string>
     <!--    General-->
     <string name="count_selected">Выбрано: %1$d</string>
     <string name="refresh">Обновить</string>

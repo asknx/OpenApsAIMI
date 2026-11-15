@@ -53,7 +53,7 @@ enum class SourceSensor(val text: String, val aliases: Set<String> = emptySet())
     // One sensor sold under two brands. AAPS already treats them as one: the broadcasts from both
     // apps go to the same worker, which has always stored this entry, and the plugin calls itself
     // "Syai/Ottai App". `Ottai` is only ever read, and is what Juggluco sends.
-    SYAI_TAG("Syai Tag", setOf("Ottai")),
+    SYAI_TAG("Syai Tag", setOf("Ottai", "Syai", "SyaiTag")),
     INSTARA("Instara"),
     RANDOM("Random"),
     UNKNOWN("Unknown"),

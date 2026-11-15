@@ -61,8 +61,7 @@ The repository is public for transparency and to share architectural, algorithmi
   * Support for protocol 4.12, fix for IOB double-counting during bolus delivery, and resolution of bolus delivery deadlocks (`e930eb03a2`, `f49f8b79be`, `9f9249d2a7`, `f83d3d2a65`).
   * Preservation of `BluetoothWakeLock` and `DozeMonitor` for uninterrupted overnight pump communication.
 * **Reactive 1-Minute xDrip+ Polling (`XdripSourcePlugin`):**
-  * Background coroutine poller querying `http://127.0.0.1:17580/sgv.json?count=1` every 60 seconds with reactive lifecycle management via `preferences.observe(BooleanKey.OApsxdriponeminute)` and two-way timestamp validation (rejecting stale readings `>10 min` old and future readings `>60s` ahead) without triggering calibration intents (`31fe5e258c`, `fd39deb8eb`).
+  * Background coroutine poller querying `http://127.0.0.1:17580/sgv.json?count=1` with reactive lifecycle management via `preferences.observe(BooleanKey.OApsxdriponeminute)` and two-way timestamp validation (rejecting stale readings `>10 min` old and future readings `>60s` ahead) without triggering calibration intents (`31fe5e258c`, `fd39deb8eb`).
 * **System Safeguards and Full State Backup (`5631f8c4a2`, `294286b575`, `78f3c0d393`):**
-  * 7-tap developer unlock in `AboutDialog` and `UserManualActivity` exposing the AIMI Engineering Bypass toggle in the navigation drawer and settings, with automatic state preservation during upgrades.
-  * Prevention of mutual recursion between `PreferencesImpl` and `ConfigImpl.isEngineeringMode()`, and alignment of `DummyService` `foregroundServiceType="specialUse|dataSync"` on Android 14/15 (API 34/35).
+  * Prevention of mutual recursion between `PreferencesImpl` and `ConfigImpl.isEngineeringMode()`, preservation of configuration state across upgrades, and alignment of `DummyService` `foregroundServiceType="specialUse|dataSync"` on Android 14/15 (API 34/35).
   * Complete exportability of all AIMI, Apex, Garmin, and profile preference prefixes (`ExportableKeys.isCustomExportableKeyPrefix`) alongside automated cloud backup routing (`CloudConstants.CLOUD_PATH_AIMI`).

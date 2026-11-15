@@ -40,4 +40,10 @@ object ApsMemberInjectors {
     @IntoMap
     @ClassKey(ContextActivity::class)
     fun bindContextActivity(injector: MembersInjector<ContextActivity>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(app.aaps.plugins.aps.openAPSAIMI.advisor.AimiModelPickerActivity::class)
+    fun bindAimiModelPickerActivity(injector: MembersInjector<app.aaps.plugins.aps.openAPSAIMI.advisor.AimiModelPickerActivity>): MembersInjector<*> = injector
 }

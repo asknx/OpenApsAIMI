@@ -24,7 +24,7 @@ class FoodRecognitionService(
         
         return when {
             providerName == "OPENAI" -> OpenAIVisionProvider(
-                modelName = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "gpt-4o" }
+                modelName = preferences.get(StringKey.AimiAdvisorModelOpenAI).ifBlank { "gpt-4o" }
             )
             providerName.startsWith("GEMINI") -> GeminiVisionProvider(context, preferences, oauthManager)
             providerName == "DEEPSEEK" -> DeepSeekVisionProvider()
@@ -32,26 +32,27 @@ class FoodRecognitionService(
             providerName == "GLM" -> GlmVisionProvider()
             providerName == "GROK" -> OpenAIVisionProvider(
                 endpointUrl = "https://api.x.ai/v1/chat/completions",
-                modelName = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "grok-vision-beta" },
+                modelName = preferences.get(StringKey.AimiAdvisorModelGrok).ifBlank { "grok-vision-beta" },
                 displayName = "xAI Grok Vision",
                 providerId = "GROK"
             )
             providerName == "OPENROUTER" -> OpenAIVisionProvider(
                 endpointUrl = "https://openrouter.ai/api/v1/chat/completions",
-                modelName = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "google/gemini-flash-1.5" },
+                modelName = preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "google/gemini-2.5-flash" },
                 displayName = "OpenRouter Vision",
                 providerId = "OPENROUTER"
             )
             providerName == "GROQ" -> OpenAIVisionProvider(
                 endpointUrl = "https://api.groq.com/openai/v1/chat/completions",
-                modelName = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "llama-3.2-11b-vision-preview" },
+                modelName = preferences.get(StringKey.AimiAdvisorModelGroq).ifBlank { "llama-3.3-70b-versatile" },
                 displayName = "Groq Vision",
                 providerId = "GROQ"
             )
             providerName == "CUSTOM" -> {
                 val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl)
                 val url = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService.normalizeEndpointUrl(rawUrl)
-                val model = preferences.get(StringKey.AimiAdvisorModel).ifBlank { "custom-model" }
+                val manual = preferences.get(StringKey.AimiAdvisorModelCustomManual).trim()
+                val model = if (manual.isNotBlank()) manual else preferences.get(StringKey.AimiAdvisorModelCustom).ifBlank { "custom-model" }
                 OpenAIVisionProvider(
                     endpointUrl = url,
                     modelName = model,

@@ -21,7 +21,8 @@ enum class IntentKey(
     override val title: TextRef,
     override val summary: TextRef? = null,
     override val preferenceType: PreferenceType = PreferenceType.CLICK,
-    override val exportable: Boolean = false
+    override val exportable: Boolean = false,
+    override val visibility: app.aaps.core.keys.interfaces.ElementVisibility = app.aaps.core.keys.interfaces.ElementVisibility.ALWAYS
 ) : IntentPreferenceKey {
 
     InsulinConcentrationRequest("InsulinConcentrationRequest", title = TextRef.Literal("InsulinConcentrationRequest")),
@@ -30,7 +31,14 @@ enum class IntentKey(
     OApsAIMIContext("OApsAIMIContext", title = TextRef.Literal("Контекст AIMI")),
     OApsAIMIEmergencySos("OApsAIMIEmergencySos", title = TextRef.Literal("Разрешения SOS (SMS / Звонок)"), summary = TextRef.Literal("Нажмите для предоставления разрешений SMS и звонков")),
     OApsAIMIHealthConnect("OApsAIMIHealthConnect", title = TextRef.Literal("Разрешения Health Connect"), summary = TextRef.Literal("Нажмите для авторизации доступа к шагам, сну и пульсу")),
-    AimiFetchModels("AimiFetchModels", title = TextRef.Literal("Выбрать модель из каталога"), summary = TextRef.Literal("Загрузить доступные модели провайдера онлайн")),
+    AimiFetchModels(
+        key = "AimiFetchModels",
+        title = TextRef.Literal("Загрузить доступные модели онлайн"),
+        summary = TextRef.Literal("Запросить список моделей с кастомного сервера"),
+        visibility = app.aaps.core.keys.interfaces.ElementVisibility {
+            it.preferences.get(StringKey.AimiAdvisorProvider) == "CUSTOM"
+        }
+    ),
     AimiGoogleLogin("AimiGoogleLogin", title = TextRef.Literal("Войти через Google (Gemini)"), summary = TextRef.Literal("Авторизация через OAuth аккаунт")),
     AimiGoogleLogout("AimiGoogleLogout", title = TextRef.Literal("Выйти из Google (Gemini)"), summary = TextRef.Literal("Сбросить авторизационный токен")),
     AimiLogExport("AimiLogExport", title = TextRef.Literal("Экспорт диагностических логов AIMI"), summary = TextRef.Literal("Сохранить логи в /Documents/AAPS/logs/")),

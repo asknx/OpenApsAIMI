@@ -77,17 +77,17 @@ fun AimiOverviewCard(
 
     val badgeInfo: Triple<Color, Color, String> = when {
         auditorStatus.isActive() ->
-            Triple(Color(0xFF0F392B), Color(0xFF4ADE80), "Auditor: OK")
+            Triple(Color(0xFF0F392B), Color(0xFF4ADE80), "Аудитор: ОК")
         auditorStatus.isSkipped() ->
-            Triple(Color(0xFF1E3A8A), Color(0xFF60A5FA), "Auditor: SKIP")
+            Triple(Color(0xFF1E3A8A), Color(0xFF60A5FA), "Аудитор: ПРОПУСК")
         auditorStatus == AuditorStatusTracker.Status.STALE ->
-            Triple(Color(0xFF451A03), Color(0xFFFBBF24), "Auditor: STALE")
+            Triple(Color(0xFF451A03), Color(0xFFFBBF24), "Аудитор: ОЖИДАНИЕ")
         auditorStatus.isError() ->
-            Triple(Color(0xFF4C0519), Color(0xFFF87171), "Auditor: ERR")
+            Triple(Color(0xFF4C0519), Color(0xFFF87171), "Аудитор: ОШИБКА")
         auditorStatus.isOffline() ->
-            Triple(Color(0xFF27272A), Color(0xFFA1A1AA), "Auditor: OFFLINE")
+            Triple(Color(0xFF27272A), Color(0xFFA1A1AA), "Аудитор: ОФЛАЙН")
         else ->
-            Triple(Color(0xFF27272A), Color(0xFFA1A1AA), "Auditor: OFF")
+            Triple(Color(0xFF27272A), Color(0xFFA1A1AA), "Аудитор: ВЫКЛ")
     }
     val (badgeBg, badgeFg, badgeText) = badgeInfo
 
@@ -96,7 +96,16 @@ fun AimiOverviewCard(
     val stepsStr = if (currentSnapshot != null && currentSnapshot.stepsLast15m > 0) "${currentSnapshot.stepsLast15m}" else "--"
     val hrStr = if (currentSnapshot != null && currentSnapshot.hrNow > 0) "${currentSnapshot.hrNow.toInt()}" else "--"
     val hrvStr = if (currentSnapshot != null && currentSnapshot.hrvRmssd > 0) "${currentSnapshot.hrvRmssd.toInt()}" else "--"
-    val stateStr = currentContext?.state?.name?.replace("_", " ")?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Normal"
+    val stateStr = when (currentContext?.state?.name) {
+        "SEDENTARY" -> "Покой"
+        "LIGHT_ACTIVITY" -> "Лёгкая акт."
+        "MODERATE_ACTIVITY" -> "Умеренная"
+        "INTENSE_ACTIVITY" -> "Нагрузка"
+        "SLEEP" -> "Сон"
+        "STRESS" -> "Стресс"
+        null -> "Оптимально"
+        else -> currentContext?.state?.name?.replace("_", " ")?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Оптимально"
+    }
 
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
@@ -159,7 +168,7 @@ fun AimiOverviewCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Meal Advisor",
+                        text = "Анализ еды",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -183,14 +192,14 @@ fun AimiOverviewCard(
             ) {
                 PhysioMetricItem(
                     icon = Icons.Default.DirectionsWalk,
-                    label = "Steps",
+                    label = "Шаги",
                     value = stepsStr,
                     modifier = Modifier.weight(1f)
                 )
                 PhysioMetricItem(
                     icon = Icons.Default.Favorite,
-                    label = "HR",
-                    value = if (hrStr != "--") "$hrStr bpm" else "--",
+                    label = "Пульс",
+                    value = if (hrStr != "--") "$hrStr уд/м" else "--",
                     tint = Color(0xFFF87171),
                     modifier = Modifier.weight(1f)
                 )
@@ -203,7 +212,7 @@ fun AimiOverviewCard(
                 )
                 PhysioMetricItem(
                     icon = Icons.Default.FitnessCenter,
-                    label = "Context",
+                    label = "Контекст",
                     value = stateStr,
                     tint = Color(0xFF4ADE80),
                     modifier = Modifier.weight(1.2f)

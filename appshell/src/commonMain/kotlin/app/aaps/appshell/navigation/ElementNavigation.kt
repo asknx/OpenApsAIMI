@@ -175,6 +175,11 @@ class ElementNavigator(
 
             ElementType.PUMP                    -> openPlugin(activePlugin.activePumpInternal as PluginBase, navController, activePlugin)
 
+            ElementType.LOOP                    -> {
+                val loopPlugin = activePlugin.getPluginsList().find { it::class.simpleName == "LoopPlugin" }
+                if (loopPlugin != null) openPlugin(loopPlugin, navController, activePlugin)
+            }
+
             // Non-searchable types - listed explicitly so the compiler catches new enum values
             ElementType.QUICK_WIZARD,
             ElementType.SCENE,
@@ -182,7 +187,6 @@ class ElementNavigator(
             ElementType.COB,
             ElementType.SENSITIVITY,
             ElementType.USER_ENTRY,
-            ElementType.LOOP,
             ElementType.AAPS                    -> {
             }
         }

@@ -70,5 +70,7 @@ object XdripSourceResolver {
         "xdrip-librereceiver" to SourceSensor.LIBRE_2,
         "xdrip-limitter" to SourceSensor.LIBRE_1,
         "xdrip-librewifi" to SourceSensor.LIBRE_1,
+        "xdrip-syaitag" to SourceSensor.SYAI_TAG,
+        "xdrip-syai" to SourceSensor.SYAI_TAG,
     )
 }

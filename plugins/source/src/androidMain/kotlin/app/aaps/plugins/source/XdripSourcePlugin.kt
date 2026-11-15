@@ -148,7 +148,7 @@ class XdripSourcePlugin(
                 } catch (e: Exception) {
                     aapsLogger.debug(LTag.BGSOURCE, "xDrip 1-min poller check failed: ${e.message}")
                 }
-                delay(60_000L)
+                delay(15_000L)
             }
         }
     }
@@ -274,6 +274,14 @@ class XdripSourcePlugin(
 
         private suspend fun processBundle(bundle: Bundle) {
             val currentTimestamp = bundle.getLong(Intents.EXTRA_TIMESTAMP, 0)
+            if (currentTimestamp <= 0) {
+                aapsLogger.warn(LTag.BGSOURCE, "Skipping xDrip bundle: missing or invalid timestamp")
+                return
+            }
+            if (currentTimestamp <= lastDataTimestamp) {
+                aapsLogger.debug(LTag.BGSOURCE, "Ignoring duplicate or older xDrip data: $currentTimestamp <= $lastDataTimestamp")
+                return
+            }
             if (!preferences.get(BooleanKey.OApsxdriponeminute) && currentTimestamp - lastDataTimestamp < 240000) {
                 aapsLogger.debug(LTag.BGSOURCE, "Ignoring data, not enough time passed since last processing")
                 return

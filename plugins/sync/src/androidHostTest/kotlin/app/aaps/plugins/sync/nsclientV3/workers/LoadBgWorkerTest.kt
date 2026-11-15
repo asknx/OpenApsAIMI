@@ -76,7 +76,7 @@ internal class LoadBgWorkerTest : TestBaseWithProfile() {
                     LoadBgWorker(
                         appContext, workerParameters, aapsLogger, fabricPrivacy,
                         LoadBgRunner(aapsLogger, preferences, dateUtil,
-                        nsClientV3Plugin, nsClientSource, nsIncomingDataProcessor, storeDataForDb, nsClientRepository)
+                        nsClientV3Plugin, nsClientSource, nsIncomingDataProcessor, storeDataForDb, nsClientRepository, persistenceLayer)
                     )
             })
             .build()

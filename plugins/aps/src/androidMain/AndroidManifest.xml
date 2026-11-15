@@ -47,6 +47,12 @@
             android:exported="false"
             android:theme="@style/AppTheme"
             android:label="AIMI Emergency SOS" />
+
+        <activity
+            android:name=".openAPSAIMI.advisor.AimiModelPickerActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme"
+            android:label="Каталог моделей AI" />
     </application>
 
 </manifest>

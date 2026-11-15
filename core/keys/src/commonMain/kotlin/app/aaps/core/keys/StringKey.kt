@@ -352,7 +352,135 @@ enum class StringKey(
         key = "aimi_advisor_model",
         defaultValue = "",
         title = TextRef.Literal("Модель AI"),
-        summary = TextRef.Literal("Активная модель нейросети (по умолчанию или выбор через каталог)")
+        summary = TextRef.Literal("Активная модель нейросети"),
+        visibility = ElementVisibility { false }
+    ),
+    AimiAdvisorModelGemini(
+        key = "aimi_advisor_model_gemini",
+        defaultValue = "gemini-3.8-flash",
+        title = TextRef.Literal("Модель AI"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "gemini-3.8-flash" to "Gemini 3.8 Flash (Рекомендуется)",
+            "gemini-3.8-flash-lite" to "Gemini 3.8 Flash Lite (Быстрая)",
+            "gemini-3.1-pro" to "Gemini 3.1 Pro (Рассуждения)",
+            "gemini-2.5-flash" to "Gemini 2.5 Flash",
+            "gemini-2.5-pro" to "Gemini 2.5 Pro"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GEMINI" }
+    ),
+    AimiAdvisorModelOpenAI(
+        key = "aimi_advisor_model_openai",
+        defaultValue = "gpt-5.4",
+        title = TextRef.Literal("Модель AI"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "gpt-5.4" to "GPT-5.4 (Рекомендуется)",
+            "gpt-5.2" to "GPT-5.2",
+            "gpt-4o" to "GPT-4o (Мультимодальная)",
+            "gpt-4o-mini" to "GPT-4o Mini (Быстрая)",
+            "o3-mini" to "o3-mini (Рассуждения)",
+            "o1" to "o1 (Глубокие рассуждения)"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "OPENAI" }
+    ),
+    AimiAdvisorModelDeepSeek(
+        key = "aimi_advisor_model_deepseek",
+        defaultValue = "deepseek-chat",
+        title = TextRef.Literal("Модель AI"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "deepseek-chat" to "DeepSeek Chat (V3)",
+            "deepseek-reasoner" to "DeepSeek Reasoner (R1)"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "DEEPSEEK" }
+    ),
+    AimiAdvisorModelClaude(
+        key = "aimi_advisor_model_claude",
+        defaultValue = "claude-sonnet-5",
+        title = TextRef.Literal("Модель AI"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "claude-sonnet-5" to "Claude Sonnet 5 (Рекомендуется)",
+            "claude-3-7-sonnet" to "Claude 3.7 Sonnet (Гибрид)",
+            "claude-3-5-sonnet" to "Claude 3.5 Sonnet",
+            "claude-3-5-haiku" to "Claude 3.5 Haiku (Быстрая)"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "CLAUDE" }
+    ),
+    AimiAdvisorModelGlm(
+        key = "aimi_advisor_model_glm",
+        defaultValue = "glm-5.2",
+        title = TextRef.Literal("Модель AI"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "glm-5.2" to "GLM-5.2 (Рекомендуется)",
+            "glm-5" to "GLM-5 Flagship",
+            "glm-4-plus" to "GLM-4 Plus",
+            "glm-4-flash" to "GLM-4 Flash (Быстрая)"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GLM" }
+    ),
+    AimiAdvisorModelGrok(
+        key = "aimi_advisor_model_grok",
+        defaultValue = "grok-4",
+        title = TextRef.Literal("Модель AI"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "grok-4" to "Grok 4 (Рекомендуется)",
+            "grok-3" to "Grok 3 (Рассуждения)",
+            "grok-2" to "Grok 2",
+            "grok-vision-beta" to "Grok Vision Beta"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GROK" }
+    ),
+    AimiAdvisorModelOpenRouter(
+        key = "aimi_advisor_model_openrouter",
+        defaultValue = "meta-llama/llama-3.3-70b-instruct",
+        title = TextRef.Literal("Модель AI"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "meta-llama/llama-3.3-70b-instruct" to "Llama 3.3 70B Instruct",
+            "anthropic/claude-3.5-sonnet" to "Claude 3.5 Sonnet",
+            "deepseek/deepseek-chat" to "DeepSeek Chat V3",
+            "google/gemini-2.5-flash" to "Gemini 2.5 Flash",
+            "openai/gpt-4o" to "GPT-4o"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "OPENROUTER" }
+    ),
+    AimiAdvisorModelGroq(
+        key = "aimi_advisor_model_groq",
+        defaultValue = "llama-3.3-70b-versatile",
+        title = TextRef.Literal("Модель AI"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "llama-3.3-70b-versatile" to "Llama 3.3 70B Versatile",
+            "llama-3.1-8b-instant" to "Llama 3.1 8B Instant (Быстрая)",
+            "mixtral-8x7b-32768" to "Mixtral 8x7B"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GROQ" }
+    ),
+    AimiAdvisorModelCustom(
+        key = "aimi_advisor_model_custom",
+        defaultValue = "custom-model",
+        title = TextRef.Literal("Модель AI (из списка)"),
+        preferenceType = PreferenceType.LIST,
+        entriesLiterals = mapOf(
+            "custom-model" to "custom-model (По умолчанию)",
+            "gpt-4o" to "gpt-4o",
+            "llama-3.3-70b" to "llama-3.3-70b",
+            "qwen-2.5-72b" to "qwen-2.5-72b",
+            "deepseek-r1" to "deepseek-r1"
+        ),
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "CUSTOM" }
+    ),
+    AimiAdvisorModelCustomManual(
+        key = "aimi_advisor_model_custom_manual",
+        defaultValue = "",
+        title = TextRef.Literal("Модель AI (вручную)"),
+        summary = TextRef.Literal("Ввести произвольное имя модели для кастомного сервера (если заполнено, используется вместо списка)"),
+        preferenceType = PreferenceType.TEXT_FIELD,
+        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "CUSTOM" }
     ),
     AimiAdvisorProvider(
         key = "aimi_advisor_provider",

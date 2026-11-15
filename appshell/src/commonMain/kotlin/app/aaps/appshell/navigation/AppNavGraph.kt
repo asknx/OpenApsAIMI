@@ -700,7 +700,9 @@ fun NavGraphBuilder.appNavGraph(
     composable(AppRoute.PluginPreferences.route) { backStackEntry ->
         val pluginKey = backStackEntry.stringArg("pluginKey")
         val plugin = activePlugin.getPluginsList().find {
-            it::class.simpleName == pluginKey
+            it::class.simpleName == pluginKey ||
+            it.name == pluginKey ||
+            (it.getPreferenceScreenContent() as? PreferenceSubScreenDef)?.key == pluginKey
         }
         if (plugin != null) {
             PluginPreferencesScreen(
