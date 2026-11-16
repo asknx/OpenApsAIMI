@@ -41,15 +41,15 @@ class AiCoachingService @Inject constructor() {
 
     companion object {
         private const val OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-        private const val OPENAI_MODEL = "gpt-4o-mini" // Efficient model for coaching logic
+        private const val OPENAI_MODEL = "gpt-6.1-sol"
         
         // DeepSeek Chat (OpenAI-compatible)
         private const val DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
-        private const val DEEPSEEK_MODEL = "deepseek-chat"
+        private const val DEEPSEEK_MODEL = "deepseek-v4-pro"
         
         // Claude Haiku (Fast & Cheap)
         private const val CLAUDE_URL = "https://api.anthropic.com/v1/messages"
-        private const val CLAUDE_MODEL = "claude-3-haiku-20240307"
+        private const val CLAUDE_MODEL = "claude-haiku-5-5"
 
         fun normalizeEndpointUrl(rawUrl: String): String {
             val trimmed = rawUrl.trim().trimEnd('/')
@@ -99,9 +99,9 @@ class AiCoachingService @Inject constructor() {
                 Provider.CLAUDE -> callClaude(apiKey, prompt, customModel)
                 Provider.OPENAI -> callOpenAICompatible(OPENAI_URL, apiKey, customModel?.ifBlank { null } ?: OPENAI_MODEL, prompt, "OpenAI")
                 Provider.DEEPSEEK -> callOpenAICompatible(DEEPSEEK_URL, apiKey, customModel?.ifBlank { null } ?: DEEPSEEK_MODEL, prompt, "DeepSeek")
-                Provider.GLM -> callOpenAICompatible("https://open.bigmodel.cn/api/paas/v4/chat/completions", apiKey, customModel?.ifBlank { null } ?: "glm-4-flash", prompt, "GLM")
-                Provider.GROK -> callOpenAICompatible("https://api.x.ai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "grok-beta", prompt, "Grok")
-                Provider.OPENROUTER -> callOpenAICompatible("https://openrouter.ai/api/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "anthropic/claude-3.5-haiku", prompt, "OpenRouter", mapOf("HTTP-Referer" to "https://androidaps.org", "X-Title" to "AndroidAPS AIMI"))
+                Provider.GLM -> callOpenAICompatible("https://open.bigmodel.cn/api/paas/v4/chat/completions", apiKey, customModel?.ifBlank { null } ?: "glm-5.3-flash", prompt, "GLM")
+                Provider.GROK -> callOpenAICompatible("https://api.x.ai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "grok-4.7", prompt, "Grok")
+                Provider.OPENROUTER -> callOpenAICompatible("https://openrouter.ai/api/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "anthropic/claude-sonnet-4-6", prompt, "OpenRouter", mapOf("HTTP-Referer" to "https://androidaps.org", "X-Title" to "AndroidAPS AIMI"))
                 Provider.GROQ -> callOpenAICompatible("https://api.groq.com/openai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "llama-3.3-70b-versatile", prompt, "Groq")
                 Provider.CUSTOM -> {
                     val url = normalizeEndpointUrl(customUrl ?: "")
@@ -145,9 +145,9 @@ class AiCoachingService @Inject constructor() {
                 Provider.CLAUDE -> callClaude(apiKey, prompt, customModel)
                 Provider.OPENAI -> callOpenAICompatible(OPENAI_URL, apiKey, customModel?.ifBlank { null } ?: OPENAI_MODEL, prompt, "OpenAI")
                 Provider.DEEPSEEK -> callOpenAICompatible(DEEPSEEK_URL, apiKey, customModel?.ifBlank { null } ?: DEEPSEEK_MODEL, prompt, "DeepSeek")
-                Provider.GLM -> callOpenAICompatible("https://open.bigmodel.cn/api/paas/v4/chat/completions", apiKey, customModel?.ifBlank { null } ?: "glm-4-flash", prompt, "GLM")
-                Provider.GROK -> callOpenAICompatible("https://api.x.ai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "grok-beta", prompt, "Grok")
-                Provider.OPENROUTER -> callOpenAICompatible("https://openrouter.ai/api/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "anthropic/claude-3.5-haiku", prompt, "OpenRouter", mapOf("HTTP-Referer" to "https://androidaps.org", "X-Title" to "AndroidAPS AIMI"))
+                Provider.GLM -> callOpenAICompatible("https://open.bigmodel.cn/api/paas/v4/chat/completions", apiKey, customModel?.ifBlank { null } ?: "glm-5.3-flash", prompt, "GLM")
+                Provider.GROK -> callOpenAICompatible("https://api.x.ai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "grok-4.7", prompt, "Grok")
+                Provider.OPENROUTER -> callOpenAICompatible("https://openrouter.ai/api/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "anthropic/claude-sonnet-4-6", prompt, "OpenRouter", mapOf("HTTP-Referer" to "https://androidaps.org", "X-Title" to "AndroidAPS AIMI"))
                 Provider.GROQ -> callOpenAICompatible("https://api.groq.com/openai/v1/chat/completions", apiKey, customModel?.ifBlank { null } ?: "llama-3.3-70b-versatile", prompt, "Groq")
                 Provider.CUSTOM -> {
                     val url = normalizeEndpointUrl(customUrl ?: "")
@@ -216,7 +216,7 @@ class AiCoachingService @Inject constructor() {
         customModel: String? = null
     ): String {
         val resolver = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiModelResolver(context)
-        val defaultModel = customModel?.ifBlank { null } ?: "gemini-2.0-flash"
+        val defaultModel = customModel?.ifBlank { null } ?: "gemini-3.8-flash"
         val primaryModel = resolver.resolveGenerateContentModel(apiKey, oauthToken, defaultModel)
         
         try {
@@ -224,7 +224,7 @@ class AiCoachingService @Inject constructor() {
         } catch (e: Exception) {
             val msg = e.message?.lowercase() ?: ""
             if (msg.contains("429") || msg.contains("resource_exhausted") || msg.contains("quota")) {
-                val fallbackModel = "gemini-1.5-flash"
+                val fallbackModel = "gemini-3.5-flash-lite"
                 return executeGeminiRequest(resolver, apiKey, oauthToken, prompt, fallbackModel)
             }
             throw e

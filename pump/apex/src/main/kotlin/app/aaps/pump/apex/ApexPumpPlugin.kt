@@ -36,6 +36,7 @@ import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.rx.events.EventAppExit
+import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.utils.DateUtil
 import kotlinx.coroutines.CoroutineStart
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
@@ -253,8 +254,9 @@ class ApexPumpPlugin @Inject constructor(
     override suspend fun getPumpStatus(reason: String) {
         if (!isInitialized() || !isConnected()) return
         aapsLogger.debug(LTag.PUMP, "Requested pump status cause of $reason")
-        if (!service!!.getStatus("ApexPumpPlugin-getPumpStatus")) return
+        if (!service!!.getStatus("ApexPumpPlugin-getPumpStatus", force = true)) return
         updateStatusFlows()
+        rxBus.send(EventPumpStatusChanged(EventPumpStatusChanged.Status.CONNECTED))
     }
 
     override suspend fun setNewBasalProfile(profile: PumpProfile): PumpEnactResult {
@@ -360,6 +362,11 @@ class ApexPumpPlugin @Inject constructor(
 
         val bolus = pump.inProgressBolus
         val successful = bolus != null && !bolus.failed
+        if (successful) {
+            service?.getStatus("ApexPumpPlugin-deliverTreatment", force = true)
+            updateStatusFlows()
+            rxBus.send(EventPumpStatusChanged(EventPumpStatusChanged.Status.CONNECTED))
+        }
         return pumpEnactResult.apply {
             success = successful
             if (successful) {

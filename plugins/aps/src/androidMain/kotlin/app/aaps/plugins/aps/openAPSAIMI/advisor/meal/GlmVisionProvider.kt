@@ -11,7 +11,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class GlmVisionProvider : AIVisionProvider {
-    override val displayName = "GLM (Zhipu AI GLM-4)"
+    override val displayName = "GLM (Zhipu AI)"
     override val providerId = "GLM"
     
     override suspend fun estimateFromImage(bitmap: Bitmap, userDescription: String, apiKey: String, glucoseContext: String?): EstimationResult = withContext(Dispatchers.IO) {

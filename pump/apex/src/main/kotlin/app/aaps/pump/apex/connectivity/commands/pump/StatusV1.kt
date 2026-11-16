@@ -119,7 +119,7 @@ class StatusV1(
     val alarms get() = buildList {
         for (i in 0..<9) {
             val raw = getUnsignedShort(command.objectData, 58 + 2 * i)
-            if (raw != 0) add(Alarm.entries.find { it.raw == raw } ?: Alarm.Unknown)
+            if (raw != 0) add(Alarm.fromRaw(raw))
         }
     }
 

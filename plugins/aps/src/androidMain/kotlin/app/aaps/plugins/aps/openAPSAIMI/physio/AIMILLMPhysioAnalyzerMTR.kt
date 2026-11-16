@@ -61,8 +61,8 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
                             p.contains("claude") -> analyzeWithClaude(features, baseline, context, apiKey)
                             p.contains("deepseek") -> analyzeWithDeepSeek(features, baseline, context, apiKey)
                             p.contains("glm") -> analyzeWithGlm(features, baseline, context, apiKey)
-                            p.contains("grok") -> analyzeWithOpenAICompatible(features, baseline, context, apiKey, "https://api.x.ai/v1/chat/completions", sp.getString(StringKey.AimiAdvisorModel.key, "grok-beta").ifBlank { "grok-beta" })
-                            p.contains("openrouter") -> analyzeWithOpenAICompatible(features, baseline, context, apiKey, "https://openrouter.ai/api/v1/chat/completions", sp.getString(StringKey.AimiAdvisorModel.key, "anthropic/claude-3.5-haiku").ifBlank { "anthropic/claude-3.5-haiku" })
+                            p.contains("grok") -> analyzeWithOpenAICompatible(features, baseline, context, apiKey, "https://api.x.ai/v1/chat/completions", sp.getString(StringKey.AimiAdvisorModel.key, "grok-4.7").ifBlank { "grok-4.7" })
+                            p.contains("openrouter") -> analyzeWithOpenAICompatible(features, baseline, context, apiKey, "https://openrouter.ai/api/v1/chat/completions", sp.getString(StringKey.AimiAdvisorModel.key, "anthropic/claude-sonnet-4-6").ifBlank { "anthropic/claude-sonnet-4-6" })
                             p.contains("groq") -> analyzeWithOpenAICompatible(features, baseline, context, apiKey, "https://api.groq.com/openai/v1/chat/completions", sp.getString(StringKey.AimiAdvisorModel.key, "llama-3.3-70b-versatile").ifBlank { "llama-3.3-70b-versatile" })
                             p.contains("custom") -> {
                                 val url = app.aaps.plugins.aps.openAPSAIMI.advisor.auditor.AuditorAIService.normalizeEndpointUrl(sp.getString(StringKey.AimiAdvisorCustomUrl.key, ""))
@@ -137,7 +137,7 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
     private fun analyzeWithGPT(features: PhysioFeaturesMTR, baseline: PhysioBaselineMTR, context: PhysioContextMTR, apiKey: String): String {
         val prompt = buildPrompt(features, baseline, context)
         val requestBody = JSONObject().apply {
-            put("model", "gpt-4")
+            put("model", "gpt-6.1-sol")
             put("messages", org.json.JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "system")
@@ -158,7 +158,7 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
     private fun analyzeWithClaude(features: PhysioFeaturesMTR, baseline: PhysioBaselineMTR, context: PhysioContextMTR, apiKey: String): String {
         val prompt = buildPrompt(features, baseline, context)
         val requestBody = JSONObject().apply {
-            put("model", "claude-3-5-sonnet-20241022")
+            put("model", "claude-sonnet-4-6")
             put("max_tokens", 150)
             put("messages", org.json.JSONArray().apply {
                 put(JSONObject().apply { put("role", "user"); put("content", prompt) })
@@ -171,7 +171,7 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
     private fun analyzeWithDeepSeek(features: PhysioFeaturesMTR, baseline: PhysioBaselineMTR, context: PhysioContextMTR, apiKey: String): String {
         val prompt = buildPrompt(features, baseline, context)
         val requestBody = JSONObject().apply {
-            put("model", "deepseek-chat")
+            put("model", "deepseek-v4-pro")
             put("messages", org.json.JSONArray().apply {
                 put(JSONObject().apply { put("role", "system"); put("content", "Expert physiologist. Brief insights.") })
                 put(JSONObject().apply { put("role", "user"); put("content", prompt) })
@@ -224,7 +224,7 @@ class AIMILLMPhysioAnalyzerMTR @Inject constructor(
     private fun analyzeWithGlm(features: PhysioFeaturesMTR, baseline: PhysioBaselineMTR, context: PhysioContextMTR, apiKey: String): String {
         val prompt = buildPrompt(features, baseline, context)
         val requestBody = JSONObject().apply {
-            put("model", "glm-4-flash")
+            put("model", "glm-5.3-flash")
             put("messages", org.json.JSONArray().apply {
                 put(JSONObject().apply { put("role", "system"); put("content", "Expert physiologist. Brief insights.") })
                 put(JSONObject().apply { put("role", "user"); put("content", prompt) })

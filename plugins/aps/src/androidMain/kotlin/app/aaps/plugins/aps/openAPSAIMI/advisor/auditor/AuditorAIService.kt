@@ -277,13 +277,13 @@ class AuditorAIService @Inject constructor(
 
     fun getActiveModel(provider: Provider = getProvider()): String {
         val model = when (provider) {
-            Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO -> preferences.get(StringKey.AimiAdvisorModelGemini).ifBlank { "gemini-2.0-flash" }
-            Provider.OPENAI -> preferences.get(StringKey.AimiAdvisorModelOpenAI).ifBlank { "gpt-4o" }
-            Provider.DEEPSEEK -> preferences.get(StringKey.AimiAdvisorModelDeepSeek).ifBlank { "deepseek-chat" }
-            Provider.CLAUDE -> preferences.get(StringKey.AimiAdvisorModelClaude).ifBlank { "claude-3-5-sonnet-20241022" }
-            Provider.GLM -> preferences.get(StringKey.AimiAdvisorModelGlm).ifBlank { "glm-4-plus" }
-            Provider.GROK -> preferences.get(StringKey.AimiAdvisorModelGrok).ifBlank { "grok-beta" }
-            Provider.OPENROUTER -> preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "meta-llama/llama-3.3-70b-instruct" }
+            Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO -> preferences.get(StringKey.AimiAdvisorModelGemini).ifBlank { "gemini-3.8-flash" }
+            Provider.OPENAI -> preferences.get(StringKey.AimiAdvisorModelOpenAI).ifBlank { "gpt-6.1-sol" }
+            Provider.DEEPSEEK -> preferences.get(StringKey.AimiAdvisorModelDeepSeek).ifBlank { "deepseek-v4-pro" }
+            Provider.CLAUDE -> preferences.get(StringKey.AimiAdvisorModelClaude).ifBlank { "claude-sonnet-4-6" }
+            Provider.GLM -> preferences.get(StringKey.AimiAdvisorModelGlm).ifBlank { "glm-5.3" }
+            Provider.GROK -> preferences.get(StringKey.AimiAdvisorModelGrok).ifBlank { "grok-4.7" }
+            Provider.OPENROUTER -> preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "anthropic/claude-sonnet-4-6" }
             Provider.GROQ -> preferences.get(StringKey.AimiAdvisorModelGroq).ifBlank { "llama-3.3-70b-versatile" }
             Provider.CUSTOM -> {
                 val manual = preferences.get(StringKey.AimiAdvisorModelCustomManual).trim()
@@ -366,7 +366,7 @@ class AuditorAIService @Inject constructor(
         } catch (e: Exception) {
             val msg = e.message?.lowercase() ?: ""
             if (msg.contains("429") || msg.contains("resource_exhausted") || msg.contains("quota")) {
-                val fallbackModel = if (primaryModel != "gemini-1.5-flash") "gemini-1.5-flash" else "gemini-2.0-flash"
+                val fallbackModel = if (primaryModel != "gemini-3.5-flash-lite") "gemini-3.5-flash-lite" else "gemini-3.8-flash"
                 return executeGeminiRequest(apiKey, prompt, fallbackModel, requireJson)
             }
             throw e
@@ -546,7 +546,7 @@ class AuditorAIService @Inject constructor(
                 } catch (e: Exception) {
                     android.util.Log.e("AuditorAIService", "Error fetching Gemini models: ${e.message}", e)
                 }
-                return@withContext listOf("gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro")
+                return@withContext listOf("gemini-4-argon", "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro")
             }
 
             Provider.CLAUDE -> {
@@ -579,31 +579,31 @@ class AuditorAIService @Inject constructor(
                 } catch (e: Exception) {
                     android.util.Log.e("AuditorAIService", "Error fetching Claude models: ${e.message}", e)
                 }
-                return@withContext listOf("claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229")
+                return@withContext listOf("claude-fable-5-2", "claude-opus-5-5", "claude-sonnet-5-5", "claude-sonnet-4-6", "claude-haiku-5-5")
             }
 
             Provider.DEEPSEEK -> {
                 if (apiKey.isBlank()) return@withContext emptyList()
-                return@withContext fetchOpenAiCompatibleModels("https://api.deepseek.com/models", apiKey, listOf("deepseek-chat", "deepseek-reasoner"))
+                return@withContext fetchOpenAiCompatibleModels("https://api.deepseek.com/models", apiKey, listOf("deepseek-v4-pro", "deepseek-v4.1-flash-1017", "deepseek-v4.1-flash"))
             }
 
             Provider.OPENAI -> {
                 if (apiKey.isBlank()) return@withContext emptyList()
-                return@withContext fetchOpenAiCompatibleModels("https://api.openai.com/v1/models", apiKey, listOf("gpt-4o", "gpt-4o-mini", "o1", "o3-mini"))
+                return@withContext fetchOpenAiCompatibleModels("https://api.openai.com/v1/models", apiKey, listOf("gpt-6.1-sol", "gpt-6.1-terra", "gpt-5.5-turbo"))
             }
 
             Provider.GLM -> {
                 if (apiKey.isBlank()) return@withContext emptyList()
-                return@withContext fetchOpenAiCompatibleModels("https://open.bigmodel.cn/api/paas/v4/models", apiKey, listOf("glm-4-plus", "glm-4-flash", "glm-4-air"))
+                return@withContext fetchOpenAiCompatibleModels("https://open.bigmodel.cn/api/paas/v4/models", apiKey, listOf("glm-5.3", "glm-5.3-flash", "glm-4.7-flash"))
             }
 
             Provider.GROK -> {
                 if (apiKey.isBlank()) return@withContext emptyList()
-                return@withContext fetchOpenAiCompatibleModels("https://api.x.ai/v1/models", apiKey, listOf("grok-beta", "grok-2"))
+                return@withContext fetchOpenAiCompatibleModels("https://api.x.ai/v1/models", apiKey, listOf("grok-4.7", "grok-4.6", "grok-4.3", "grok-4.20"))
             }
 
             Provider.OPENROUTER -> {
-                return@withContext fetchOpenAiCompatibleModels("https://openrouter.ai/api/v1/models", apiKey, listOf("meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-chat", "google/gemini-2.0-flash-exp:free"))
+                return@withContext fetchOpenAiCompatibleModels("https://openrouter.ai/api/v1/models", apiKey, listOf("anthropic/claude-sonnet-4-6", "google/gemini-3.8-flash", "deepseek/deepseek-v4-pro"))
             }
 
             Provider.GROQ -> {

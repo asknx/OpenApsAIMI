@@ -12,8 +12,8 @@ import java.net.URL
 
 class OpenAIVisionProvider(
     private val endpointUrl: String = "https://api.openai.com/v1/chat/completions",
-    private val modelName: String = "gpt-4o",
-    override val displayName: String = "OpenAI (GPT-4o Vision)",
+    private val modelName: String = "gpt-6.1-sol",
+    override val displayName: String = "OpenAI (GPT-6.1 Vision)",
     override val providerId: String = "OPENAI"
 ) : AIVisionProvider {
     

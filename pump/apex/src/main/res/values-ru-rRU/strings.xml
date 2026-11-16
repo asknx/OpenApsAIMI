@@ -50,7 +50,7 @@
     <string name="alarm_reservoir_empty">Резервуар пуст</string>
     <string name="alarm_hardware_fault">Аппаратная ошибка (%1$s)</string>
     <string name="alarm_check_bg">Проверьте ГК</string>
-    <string name="alarm_unknown_error_name">Неизвестная ошибка $1$s, сообщите разработчикам</string>
+    <string name="alarm_unknown_error_name">Неизвестная ошибка %1$s, сообщите разработчикам</string>
     <string name="alarm_unknown_error">Неизвестная ошибка</string>
     <string name="status_delivering">Подача %1$.3f Ед</string>
     <string name="status_delivered">Подано %1$.3f Ед успешно</string>

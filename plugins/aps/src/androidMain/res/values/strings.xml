@@ -1033,7 +1033,7 @@
     <string name="aimi_prefs_custom_key_title">Custom API Key (Optional)</string>
     <string name="aimi_prefs_custom_key_summary">API Key for custom endpoint</string>
     <string name="aimi_prefs_model_title">Model ID Override</string>
-    <string name="aimi_prefs_model_summary">Specify model ID (e.g. "google/gemini-2.0-flash-exp:free" for OpenRouter)</string>
+    <string name="aimi_prefs_model_summary">Specify model ID (e.g. "google/gemini-3.8-flash" for OpenRouter)</string>
     <string name="aimi_prefs_fetch_models_title">Fetch &amp; Test Available Models</string>
     <string name="aimi_prefs_fetch_models_summary">Fetch models from provider and test connection</string>
     <string name="aimi_adv_apply_profile">Apply Profile</string>

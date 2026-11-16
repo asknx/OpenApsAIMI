@@ -24,7 +24,7 @@ class FoodRecognitionService(
         
         return when {
             providerName == "OPENAI" -> OpenAIVisionProvider(
-                modelName = preferences.get(StringKey.AimiAdvisorModelOpenAI).ifBlank { "gpt-4o" }
+                modelName = preferences.get(StringKey.AimiAdvisorModelOpenAI).ifBlank { "gpt-6.1-sol" }
             )
             providerName.startsWith("GEMINI") -> GeminiVisionProvider(context, preferences, oauthManager)
             providerName == "DEEPSEEK" -> DeepSeekVisionProvider()
@@ -32,13 +32,13 @@ class FoodRecognitionService(
             providerName == "GLM" -> GlmVisionProvider()
             providerName == "GROK" -> OpenAIVisionProvider(
                 endpointUrl = "https://api.x.ai/v1/chat/completions",
-                modelName = preferences.get(StringKey.AimiAdvisorModelGrok).ifBlank { "grok-vision-beta" },
+                modelName = preferences.get(StringKey.AimiAdvisorModelGrok).ifBlank { "grok-4.7" },
                 displayName = "xAI Grok Vision",
                 providerId = "GROK"
             )
             providerName == "OPENROUTER" -> OpenAIVisionProvider(
                 endpointUrl = "https://openrouter.ai/api/v1/chat/completions",
-                modelName = preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "google/gemini-2.0-flash-001" },
+                modelName = preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "anthropic/claude-sonnet-4-6" },
                 displayName = "OpenRouter Vision",
                 providerId = "OPENROUTER"
             )

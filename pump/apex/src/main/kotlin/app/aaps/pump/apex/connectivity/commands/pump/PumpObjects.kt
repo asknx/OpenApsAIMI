@@ -105,5 +105,11 @@ enum class Alarm(val raw: Int) {
     BolusOrBasalDoseAbnormal(0x208),
     ConnectionAnomaly(0x209),
     Reserved2(0x20a),
-    PressureAbnormal(0x20b),
+    PressureAbnormal(0x20b);
+
+    companion object {
+        fun fromRaw(raw: Int): Alarm {
+            return entries.find { it.raw == raw || (raw in 1..0xFF && it.raw == (raw or 0x100)) } ?: Unknown
+        }
+    }
 }

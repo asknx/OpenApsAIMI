@@ -48,7 +48,7 @@ class DeepSeekVisionProvider : AIVisionProvider {
         }.toString()
         
         val jsonBody = JSONObject().apply {
-            put("model", "deepseek-chat")
+            put("model", "deepseek-v4-pro")
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "system")

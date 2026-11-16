@@ -985,21 +985,24 @@ class ApexService : MetroService(), ApexBluetoothCallback {
     }
 
     private fun onAlarmsChanged(update: ApexPump.StatusUpdate) {
-        val prev = update.previous?.alarms
+        val prev = update.previous?.alarms ?: emptyList()
+        val current = update.current.alarms
+
         // Alarm was dismissed
-        if (!prev.isNullOrEmpty() && update.current.alarms.isEmpty()) {
+        if (prev.isNotEmpty() && current.isEmpty()) {
             notificationManager.dismiss(NotificationId.PUMP_ERROR)
             notificationManager.dismiss(NotificationId.PUMP_WARNING)
         }
 
         // New alarms
-        if (prev.isNullOrEmpty() && update.current.alarms.isNotEmpty()) {
+        val newAlarms = current.filter { it !in prev }
+        if (newAlarms.isNotEmpty()) {
             var anyUrgent = false
 
-            for (alarm in update.current.alarms) {
+            for (alarm in newAlarms) {
                 val name = when (alarm) {
-                    Alarm.NoDosage, Alarm.NoDelivery -> rh.gs(R.string.alarm_occlusion)
-                    Alarm.NoReservoir -> rh.gs(R.string.alarm_reservoir_empty)
+                    Alarm.NoDelivery, Alarm.PressureAbnormal -> rh.gs(R.string.alarm_occlusion)
+                    Alarm.NoDosage, Alarm.NoReservoir -> rh.gs(R.string.alarm_reservoir_empty)
                     Alarm.DeadBattery -> rh.gs(R.string.alarm_battery_dead)
                     Alarm.LowBattery -> rh.gs(R.string.alarm_w_battery_low)
                     Alarm.LowReservoir -> rh.gs(R.string.alarm_w_reservoir_low)
@@ -1034,6 +1037,12 @@ class ApexService : MetroService(), ApexBluetoothCallback {
                 // Pump sends early heartbeat while bolusing if there's an error while bolusing.
                 aapsLogger.error(LTag.PUMP, "Bolus has failed!")
                 Thread { onBolusFailed() }.start()
+            }
+        }
+
+        if (current.isNotEmpty()) {
+            serviceScope.launch {
+                getStatus("ApexService-onAlarmsChanged", force = true)
             }
         }
     }
@@ -1124,6 +1133,8 @@ class ApexService : MetroService(), ApexBluetoothCallback {
             onBatteryChanged(update)
         }
 
+        apexPumpPlugin.updateStatusFlows()
+        rxBus.send(EventPumpStatusChanged(EventPumpStatusChanged.Status.CONNECTED))
         rxBus.send(EventApexPumpDataChanged())
     }
 
@@ -1491,6 +1502,11 @@ class ApexService : MetroService(), ApexBluetoothCallback {
             is Heartbeat -> onHeartbeat()
             is BolusEntry -> onBolusEntry(obj)
             is TDDEntry -> onTDDEntry(obj)
+            is AlarmObject -> {
+                serviceScope.launch {
+                    getStatus("ApexService-AlarmObject", force = true)
+                }
+            }
             else -> {}
         }
     }

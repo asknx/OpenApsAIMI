@@ -1,6 +1,7 @@
 package app.aaps.pump.apex
 
 import app.aaps.pump.apex.connectivity.commands.device.Bolus
+import app.aaps.pump.apex.connectivity.commands.pump.Alarm
 import app.aaps.pump.apex.connectivity.commands.pump.AlarmType
 import app.aaps.pump.apex.connectivity.commands.pump.BasalProfile
 import app.aaps.pump.apex.connectivity.commands.pump.BolusDeliverySpeed
@@ -142,5 +143,18 @@ class CommandsTest : TestBase() {
         val expected = ubyteArrayOf(0x35u, 0x17u, 0x00u, 0xa1u, 0x12u, 0xaau, 0x41u, 0x50u, 0x45u, 0x58u, 0x31u, 0x32u, 0x33u, 0x34u, 0x35u, 0x36u, 0x37u, 0x38u, 0x3cu, 0x00u, 0x00u, 0x6fu, 0x65u).toByteArray()
         val command = Bolus(info, 60)
         assert(expected.contentEquals(command.serialize()))
+    }
+
+    @Test
+    fun pump_alarms_decoding() {
+        assert(Alarm.fromRaw(0x10d) == Alarm.NoDosage)
+        assert(Alarm.fromRaw(0x0d) == Alarm.NoDosage)
+        assert(Alarm.fromRaw(0x10f) == Alarm.NoReservoir)
+        assert(Alarm.fromRaw(0x0f) == Alarm.NoReservoir)
+        assert(Alarm.fromRaw(0x108) == Alarm.NoDelivery)
+        assert(Alarm.fromRaw(0x08) == Alarm.NoDelivery)
+        assert(Alarm.fromRaw(0x104) == Alarm.LowReservoir)
+        assert(Alarm.fromRaw(0x04) == Alarm.LowReservoir)
+        assert(Alarm.fromRaw(0x20b) == Alarm.PressureAbnormal)
     }
 }

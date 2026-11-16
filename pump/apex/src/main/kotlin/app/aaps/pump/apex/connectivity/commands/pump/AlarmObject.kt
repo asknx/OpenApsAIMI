@@ -18,10 +18,10 @@ class AlarmObject(
     val dateTime get() = getDateTime(command.objectData, 2, apexDeviceInfo)
 
     /** Alarm type */
-    val type get() = Alarm.entries.find { it.raw == (getUnsignedShort(command.objectData, 8) + 0x100) }
+    val type get() = Alarm.fromRaw(getUnsignedShort(command.objectData, 8))
 
     override fun validate(): String? {
-        if (type == null) return "type == null"
+        if (type == Alarm.Unknown) return "type == Unknown"
         if (!validateDateTime(command.objectData, 2, apexDeviceInfo)) return "invalid datetime"
         return null
     }

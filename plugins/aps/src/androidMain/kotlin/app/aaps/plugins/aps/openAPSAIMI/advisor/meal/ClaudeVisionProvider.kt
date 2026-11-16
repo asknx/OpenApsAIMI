@@ -49,7 +49,7 @@ class ClaudeVisionProvider : AIVisionProvider {
         }.toString()
 
         val jsonBody = JSONObject().apply {
-            put("model", "claude-3-5-sonnet-20240620")
+            put("model", "claude-sonnet-4-6")
             put("max_tokens", 2048)
             put("temperature", 0.0)
             put("system", FoodAnalysisPrompt.SYSTEM_PROMPT)

@@ -37,10 +37,10 @@ class GeminiModelResolver @Inject constructor(
 
         // Fallback priority list with real models
         private val FALLBACK_PRIORITY = listOf(
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-2.0-flash-exp"
+            "gemini-4-argon",
+            "gemini-3.8-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-pro"
         )
     }
 
@@ -71,7 +71,7 @@ class GeminiModelResolver @Inject constructor(
         }
 
         // Last resort
-        return availableModels.firstOrNull { it.contains("gemini") } ?: "gemini-2.0-flash"
+        return availableModels.firstOrNull { it.contains("gemini") } ?: "gemini-3.8-flash"
     }
     
     /**
