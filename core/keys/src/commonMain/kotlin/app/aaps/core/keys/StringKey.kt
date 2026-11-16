@@ -350,40 +350,36 @@ enum class StringKey(
     ),
     AimiAdvisorModel(
         key = "aimi_advisor_model",
-        defaultValue = "",
+        defaultValue = "gemini-2.0-flash",
         title = TextRef.Literal("Модель AI"),
         summary = TextRef.Literal("Активная модель нейросети"),
-        visibility = ElementVisibility { false }
+        preferenceType = PreferenceType.TEXT_FIELD,
+        visibility = ElementVisibility { true }
     ),
     AimiAdvisorModelGemini(
         key = "aimi_advisor_model_gemini",
-        defaultValue = "gemini-3.8-flash",
+        defaultValue = "gemini-2.0-flash",
         title = TextRef.Literal("Модель AI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "gemini-3.8-flash" to "Gemini 3.8 Flash (Рекомендуется)",
-            "gemini-3.8-flash-lite" to "Gemini 3.8 Flash Lite (Быстрая)",
-            "gemini-3.1-pro" to "Gemini 3.1 Pro (Рассуждения)",
             "gemini-2.0-flash" to "Gemini 2.0 Flash",
             "gemini-1.5-flash" to "Gemini 1.5 Flash",
             "gemini-1.5-pro" to "Gemini 1.5 Pro"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GEMINI" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelOpenAI(
         key = "aimi_advisor_model_openai",
-        defaultValue = "gpt-5.4",
+        defaultValue = "gpt-4o",
         title = TextRef.Literal("Модель AI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "gpt-5.4" to "GPT-5.4 (Рекомендуется)",
-            "gpt-5.2" to "GPT-5.2",
-            "gpt-4o" to "GPT-4o (Мультимодальная)",
-            "gpt-4o-mini" to "GPT-4o Mini (Быстрая)",
-            "o3-mini" to "o3-mini (Рассуждения)",
-            "o1" to "o1 (Глубокие рассуждения)"
+            "gpt-4o" to "GPT-4o",
+            "gpt-4o-mini" to "GPT-4o Mini",
+            "o3-mini" to "o3-mini",
+            "o1" to "o1"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "OPENAI" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelDeepSeek(
         key = "aimi_advisor_model_deepseek",
@@ -391,49 +387,45 @@ enum class StringKey(
         title = TextRef.Literal("Модель AI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "deepseek-chat" to "DeepSeek Chat (V3)",
-            "deepseek-reasoner" to "DeepSeek Reasoner (R1)"
+            "deepseek-chat" to "DeepSeek Chat",
+            "deepseek-reasoner" to "DeepSeek Reasoner"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "DEEPSEEK" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelClaude(
         key = "aimi_advisor_model_claude",
-        defaultValue = "claude-sonnet-5",
+        defaultValue = "claude-3-5-sonnet-20241022",
         title = TextRef.Literal("Модель AI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "claude-sonnet-5" to "Claude Sonnet 5 (Рекомендуется)",
-            "claude-3-7-sonnet" to "Claude 3.7 Sonnet (Гибрид)",
-            "claude-3-5-sonnet" to "Claude 3.5 Sonnet",
-            "claude-3-5-haiku" to "Claude 3.5 Haiku (Быстрая)"
+            "claude-3-5-sonnet-20241022" to "Claude 3.5 Sonnet",
+            "claude-3-5-haiku-20241022" to "Claude 3.5 Haiku",
+            "claude-3-opus-20240229" to "Claude 3 Opus"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "CLAUDE" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelGlm(
         key = "aimi_advisor_model_glm",
-        defaultValue = "glm-5.2",
+        defaultValue = "glm-4-plus",
         title = TextRef.Literal("Модель AI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "glm-5.2" to "GLM-5.2 (Рекомендуется)",
-            "glm-5" to "GLM-5 Flagship",
             "glm-4-plus" to "GLM-4 Plus",
-            "glm-4-flash" to "GLM-4 Flash (Быстрая)"
+            "glm-4-flash" to "GLM-4 Flash",
+            "glm-4-air" to "GLM-4 Air"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GLM" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelGrok(
         key = "aimi_advisor_model_grok",
-        defaultValue = "grok-4",
+        defaultValue = "grok-beta",
         title = TextRef.Literal("Модель AI"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "grok-4" to "Grok 4 (Рекомендуется)",
-            "grok-3" to "Grok 3 (Рассуждения)",
-            "grok-2" to "Grok 2",
-            "grok-vision-beta" to "Grok Vision Beta"
+            "grok-beta" to "Grok Beta",
+            "grok-2" to "Grok 2"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GROK" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelOpenRouter(
         key = "aimi_advisor_model_openrouter",
@@ -442,12 +434,10 @@ enum class StringKey(
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
             "meta-llama/llama-3.3-70b-instruct" to "Llama 3.3 70B Instruct",
-            "anthropic/claude-3.5-sonnet" to "Claude 3.5 Sonnet",
-            "deepseek/deepseek-chat" to "DeepSeek Chat V3",
-            "google/gemini-2.0-flash-001" to "Gemini 2.0 Flash",
-            "openai/gpt-4o" to "GPT-4o"
+            "deepseek/deepseek-chat" to "DeepSeek Chat",
+            "google/gemini-2.0-flash-exp:free" to "Gemini 2.0 Flash (Free)"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "OPENROUTER" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelGroq(
         key = "aimi_advisor_model_groq",
@@ -456,10 +446,9 @@ enum class StringKey(
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
             "llama-3.3-70b-versatile" to "Llama 3.3 70B Versatile",
-            "llama-3.1-8b-instant" to "Llama 3.1 8B Instant (Быстрая)",
-            "mixtral-8x7b-32768" to "Mixtral 8x7B"
+            "llama-3.1-8b-instant" to "Llama 3.1 8B Instant"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "GROQ" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelCustom(
         key = "aimi_advisor_model_custom",
@@ -467,13 +456,9 @@ enum class StringKey(
         title = TextRef.Literal("Модель AI (из списка)"),
         preferenceType = PreferenceType.LIST,
         entriesLiterals = mapOf(
-            "custom-model" to "custom-model (По умолчанию)",
-            "gpt-4o" to "gpt-4o",
-            "llama-3.3-70b" to "llama-3.3-70b",
-            "qwen-2.5-72b" to "qwen-2.5-72b",
-            "deepseek-r1" to "deepseek-r1"
+            "custom-model" to "custom-model (По умолчанию)"
         ),
-        visibility = ElementVisibility { it.preferences.get(AimiAdvisorProvider) == "CUSTOM" }
+        visibility = ElementVisibility { false }
     ),
     AimiAdvisorModelCustomManual(
         key = "aimi_advisor_model_custom_manual",

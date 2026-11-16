@@ -31,6 +31,7 @@ import app.aaps.plugins.source.PoctechPlugin
 import app.aaps.plugins.source.SyaiPlugin
 import app.aaps.plugins.source.TomatoPlugin
 import app.aaps.plugins.source.XdripInbox
+import app.aaps.plugins.source.XdripSourcePlugin
 import app.aaps.plugins.source.instara.InstaraPlugin
 import app.aaps.plugins.sync.smsCommunicator.SmsInbox
 import dev.zacsweers.metro.HasMemberInjections
@@ -45,6 +46,7 @@ open class DataReceiver : MetroBroadcastReceiver() {
     @Inject lateinit var dataInbox: DataInbox
     @Inject lateinit var fabricPrivacy: FabricPrivacy
     @Inject lateinit var workManager: WorkManager
+    @Inject lateinit var xdripSourcePlugin: XdripSourcePlugin
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
@@ -56,8 +58,12 @@ open class DataReceiver : MetroBroadcastReceiver() {
         val bundle = intent.extras ?: return
         aapsLogger.debug(LTag.CORE, "onReceive ${intent.action} ${BundleLogger.log(bundle)}")
         when (intent.action) {
-            Intents.ACTION_NEW_BG_ESTIMATE            ->
+            Intents.ACTION_NEW_BG_ESTIMATE            -> {
+                if (::xdripSourcePlugin.isInitialized) {
+                    xdripSourcePlugin.processDirectBroadcast(intent.action, bundle)
+                }
                 dataInbox.putAndEnqueue(XdripInbox, bundle)
+            }
 
             Intents.GLUCODATA_MINUTE                  -> {
                 val bgMgdl = if (bundle.containsKey("glucodata.Minute.mgdl")) {
@@ -83,6 +89,9 @@ open class DataReceiver : MetroBroadcastReceiver() {
                     putLong(Intents.EXTRA_TIMESTAMP, timestamp)
                     putString(Intents.EXTRA_BG_SLOPE_NAME, slopeName)
                     putString(Intents.XDRIP_DATA_SOURCE, bundle.getString("glucodata.Minute.SerialNumber") ?: "Juggluco")
+                }
+                if (::xdripSourcePlugin.isInitialized) {
+                    xdripSourcePlugin.processDirectBroadcast(intent.action, bundle)
                 }
                 dataInbox.putAndEnqueue(XdripInbox, outBundle)
             }

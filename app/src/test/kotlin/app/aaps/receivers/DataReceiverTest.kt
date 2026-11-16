@@ -50,6 +50,7 @@ class DataReceiverTest : TestBase() {
     @Mock private lateinit var workManager: WorkManager
     @Mock private lateinit var context: Context
     @Mock private lateinit var bundle: Bundle
+    @Mock private lateinit var xdripSourcePlugin: app.aaps.plugins.source.XdripSourcePlugin
 
     @BeforeEach
     fun setUp() {
@@ -59,6 +60,7 @@ class DataReceiverTest : TestBase() {
             it.dataInbox = dataInbox
             it.fabricPrivacy = fabricPrivacy
             it.workManager = workManager
+            it.xdripSourcePlugin = xdripSourcePlugin
         }
     }
 
@@ -84,13 +86,14 @@ class DataReceiverTest : TestBase() {
     // ---- Inbox routing ----
 
     @Test
-    fun `xdrip BG estimate routes to XdripInbox`() {
+    fun `xdrip BG estimate routes to XdripInbox and triggers processDirectBroadcast`() {
         dataReceiver.processIntent(context, createIntent(Intents.ACTION_NEW_BG_ESTIMATE))
+        verify(xdripSourcePlugin).processDirectBroadcast(eq(Intents.ACTION_NEW_BG_ESTIMATE), eq(bundle))
         verify(dataInbox).putAndEnqueue(eq(XdripInbox), eq(bundle))
     }
 
     @Test
-    fun `glucodata Minute routes to XdripInbox`() {
+    fun `glucodata Minute routes to XdripInbox and triggers processDirectBroadcast`() {
         whenever(bundle.containsKey("glucodata.Minute.mgdl")).thenReturn(true)
         whenever(bundle.getInt("glucodata.Minute.mgdl")).thenReturn(120)
         whenever(bundle.getLong(eq("glucodata.Minute.Time"), any())).thenReturn(1000L)
@@ -98,6 +101,7 @@ class DataReceiverTest : TestBase() {
         whenever(bundle.getString(eq("glucodata.Minute.SerialNumber"))).thenReturn("Juggluco")
 
         dataReceiver.processIntent(context, createIntent(Intents.GLUCODATA_MINUTE))
+        verify(xdripSourcePlugin).processDirectBroadcast(eq(Intents.GLUCODATA_MINUTE), eq(bundle))
         verify(dataInbox).putAndEnqueue(eq(XdripInbox), any())
     }
 

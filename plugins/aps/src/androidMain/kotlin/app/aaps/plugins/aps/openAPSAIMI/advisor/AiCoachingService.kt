@@ -216,7 +216,7 @@ class AiCoachingService @Inject constructor() {
         customModel: String? = null
     ): String {
         val resolver = app.aaps.plugins.aps.openAPSAIMI.llm.gemini.GeminiModelResolver(context)
-        val defaultModel = customModel?.ifBlank { null } ?: "gemini-3.8-flash"
+        val defaultModel = customModel?.ifBlank { null } ?: "gemini-2.0-flash"
         val primaryModel = resolver.resolveGenerateContentModel(apiKey, oauthToken, defaultModel)
         
         try {
@@ -224,7 +224,7 @@ class AiCoachingService @Inject constructor() {
         } catch (e: Exception) {
             val msg = e.message?.lowercase() ?: ""
             if (msg.contains("429") || msg.contains("resource_exhausted") || msg.contains("quota")) {
-                val fallbackModel = "gemini-3.8-flash"
+                val fallbackModel = "gemini-1.5-flash"
                 return executeGeminiRequest(resolver, apiKey, oauthToken, prompt, fallbackModel)
             }
             throw e

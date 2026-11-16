@@ -277,13 +277,12 @@ class AuditorAIService @Inject constructor(
 
     fun getActiveModel(provider: Provider = getProvider()): String {
         val model = when (provider) {
-            Provider.GEMINI_38_FLASH -> preferences.get(StringKey.AimiAdvisorModelGemini).ifBlank { "gemini-3.8-flash" }
-            Provider.GEMINI_31_PRO -> preferences.get(StringKey.AimiAdvisorModelGemini).ifBlank { "gemini-3.1-pro" }
-            Provider.OPENAI -> preferences.get(StringKey.AimiAdvisorModelOpenAI).ifBlank { "gpt-5.4" }
+            Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO -> preferences.get(StringKey.AimiAdvisorModelGemini).ifBlank { "gemini-2.0-flash" }
+            Provider.OPENAI -> preferences.get(StringKey.AimiAdvisorModelOpenAI).ifBlank { "gpt-4o" }
             Provider.DEEPSEEK -> preferences.get(StringKey.AimiAdvisorModelDeepSeek).ifBlank { "deepseek-chat" }
-            Provider.CLAUDE -> preferences.get(StringKey.AimiAdvisorModelClaude).ifBlank { "claude-sonnet-5" }
-            Provider.GLM -> preferences.get(StringKey.AimiAdvisorModelGlm).ifBlank { "glm-5.2" }
-            Provider.GROK -> preferences.get(StringKey.AimiAdvisorModelGrok).ifBlank { "grok-4" }
+            Provider.CLAUDE -> preferences.get(StringKey.AimiAdvisorModelClaude).ifBlank { "claude-3-5-sonnet-20241022" }
+            Provider.GLM -> preferences.get(StringKey.AimiAdvisorModelGlm).ifBlank { "glm-4-plus" }
+            Provider.GROK -> preferences.get(StringKey.AimiAdvisorModelGrok).ifBlank { "grok-beta" }
             Provider.OPENROUTER -> preferences.get(StringKey.AimiAdvisorModelOpenRouter).ifBlank { "meta-llama/llama-3.3-70b-instruct" }
             Provider.GROQ -> preferences.get(StringKey.AimiAdvisorModelGroq).ifBlank { "llama-3.3-70b-versatile" }
             Provider.CUSTOM -> {
@@ -367,7 +366,7 @@ class AuditorAIService @Inject constructor(
         } catch (e: Exception) {
             val msg = e.message?.lowercase() ?: ""
             if (msg.contains("429") || msg.contains("resource_exhausted") || msg.contains("quota")) {
-                val fallbackModel = if (primaryModel != "gemini-3.8-flash-lite") "gemini-3.8-flash-lite" else "gemini-3.8-flash"
+                val fallbackModel = if (primaryModel != "gemini-1.5-flash") "gemini-1.5-flash" else "gemini-2.0-flash"
                 return executeGeminiRequest(apiKey, prompt, fallbackModel, requireJson)
             }
             throw e
@@ -510,54 +509,129 @@ class AuditorAIService @Inject constructor(
     }
 
     suspend fun fetchAvailableModels(provider: Provider): List<String> = withContext(Dispatchers.IO) {
+        val apiKey = getApiKey(provider)
+
         when (provider) {
             Provider.GEMINI_38_FLASH, Provider.GEMINI_31_PRO -> {
-                return@withContext listOf(
-                    "gemini-3.8-flash",
-                    "gemini-3.8-flash-lite",
-                    "gemini-3.1-pro",
-                    "gemini-2.0-flash",
-                    "gemini-1.5-flash",
-                    "gemini-1.5-pro"
-                )
+                if (apiKey.isBlank()) return@withContext emptyList()
+                val urlStr = "https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey"
+                try {
+                    val url = URL(urlStr)
+                    val conn = (url.openConnection() as HttpURLConnection).apply {
+                        instanceFollowRedirects = false
+                        requestMethod = "GET"
+                        connectTimeout = 10_000
+                        readTimeout = 15_000
+                    }
+                    if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+                        val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                        val root = JSONObject(resp)
+                        val models = mutableListOf<String>()
+                        val modelsArray = root.optJSONArray("models")
+                        if (modelsArray != null) {
+                            for (i in 0 until modelsArray.length()) {
+                                val item = modelsArray.getJSONObject(i)
+                                val name = item.optString("name", "")
+                                val methods = item.optJSONArray("supportedGenerationMethods")
+                                val canGenerate = methods != null && (0 until methods.length()).any {
+                                    methods.getString(it) == "generateContent"
+                                }
+                                if (canGenerate && name.isNotBlank()) {
+                                    models.add(name.removePrefix("models/"))
+                                }
+                            }
+                        }
+                        if (models.isNotEmpty()) return@withContext models.sorted()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("AuditorAIService", "Error fetching Gemini models: ${e.message}", e)
+                }
+                return@withContext listOf("gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro")
             }
+
             Provider.CLAUDE -> {
-                return@withContext listOf(
-                    "claude-sonnet-5",
-                    "claude-3-7-sonnet",
-                    "claude-3-5-sonnet",
-                    "claude-3-5-haiku"
-                )
+                if (apiKey.isBlank()) return@withContext emptyList()
+                val urlStr = "https://api.anthropic.com/v1/models"
+                try {
+                    val url = URL(urlStr)
+                    val conn = (url.openConnection() as HttpURLConnection).apply {
+                        instanceFollowRedirects = false
+                        requestMethod = "GET"
+                        setRequestProperty("x-api-key", apiKey)
+                        setRequestProperty("anthropic-version", "2023-06-01")
+                        connectTimeout = 10_000
+                        readTimeout = 15_000
+                    }
+                    if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+                        val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                        val root = JSONObject(resp)
+                        val models = mutableListOf<String>()
+                        val dataArray = root.optJSONArray("data")
+                        if (dataArray != null) {
+                            for (i in 0 until dataArray.length()) {
+                                val item = dataArray.getJSONObject(i)
+                                val id = item.optString("id", "")
+                                if (id.isNotBlank()) models.add(id)
+                            }
+                        }
+                        if (models.isNotEmpty()) return@withContext models.sorted()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("AuditorAIService", "Error fetching Claude models: ${e.message}", e)
+                }
+                return@withContext listOf("claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229")
             }
-            else -> {}
-        }
 
-        val apiKey = getApiKey(provider)
-        val baseUrl = when (provider) {
-            Provider.OPENAI -> "https://api.openai.com/v1/models"
-            Provider.DEEPSEEK -> "https://api.deepseek.com/v1/models"
-            Provider.GLM -> "https://open.bigmodel.cn/api/paas/v4/models"
-            Provider.GROK -> "https://api.x.ai/v1/models"
-            Provider.OPENROUTER -> "https://openrouter.ai/api/v1/models"
-            Provider.GROQ -> "https://api.groq.com/openai/v1/models"
+            Provider.DEEPSEEK -> {
+                if (apiKey.isBlank()) return@withContext emptyList()
+                return@withContext fetchOpenAiCompatibleModels("https://api.deepseek.com/models", apiKey, listOf("deepseek-chat", "deepseek-reasoner"))
+            }
+
+            Provider.OPENAI -> {
+                if (apiKey.isBlank()) return@withContext emptyList()
+                return@withContext fetchOpenAiCompatibleModels("https://api.openai.com/v1/models", apiKey, listOf("gpt-4o", "gpt-4o-mini", "o1", "o3-mini"))
+            }
+
+            Provider.GLM -> {
+                if (apiKey.isBlank()) return@withContext emptyList()
+                return@withContext fetchOpenAiCompatibleModels("https://open.bigmodel.cn/api/paas/v4/models", apiKey, listOf("glm-4-plus", "glm-4-flash", "glm-4-air"))
+            }
+
+            Provider.GROK -> {
+                if (apiKey.isBlank()) return@withContext emptyList()
+                return@withContext fetchOpenAiCompatibleModels("https://api.x.ai/v1/models", apiKey, listOf("grok-beta", "grok-2"))
+            }
+
+            Provider.OPENROUTER -> {
+                return@withContext fetchOpenAiCompatibleModels("https://openrouter.ai/api/v1/models", apiKey, listOf("meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-chat", "google/gemini-2.0-flash-exp:free"))
+            }
+
+            Provider.GROQ -> {
+                if (apiKey.isBlank()) return@withContext emptyList()
+                return@withContext fetchOpenAiCompatibleModels("https://api.groq.com/openai/v1/models", apiKey, listOf("llama-3.3-70b-versatile", "llama-3.1-8b-instant"))
+            }
+
             Provider.CUSTOM -> {
-                val url = preferences.get(StringKey.AimiAdvisorCustomUrl).trim()
-                if (url.isBlank() || (!url.startsWith("http://") && !url.startsWith("https://"))) return@withContext emptyList()
-                if (url.contains("/chat/completions")) url.replace("/chat/completions", "/models")
-                else if (url.endsWith("/")) "${url}models"
-                else "$url/models"
+                val rawUrl = preferences.get(StringKey.AimiAdvisorCustomUrl).trim()
+                if (rawUrl.isBlank() || (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://"))) return@withContext emptyList()
+                val baseUrl = if (rawUrl.contains("/chat/completions")) rawUrl.replace("/chat/completions", "/models")
+                else if (rawUrl.endsWith("/")) "${rawUrl}models"
+                else "$rawUrl/models"
+                return@withContext fetchOpenAiCompatibleModels(baseUrl, apiKey, listOf("custom-model"))
             }
-            else -> "https://api.openai.com/v1/models"
         }
+    }
 
+    private fun fetchOpenAiCompatibleModels(urlStr: String, apiKey: String, fallback: List<String>): List<String> {
         try {
-            val url = URL(baseUrl)
+            val url = URL(urlStr)
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 instanceFollowRedirects = false
                 requestMethod = "GET"
                 if (apiKey.isNotBlank()) setRequestProperty("Authorization", "Bearer $apiKey")
-                connectTimeout = 8000
-                readTimeout = 12000
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 10_000
+                readTimeout = 15_000
             }
 
             if (connection.responseCode == HttpURLConnection.HTTP_OK) {
@@ -573,13 +647,11 @@ class AuditorAIService @Inject constructor(
                         }
                     }
                 }
-                return@withContext models.sorted()
-            } else {
-                return@withContext emptyList()
+                if (models.isNotEmpty()) return models.sorted()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            return@withContext emptyList()
+            android.util.Log.e("AuditorAIService", "Error fetching models from $urlStr: ${e.message}", e)
         }
+        return fallback
     }
 }

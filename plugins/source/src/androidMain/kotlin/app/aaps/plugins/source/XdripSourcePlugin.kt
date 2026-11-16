@@ -176,6 +176,13 @@ class XdripSourcePlugin(
         else          -> TrendArrow.DOUBLE_DOWN
     }
 
+    fun processDirectBroadcast(action: String?, bundle: Bundle) {
+        if (!isEnabled()) return
+        pluginScope.launch(Dispatchers.IO) {
+            handleDirectBroadcast(action, bundle)
+        }
+    }
+
     internal suspend fun handleDirectBroadcast(action: String?, bundle: Bundle) {
         if (!isEnabled()) return
         val gv: GV

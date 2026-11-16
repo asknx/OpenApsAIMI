@@ -1150,22 +1150,14 @@ open class OpenAPSAIMIPlugin  @Inject constructor(
                 title = TextRef.AndroidRes(R.string.aimi_prefs_ai_title),
                 items = listOf(
                     StringKey.AimiAdvisorProvider,
-                    StringKey.AimiAdvisorModelGemini,
-                    StringKey.AimiAdvisorModelOpenAI,
-                    StringKey.AimiAdvisorModelDeepSeek,
-                    StringKey.AimiAdvisorModelClaude,
-                    StringKey.AimiAdvisorModelGlm,
-                    StringKey.AimiAdvisorModelGrok,
-                    StringKey.AimiAdvisorModelOpenRouter,
-                    StringKey.AimiAdvisorModelGroq,
-                    StringKey.AimiAdvisorModelCustom,
-                    StringKey.AimiAdvisorModelCustomManual,
+                    StringKey.AimiAdvisorModel,
                     IntentKey.AimiFetchModels.withClick {
                         val intent = android.content.Intent(context, app.aaps.plugins.aps.openAPSAIMI.advisor.AimiModelPickerActivity::class.java).apply {
                             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
                         }
                         context.startActivity(intent)
                     },
+                    StringKey.AimiAdvisorModelCustomManual,
                     StringKey.AimiAdvisorGeminiKey,
                     StringKey.AimiAdvisorOpenAIKey,
                     StringKey.AimiAdvisorDeepSeekKey,

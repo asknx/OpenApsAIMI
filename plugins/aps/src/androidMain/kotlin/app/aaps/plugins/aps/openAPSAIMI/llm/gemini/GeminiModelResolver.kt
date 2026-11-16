@@ -35,12 +35,11 @@ class GeminiModelResolver @Inject constructor(
         // TTL: 24h
         private val CACHE_TTL_MS = TimeUnit.HOURS.toMillis(24)
 
-        // Fallback fallback priority list (Realistic Model IDs as of April 2026)
+        // Fallback priority list with real models
         private val FALLBACK_PRIORITY = listOf(
-            "gemini-3.1-pro",
-            "gemini-3.8-flash",
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-pro-latest",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
             "gemini-2.0-flash-exp"
         )
     }
@@ -59,17 +58,7 @@ class GeminiModelResolver @Inject constructor(
     fun resolveGenerateContentModel(apiKey: String?, oauthToken: String?, preferredModel: String?): String {
         // If preferredModel is directly provided and valid, prioritize it directly!
         if (!preferredModel.isNullOrBlank()) {
-            val mappedModel = when (preferredModel.uppercase(Locale.US)) {
-                "GEMINI-3.1-PRO" -> "gemini-3.1-pro"
-                "GEMINI-3.8-FLASH" -> "gemini-3.8-flash"
-                "GEMINI-3.8-FLASH-LITE" -> "gemini-3.8-flash-lite"
-                "GEMINI-1.5-PRO" -> "gemini-1.5-pro-latest"
-                "GEMINI-1.5-FLASH" -> "gemini-1.5-flash-latest"
-                "GEMINI-2.0-FLASH" -> "gemini-2.0-flash-exp"
-                "GEMINI" -> "gemini-3.8-flash"
-                else -> preferredModel.trim().removePrefix("models/")
-            }
-            return mappedModel
+            return preferredModel.trim().removePrefix("models/")
         }
 
         val availableModels = getOrFetchModels(apiKey, oauthToken)
@@ -82,7 +71,7 @@ class GeminiModelResolver @Inject constructor(
         }
 
         // Last resort
-        return availableModels.firstOrNull { it.contains("gemini") } ?: "gemini-3.8-flash"
+        return availableModels.firstOrNull { it.contains("gemini") } ?: "gemini-2.0-flash"
     }
     
     /**

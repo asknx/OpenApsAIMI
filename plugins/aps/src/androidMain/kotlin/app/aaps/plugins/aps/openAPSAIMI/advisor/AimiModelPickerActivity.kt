@@ -41,15 +41,19 @@ class AimiModelPickerActivity : MetroAppCompatActivity() {
     private val manualModelText = mutableStateOf("")
     private val searchQuery = mutableStateOf("")
     private val statusMessage = mutableStateOf("")
+    private var currentProvider = AuditorAIService.Provider.GEMINI_38_FLASH
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val currentManual = preferences.get(StringKey.AimiAdvisorModelCustomManual).trim()
-        val currentList = preferences.get(StringKey.AimiAdvisorModelCustom).trim()
-        val initial = currentManual.ifBlank { currentList.ifBlank { "custom-model" } }
-        selectedModel.value = initial
-        manualModelText.value = currentManual
+        currentProvider = auditorAIService.getProvider()
+        val activeModel = auditorAIService.getActiveModel(currentProvider)
+        selectedModel.value = activeModel
+        manualModelText.value = if (currentProvider == AuditorAIService.Provider.CUSTOM) {
+            preferences.get(StringKey.AimiAdvisorModelCustomManual).trim()
+        } else {
+            activeModel
+        }
 
         loadModels()
 
@@ -62,7 +66,7 @@ class AimiModelPickerActivity : MetroAppCompatActivity() {
                             title = {
                                 Column {
                                     Text("Каталог моделей", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    Text("Кастомный Endpoint", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(currentProvider.displayName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             },
                             navigationIcon = {
@@ -229,35 +233,44 @@ class AimiModelPickerActivity : MetroAppCompatActivity() {
 
     private fun loadModels() {
         isLoading.value = true
-        statusMessage.value = "Запрос к серверу..."
+        statusMessage.value = "Запрос к серверу ${currentProvider.displayName}..."
         lifecycleScope.launch {
             try {
-                val customUrl = preferences.get(StringKey.AimiAdvisorCustomUrl).trim()
-                if (customUrl.isBlank() || (!customUrl.startsWith("http://") && !customUrl.startsWith("https://"))) {
-                    withContext(Dispatchers.Main) {
-                        isLoading.value = false
-                        statusMessage.value = "Укажите корректный URL кастомного API в настройках"
-                        Toast.makeText(this@AimiModelPickerActivity, "Укажите URL кастомного API в настройках", Toast.LENGTH_LONG).show()
+                if (currentProvider == AuditorAIService.Provider.CUSTOM) {
+                    val customUrl = preferences.get(StringKey.AimiAdvisorCustomUrl).trim()
+                    if (customUrl.isBlank() || (!customUrl.startsWith("http://") && !customUrl.startsWith("https://"))) {
+                        withContext(Dispatchers.Main) {
+                            isLoading.value = false
+                            statusMessage.value = "Укажите корректный URL кастомного API в настройках"
+                            Toast.makeText(this@AimiModelPickerActivity, "Укажите URL кастомного API в настройках", Toast.LENGTH_LONG).show()
+                        }
+                        return@launch
                     }
-                    return@launch
+                } else if (currentProvider != AuditorAIService.Provider.OPENROUTER) {
+                    val key = auditorAIService.getApiKey(currentProvider)
+                    if (key.isBlank()) {
+                        withContext(Dispatchers.Main) {
+                            isLoading.value = false
+                            statusMessage.value = "Укажите API ключ ${currentProvider.displayName} в настройках"
+                            Toast.makeText(this@AimiModelPickerActivity, "Укажите API ключ в настройках", Toast.LENGTH_LONG).show()
+                        }
+                        return@launch
+                    }
                 }
 
-                val fetched = auditorAIService.fetchAvailableModels(AuditorAIService.Provider.CUSTOM)
+                val fetched = auditorAIService.fetchAvailableModels(currentProvider)
                 withContext(Dispatchers.Main) {
                     isLoading.value = false
                     if (fetched.isNotEmpty()) {
                         modelsList.value = fetched
-                        statusMessage.value = "Получено моделей: ${fetched.size}"
+                        statusMessage.value = "Получено моделей онлайн: ${fetched.size}"
                     } else {
-                        // Fallback to default custom models list
-                        modelsList.value = listOf("custom-model", "gpt-4o", "llama-3.3-70b", "qwen-2.5-72b", "deepseek-r1")
-                        statusMessage.value = "Сервер не вернул /models. Показан базовый список."
+                        statusMessage.value = "Сервер не вернул моделей. Вы можете ввести имя вручную."
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     isLoading.value = false
-                    modelsList.value = listOf("custom-model", "gpt-4o", "llama-3.3-70b", "qwen-2.5-72b", "deepseek-r1")
                     statusMessage.value = "Ошибка подключения: ${e.message}"
                 }
             }
@@ -266,10 +279,30 @@ class AimiModelPickerActivity : MetroAppCompatActivity() {
 
     private fun applyModel(model: String) {
         if (model.isBlank()) return
-        preferences.put(StringKey.AimiAdvisorModelCustomManual, model)
-        preferences.put(StringKey.AimiAdvisorModelCustom, model)
         preferences.put(StringKey.AimiAdvisorModel, model)
-        Toast.makeText(this, "Модель установлена: $model", Toast.LENGTH_SHORT).show()
+        when (currentProvider) {
+            AuditorAIService.Provider.GEMINI_38_FLASH, AuditorAIService.Provider.GEMINI_31_PRO ->
+                preferences.put(StringKey.AimiAdvisorModelGemini, model)
+            AuditorAIService.Provider.OPENAI ->
+                preferences.put(StringKey.AimiAdvisorModelOpenAI, model)
+            AuditorAIService.Provider.DEEPSEEK ->
+                preferences.put(StringKey.AimiAdvisorModelDeepSeek, model)
+            AuditorAIService.Provider.CLAUDE ->
+                preferences.put(StringKey.AimiAdvisorModelClaude, model)
+            AuditorAIService.Provider.GLM ->
+                preferences.put(StringKey.AimiAdvisorModelGlm, model)
+            AuditorAIService.Provider.GROK ->
+                preferences.put(StringKey.AimiAdvisorModelGrok, model)
+            AuditorAIService.Provider.OPENROUTER ->
+                preferences.put(StringKey.AimiAdvisorModelOpenRouter, model)
+            AuditorAIService.Provider.GROQ ->
+                preferences.put(StringKey.AimiAdvisorModelGroq, model)
+            AuditorAIService.Provider.CUSTOM -> {
+                preferences.put(StringKey.AimiAdvisorModelCustom, model)
+                preferences.put(StringKey.AimiAdvisorModelCustomManual, model)
+            }
+        }
+        Toast.makeText(this, "Выбрана модель: $model", Toast.LENGTH_SHORT).show()
         finish()
     }
 }
